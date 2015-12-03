@@ -1,0 +1,200 @@
+clock.o clock.o: clock.c ../../config.h /usr/include/signal.h \
+  /usr/include/sys/cdefs.h /usr/include/_types.h \
+  /usr/include/sys/_types.h /usr/include/machine/_types.h \
+  /usr/include/i386/_types.h /usr/include/sys/signal.h \
+  /usr/include/sys/appleapiopts.h /usr/include/machine/signal.h \
+  /usr/include/i386/signal.h /usr/include/i386/_structs.h \
+  /usr/include/sys/_structs.h /usr/include/machine/_structs.h \
+  /usr/include/mach/i386/_structs.h /usr/include/time.h \
+  /usr/include/_structs.h /usr/include/math.h \
+  /usr/include/architecture/i386/math.h \
+  ../../April/Engine/Headers/april.h /usr/include/stdlib.h \
+  /usr/include/Availability.h /usr/include/AvailabilityInternal.h \
+  /usr/include/sys/wait.h /usr/include/sys/resource.h \
+  /usr/include/machine/endian.h /usr/include/i386/endian.h \
+  /usr/include/sys/_endian.h /usr/include/libkern/_OSByteOrder.h \
+  /usr/include/libkern/i386/_OSByteOrder.h /usr/include/alloca.h \
+  /usr/include/machine/types.h /usr/include/i386/types.h \
+  /usr/include/i386/_types.h /usr/include/assert.h \
+  ../../April/Engine/Headers/dbgflags.h /opt/nar/ooio/include/logical.h \
+  ../../April/Headers/local.h /opt/nar/ooio/include/ooio.h ../../config.h \
+  /opt/nar/ooio/include/io.h /opt/nar/ooio/include/retcode.h \
+  /opt/nar/ooio/include/integer.h /opt/nar/ooio/include/number.h \
+  /opt/nar/ooio/include/logical.h /opt/nar/ooio/include/object.h \
+  /usr/include/pthread.h /usr/include/pthread_impl.h /usr/include/sched.h \
+  /opt/nar/ooio/include/unicode.h /opt/nar/ooio/include/formio.h \
+  /opt/nar/ooio/include/file.h /opt/nar/ooio/include/url.h \
+  /opt/nar/ooio/include/iostr.h /opt/nar/ooio/include/ioTcp.h \
+  /opt/nar/ooio/include/pool.h /usr/include/sys/types.h \
+  /opt/nar/ooio/include/hosts.h /opt/nar/ooio/include/pipe.h \
+  /opt/nar/ooio/include/bytes.h /opt/nar/ooio/include/hash.h \
+  ../../April/Engine/Headers/word.h /opt/nar/ooio/include/integer.h \
+  ../../April/Engine/Headers/chars.h ../../April/Engine/Headers/handle.h \
+  ../../April/Engine/Headers/symbols.h ../../April/Engine/Headers/alloc.h \
+  ../../April/Engine/Headers/gcP.h ../../April/Engine/Headers/opaque.h \
+  ../../April/Engine/Headers/str.h /opt/nar/ooio/include/pool.h \
+  /opt/nar/ooio/include/hosts.h ../../April/Engine/Headers/stats.h \
+  ../../April/Engine/Headers/dict.h ../../April/Engine/Headers/signals.h \
+  ../../April/Engine/Headers/process.h ../../April/Engine/Headers/clock.h \
+  /usr/include/sys/time.h /usr/include/sys/_select.h \
+  ../../April/Engine/Headers/symbols.h
+
+../../config.h:
+
+/usr/include/signal.h:
+
+/usr/include/sys/cdefs.h:
+
+/usr/include/_types.h:
+
+/usr/include/sys/_types.h:
+
+/usr/include/machine/_types.h:
+
+/usr/include/i386/_types.h:
+
+/usr/include/sys/signal.h:
+
+/usr/include/sys/appleapiopts.h:
+
+/usr/include/machine/signal.h:
+
+/usr/include/i386/signal.h:
+
+/usr/include/i386/_structs.h:
+
+/usr/include/sys/_structs.h:
+
+/usr/include/machine/_structs.h:
+
+/usr/include/mach/i386/_structs.h:
+
+/usr/include/time.h:
+
+/usr/include/_structs.h:
+
+/usr/include/math.h:
+
+/usr/include/architecture/i386/math.h:
+
+../../April/Engine/Headers/april.h:
+
+/usr/include/stdlib.h:
+
+/usr/include/Availability.h:
+
+/usr/include/AvailabilityInternal.h:
+
+/usr/include/sys/wait.h:
+
+/usr/include/sys/resource.h:
+
+/usr/include/machine/endian.h:
+
+/usr/include/i386/endian.h:
+
+/usr/include/sys/_endian.h:
+
+/usr/include/libkern/_OSByteOrder.h:
+
+/usr/include/libkern/i386/_OSByteOrder.h:
+
+/usr/include/alloca.h:
+
+/usr/include/machine/types.h:
+
+/usr/include/i386/types.h:
+
+/usr/include/i386/_types.h:
+
+/usr/include/assert.h:
+
+../../April/Engine/Headers/dbgflags.h:
+
+/opt/nar/ooio/include/logical.h:
+
+../../April/Headers/local.h:
+
+/opt/nar/ooio/include/ooio.h:
+
+../../config.h:
+
+/opt/nar/ooio/include/io.h:
+
+/opt/nar/ooio/include/retcode.h:
+
+/opt/nar/ooio/include/integer.h:
+
+/opt/nar/ooio/include/number.h:
+
+/opt/nar/ooio/include/logical.h:
+
+/opt/nar/ooio/include/object.h:
+
+/usr/include/pthread.h:
+
+/usr/include/pthread_impl.h:
+
+/usr/include/sched.h:
+
+/opt/nar/ooio/include/unicode.h:
+
+/opt/nar/ooio/include/formio.h:
+
+/opt/nar/ooio/include/file.h:
+
+/opt/nar/ooio/include/url.h:
+
+/opt/nar/ooio/include/iostr.h:
+
+/opt/nar/ooio/include/ioTcp.h:
+
+/opt/nar/ooio/include/pool.h:
+
+/usr/include/sys/types.h:
+
+/opt/nar/ooio/include/hosts.h:
+
+/opt/nar/ooio/include/pipe.h:
+
+/opt/nar/ooio/include/bytes.h:
+
+/opt/nar/ooio/include/hash.h:
+
+../../April/Engine/Headers/word.h:
+
+/opt/nar/ooio/include/integer.h:
+
+../../April/Engine/Headers/chars.h:
+
+../../April/Engine/Headers/handle.h:
+
+../../April/Engine/Headers/symbols.h:
+
+../../April/Engine/Headers/alloc.h:
+
+../../April/Engine/Headers/gcP.h:
+
+../../April/Engine/Headers/opaque.h:
+
+../../April/Engine/Headers/str.h:
+
+/opt/nar/ooio/include/pool.h:
+
+/opt/nar/ooio/include/hosts.h:
+
+../../April/Engine/Headers/stats.h:
+
+../../April/Engine/Headers/dict.h:
+
+../../April/Engine/Headers/signals.h:
+
+../../April/Engine/Headers/process.h:
+
+../../April/Engine/Headers/clock.h:
+
+/usr/include/sys/time.h:
+
+/usr/include/sys/_select.h:
+
+../../April/Engine/Headers/symbols.h:

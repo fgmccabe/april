@@ -1,0 +1,24 @@
+program
+{
+  is_april_process_alive(handle?Target) => valof {
+    (ping,Target) >> commserver();
+    receive{
+      (alive,handle?H) -> valis true
+    | (unknown,handle?H) -> valis false
+    | ?Any -> {
+        writef(stdout,"is_april_process_alive: error: Target=%w, reply=%w\n",
+              (Target,Any));
+        halt;
+      }
+    };
+    valis false;
+  };
+
+  main(?X)
+  {
+    if is_april_process_alive(X) then
+      writef(stdout,"Ok\n",())
+    else
+      writef(stdout,"Not Ok\n",())
+  }
+} execute main;

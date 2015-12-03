@@ -1,0 +1,21 @@
+program{
+  app(X,Y) => theta{
+    ap = {
+      ([]) => Y
+    | ([?E,..?Z]) => [E,..ap(Z)]
+    }
+  }.ap(X);
+
+/*
+  app = {
+    ([],?X) => X
+  | ([?E,..?Z],?X) => [E,..app(Z,X)]
+  };
+*/
+  
+  mutA(A) => mutB(A);
+  mutB(A) => app(A,mutA([]));
+
+  mA:{(?A)=>mB(A)};
+  mB:{(?A)=>app(A,mA(A))};
+} execute app;

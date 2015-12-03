@@ -1,0 +1,15 @@
+/*
+ * Type definition of a token type
+ */
+
+tokval ::=  ID(string)
+ | INT(number)
+ | PLUS | STAR
+ | LPAR | RPAR | COMMA | SEMI | EOF ;
+token ::= (tokval?tok,string?F,number?L);
+
+
+stype(%i) ::= N(tokval) | PL(%i,%i) | ST(%i,%i) | END | SEQ(%i,%i);
+item ::= item(stype(item)?val,string?F,number?FL,number?LL);
+
+

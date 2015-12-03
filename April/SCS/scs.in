@@ -1,0 +1,7 @@
+#!/bin/sh
+
+# Execute the SCS server
+
+export PATH=@prefix@/bin:${PATH}
+
+exec april file:///@prefix@/april/scs.aam $*

@@ -1,0 +1,26 @@
+/* 
+ * An April program to test the dialox system
+ */
+
+program
+  import interface "dx.af" in
+{
+  main(Host,Port,Url)
+  {
+    Me = self();
+    
+    Dx = spawn{ dxConnect(Host,Port,Me) };
+    
+    sio_term(1,xmlNode("open",[("url",Url)],[]))>>Dx;
+
+    exit::{
+      repeat
+	sio_term(_,XX) ->> {
+	  "Dialox response "++XX^0++"\n" >> stderr;
+	  if xmlNode("closed",_,S).=XX  then
+	    leave exit
+	}
+      until sio_end;
+    }
+  }
+} execute main;

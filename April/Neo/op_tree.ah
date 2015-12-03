@@ -1,0 +1,12 @@
+/*
+ * definition of abstract syntax elements
+ */
+
+asItm ::= IDEN(string,number,string)
+ | NM(string,number,number)
+ | ST(string,number,string)
+ | APPLY(asItm,asItm)
+ | PAIR(asItm,asItm)
+ | VOID
+ | END
+ ;

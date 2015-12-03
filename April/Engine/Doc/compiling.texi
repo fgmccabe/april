@@ -1,0 +1,1052 @@
+@node Compiling April programs
+@chapter Compiling @code{April} programs
+@cindex  Compiling @code{April} programs
+
+@noindent
+@code{April} programs are compiled into sequences of @code{AM}
+instructions, with each function, procedure and pattern occupying a
+single code segment. Multiple code segments are linked together by means
+of the tuple structure in which they are embedded -- this is described
+in @ref{Linking programs}.
+
+The issue of how programs are compiled can be broken down into four
+areas -- the compiling of expressions, patterns, statements and
+predicates. Predicates are really a special kind of expression but we
+treat them as a special case because the result of a predicate
+expression is generally a choice of code to execute rather than
+assigning a value to a variable.
+
+In our discussions about how @code{April} programs are compiled we make
+two assumptions -- that the macro-processing phase has been completed
+and that the program has been verified for type safety and it is
+possible to identify the type of every symbol occuring in the text of
+the program.
+
+@menu
+* Compiling Expressions::       
+* Compiling patterns::          
+* Compiling statements::        
+* Compiling predicates::        
+* Linking programs::            
+@end menu
+
+@node Compiling Expressions
+@section Compiling Expressions
+@cindex Compiling Expressions
+
+@noindent
+Expressions are compiled as though the @code{AM} were a stack machine;
+except that since it is not the evaluation stack is mapped on to the
+register window model of the @code{AM}.
+
+For example, consider the statement:
+
+@smallexample
+?X = @{U + V@} * foo(A);
+@end smallexample
+
+@noindent
+On a stack machine we could map the expression into a sequence of
+Reverse Polish Form instructions:
+
+@smallexample
+        push U
+        push V
+        plus    
+        push A
+        call foo
+        times
+        pop X
+@end smallexample
+
+@noindent
+Since the compiler is always able to convert expressions into RPF, and
+since further the complete sequence is determined, we can take this
+sequence and reify it further. For example, since we have the sequence,
+we can predict which memory locations with the evaluation stack will be
+used, the duration of their validity and so on.
+
+We can use this extra information to replace the general push and pop
+instructions to specific memory referencing instructions:
+
+@smallexample
+        move U,@var{S1}                 @r{; The first stack location}
+        move V,@var{S2}                 @r{; The second stack location}
+        plus @var{S1},@var{S2},@var{S1}             @r{; +, leave result in first stack}
+        move A,@var{S2}                 @r{; reuse second stack location}
+        call foo,@var{S2}               @r{; give location of argument to foo}
+        times @var{S2},@var{S1},@var{S1}            @r{; multiply}
+        move @var{S1},@var{X}                @r{; assign result to X}
+@end smallexample
+
+@noindent
+Here we are assuming a 3 address machine, a 2 address machine
+would have a similar although in some cases longer realization; however
+the @code{AM} is a three address architecture.
+
+Assigning memory locations to the stack levels as we have done also
+allows us to optimize the code still further: since the variables
+referenced in the expression can also be held in stack locations, we can
+eliminate redundant @code{move} instructions:
+
+@smallexample
+        plus U,V,@var{S1}               @r{; +, leave result in first stack}
+        move A,@var{S2}                 @r{; reuse second stack location}
+        call foo,@var{S2}               @r{; give location of argument to foo}
+        times @var{S2},@var{S1},@var{X}            @r{; multiply and assign result to X}
+@end smallexample
+
+@noindent
+This sequence is preferable to the first in many architectures because
+it minimizes the movement between memory locations which a general stack
+architecture imposes.
+
+The final piece of the puzzle lies in the memory locations
+themselves. In a recursive programming language it is not possible to
+allocate stack locations in fixed addresses -- even though we might know
+enough to map this expression completely, if the expression involves
+recursive functions or if the statement itself were embedded in a
+recursive function, then we must use a stack. We can however replace a
+series of general stack instructions with instructions which still use a
+stack but use fixed offsets from a single pointer into the stack.
+
+In the @code{AM} this single pointer is the @code{FP} register, and
+@var{S1} and @var{S2} above become offsets from the @code{FP}, as are
+the variables of the program itself @var{U}, @var{V}, @var{A} and
+@var{X}.  The final sequence of @code{AM} instructions which implements
+the expression is something like:
+
+@smallexample
+        plus fp[4],fp[-1],fp[-10]      @r{; fp[4]@equiv{}U, fp[-1]@equiv{}V}
+        move fp[-2],fp[-11]            @r{; fp[-2]@equiv{}A}
+        fcall -11,1,@var{foo}           @r{; foo arity 1, args are at fp[-11]}
+        times fp[-11],fp[-10],fp[-3]    @r{; fp[-3]@equiv{}X}
+@end smallexample
+@findex plus
+@findex move
+@findex fcall
+@findex times
+
+@noindent
+Using these techniques, the @code{April} compiler is able to general
+nearly optimal code for expressions with no special optimization
+phase. Of course, this technique cannot solve global optimzation issues
+which often hinge on moving expressions and statements around and change
+expressions into different but equivalent but cheaper ones.
+
+@node Compiling patterns
+@section Compiling patterns
+@cindex Compiling patterns
+
+@noindent
+A pattern -- by which we mean a `normal' pattern expression rather than
+a pattern program -- is compiled into instructions which test a value
+and/or extract components of values into local variables.
+
+As with expressions, all local variables and intermediate variables
+needed during pattern matching are held on the local stack as offsets
+from @code{FP}.
+
+In the discussion that follows two concepts will feature
+more than once: the `failure label' and the value variable.
+
+Since, by definition a match is a test, we must be able to cope with the
+failure and success of a match. By convention if a match is successful
+the instruction sequence that implements the match is followed by the
+instructions that represent the action to take on a successful match. On
+the other hand if the match fails then execution must continue elsewhere
+-- which we represent by the @emph{failure label} or @var{LF}. Often the
+failure action is represented with the @samp{jmp @var{LF}} instruction
+-- jump to the failure label.
+@findex jmp
+
+The @emph{value variable} is the location on the stack that holds the data
+value that is being matched by the pattern code. Here we represent this
+by @code{fp[@var{val}]} but in practice the value variable may be a
+parameter of a procedure or function, a local variable or even an
+intermediate variable generated during the matching process.
+
+
+@menu
+* Matching simple values::      
+* Matching lists::              
+* Matching tuple expressions::  
+* Matching alternatives::       
+* Pattern application::         
+* List patterns revisited::     
+* String patterns::             
+* Guarded patterns::            
+* Matching functions and programs::  
+@end menu
+
+@node Matching simple values
+@subsection Matching simple values
+@cindex Matching simple values
+
+@noindent
+A simple match -- such as the @code{integer} test -- is generally
+reflected in a single instruction. For example to test for an integer we
+use:
+
+@smallexample
+        anyint fp[@var{val}],@var{LF}
+@end smallexample
+@findex anyint
+
+@noindent
+This instruction tests that @code{fp[@var{val}]} is an integer value; if
+it is then execution continues to the next instruction, if it isnt then
+execution continues at @var{LF}.
+
+If a data value is being compared, for example for a specific integer,
+then we use the @code{neq} instruction:
+
+@smallexample
+        neq fp[@var{val}],fp[@var{I}]           @r{; is @var{val} the same as @var{I}}
+        jmp @var{LF}
+@end smallexample
+@findex neq
+@findex jmp
+
+@noindent
+The @code{neq} instruction compares two locations --
+@code{fp[@var{val}]} and @code{fp[@var{I}]} -- and if they are
+@emph{not} equal execution continues at the next instruction, otherwise
+if they @emph{are} equal the next instruction is @emph{skipped}. Many
+instructions in the @code{AM} use a similar strategy of skipping the
+following instruction on some condition. The following instruction must
+be a single word instruction -- which nearly all of the @code{AM}'s
+instructions are.
+
+The effect of these two instructions is to branch to the failure label
+if the values are not equal and to continue if they are.
+
+@node Matching lists
+@subsection Matching lists
+@cindex Matching lists
+
+@noindent
+There are two ways in which lists may be matched against -- via explicit
+list expressions and via the list closure pattern.
+
+@menu
+* Matching list expressions::   
+* Matching list closures::      
+@end menu
+
+@node Matching list expressions
+@subsubsection Matching list expressions
+@cindex Matching list expressions
+
+@noindent
+Matching an empty list is much the same as matching a simple value --
+except that we use the @code{mnil} instruction -- @pxref{mnil}. Matching
+non-empty list expressions is done in two phases: first the value is
+`unpacked' -- putting the head and tail of the list into local variables
+-- then the head and tail of the list are matched.
+
+For example, the list pattern:
+
+@smallexample
+[?X,?Y,..?Z]
+@end smallexample
+
+@noindent
+is matched using the instructions:
+
+@smallexample
+        mcons   fp[@var{val}],fp[@var{X}],fp[@var{T1}]
+        jmp     @var{LF}
+        mcons   fp[@var{T1}],fp[@var{Y}],fp[@var{Z}]
+        jmp     @var{LF}
+@end smallexample
+@findex mcons
+@findex jmp
+
+@noindent
+The @code{mcons} instruction -- @pxref{mcons} -- matches a non-empty
+list and if successful puts the head of the list and the tail of the
+list into the @var{2-nd} and @var{3-rd} operands and skips the following
+instruction. If @code{fp[@var{val}]} does not contain a non-empty list
+(it might be the empty list or something else altogether) then the
+instruction fails; which in this case means execute the next instruction
+which is normally a @code{jmp} to the failure label.
+
+@node Matching list closures
+@subsubsection Matching list closures
+@cindex Matching list closures
+
+@noindent
+A list closure pattern is slightly different to an explicit list pattern
+-- each element of the list must be matched against the same pattern,
+and an empty list is always a valid case for the list closure case. List
+closure patterns are compiled into loops that process the list. For
+example, the list closure pattern:
+
+@smallexample
+integer[]
+@end smallexample
+
+@noindent
+is compiled into the loop:
+
+@smallexample
+        move    fp[@var{val}],fp[@var{T1}]          @r{; Temp copy of value var}
+L0:     mcons   fp[@var{T1}],fp[@var{T2}],fp[@var{T1}]
+        jmp     L1                      @r{; Not a non-empty list}
+        anyint  fp[@var{T2}],@var{LF}              @r{; body of list closure}
+        jmp     L0                      @r{; Try next element}
+L1:     mnil    fp[@var{T1}],@var{LF}
+@end smallexample
+@findex mcons
+@findex mnil
+
+@noindent
+The loop uses the @code{mcons} instruction to progressively step down
+the list until it becomes empty -- which is then tested for explicitly
+with the @code{mnil} instruction.
+
+In this sequence we use 2 temporary variables @var{T1} and
+@var{T2}. Allocating temporary variables for a match is a similar
+process to that for expressions -- we allocate and deallocate locations
+on the local stack and assign them explicit offsets at compile-time.
+
+@node Matching tuple expressions
+@subsection Matching tuple expressions
+@cindex Matching tuple expressions
+
+@noindent
+A tuple match is handled in a similar manner to an explicit list
+expression, except that since tuples can have any number of elements we
+cannot unpack a tuple in a single instruction. Instead, we first verify
+the arity of the tuple then we access and match each element of the
+tuple separately.
+
+For example, in the pattern:
+
+@smallexample
+(number?X, integer?Y, any?Z)
+@end smallexample
+
+@noindent
+we first verify that the value variable is a 3-tuple then we handle each
+argument separately:
+
+@smallexample
+        mtpl    fp[@var{val}],3
+        jmp     @var{LF}                @r{; not a 3-tuple?}
+        indxfld fp[@var{val}],1,fp[@var{X}]
+        anynum  fp[@var{X}],@var{LF}
+        indxfld fp[@var{val}],2,fp[@var{Y}]
+        anyint  fp[@var{Y}],@var{LF}
+        indxfld fp[@var{val}],3,fp[@var{Z}]
+@end smallexample
+@findex mtpl
+@findex indxfld
+@findex anyint
+@findex anynum
+
+@noindent
+Note that a @var{k}-arity constructor function is handled as a tuple of
+arity @var{k+1} where the constructor function symbol is placed in the
+first element of the tuple and the arguments of the constructor are
+placed in the remaining elements of the tuple.
+
+@node Matching alternatives
+@subsection Matching alternatives
+@cindex Matching alternatives
+
+@noindent
+Choice patterns involve the potential for backtracking in pattern
+matching. @code{April} supports backtracking @emph{within} a pattern but
+not between patterns; this simplifies the language and allows
+backtracking to be `compiled'.
+
+Given a choice pattern of the form @code{@{ @var{Ptn1} | @var{Ptn2} @}}
+we compile @var{Ptn1} with a failure label representing the pattern
+@var{Ptn2} -- and we compile @var{Ptn2} with the normal failure
+label. For example, for the choice pattern:
+
+@smallexample
+@{ 1 | 2 | 3 @}
+@end smallexample
+
+@noindent
+we generate the instructions:
+
+@smallexample
+        mlit    fp[@var{val}],1
+        jmp     L0                      @r{; 1st internal failure label}
+        jmp     @var{Exit}
+L0:     mlit    fp[@var{val}],2
+        jmp     L1                      @r{; 2nd internal failure label}
+        jmp     @var{Exit}
+L1:     mlit    fp[@var{val}],1
+        jmp     @var{LF}                      @r{; global failure label}
+@var{Exit}:  @dots{}
+@end smallexample
+
+@noindent
+If a left-branch of a choice pattern succeeds then we must execute a
+branch around the instructions that represent the matching code for the
+right-branch of the choice pattern.
+
+@node Pattern application
+@subsection Pattern application
+@cindex Pattern application
+
+@noindent
+A pattern application is the matching equivalent of a function
+call. There are three major issues to examine with a pattern application
+-- how the object to be matched is passed to the pattern program, how
+the returned values are accessed and how the pattern program itself is
+invoked.
+
+When a pattern application is compiled, space is allocated on the stack
+for each of the return values of the pattern, and a single location is
+used to pass in the value to be matched against -- and the result of the
+match is returned in the same location.
+
+Since the locations on the stack are not `filled' by the caller but by
+the callee, care must be taken to ensure that the stack locations are
+properly initialized. If a stack location is not properly initialized
+then problems may arise in the garbage collector.@footnote{This
+condition is enforced by the @code{AM} code verifier when programs are
+loaded.}
+
+
+@node List patterns revisited
+@subsection List patterns revisited
+@cindex List patterns revisited
+
+@noindent
+@code{April} supports a particular form of list matching when the
+top-level operator in the match expression is list append --
+@code{<>}. A list append operator is used to match a list and partition
+it into two portions. @code{April} supports backtracking within a list
+append operator -- the system will non-deterministically partition the
+list so that both `front' and `back' patterns are satisfied.
+
+For example, in the pattern:
+
+@smallexample
+integer[]?X <> number[]?Y
+@end smallexample
+
+@noindent
+we try to partition the list so that @code{X} is bound to a list of
+integers and @code{Y} is bound to the remainder of the list of
+numbers. 
+
+To partition a list we first of all `make a guess' how to partition the
+list (by assigning the empty list to the front and the whole of the
+value list to the back) and then use internal backtracking to
+re-partition the list until the complete list matches. The code for a
+pattern of the form @code{@var{Ptn1}<>@var{Ptn2}} is structured:
+
+@smallexample
+        movl    [],fp[@var{T1}]
+        move    fp[@var{val}],fp[@var{T2}]
+        jmp     L0                      @r{; try []-whole first}
+L1:     mcons   fp[@var{T2}],fp[@var{T3}],fp[@var{T2}]
+        jmp     @var{LF}                @r{; no further split possible}
+        add2lst @var{depth},fp[@var{T3}],fp[@var{T1}]
+L0:     @var{Code for front half}
+        @dots{}                         @r{; Use L1 as failure label}
+        @var{Code for back half}
+        @dots{}                         @r{; Use L1 as failure label}
+@end smallexample
+@findex mcons
+@findex add2lst
+@findex movl
+
+@noindent
+Here we use @code{mcons} to remove the head element of the back list and
+@code{add2lst} -- @pxref{add2lst} -- to extend the front list with this
+element. @code{add2lst} extends a list by adding a new element to the
+back of a list -- side-affecting the original in the process. We also
+use an internal label @code{L1} as the failure label for both of the
+front and back patterns.
+
+For example, the list pattern expression above is compiled into:
+
+@smallexample
+@group
+        movl    [],fp[@var{X}]
+        move    fp[@var{val}],fp[@var{Y}]
+        jmp     L0                      @r{; try []-whole first}
+L1:     mcons   fp[@var{Y}],fp[@var{T1}],fp[@var{Y}]
+        jmp     @var{LF}                        @r{; no further split possible}
+        add2lst @var{depth},fp[@var{T1}],fp[@var{X}]
+L0:     move    fp[@var{X}],fp[@var{T2}]
+L2:     mcons   fp[@var{T2}],fp[@var{T3}],fp[@var{T2}]
+        jmp     L3
+        anyint  fp[@var{T3}],L1                 @r{; Use L1 as failure label}
+        jmp     L2
+L3:     mnil    fp[@var{T2}],L1
+        move    fp[@var{Y}],fp[@var{T2}]
+L4:     mcons   fp[@var{T2}],fp[@var{T3}],fp[@var{T2}]
+        jmp     L5
+        anynum  fp[@var{T3}],L1                 @r{; Use L1 as failure label}
+        jmp     L4
+L5:     mnil    fp[@var{T2}],L1
+@end group
+@end smallexample
+@findex mcons
+@findex add2lst
+@findex movl
+@findex mnil
+
+@noindent
+Note how we are able to re-used @code{fp[@var{T2}]} and
+@code{fp[@var{T3}]} in the two sub-patterns for the front and back halves.
+        
+
+@node String patterns
+@subsection String patterns
+@cindex String patterns
+
+@noindent
+@code{April} has a number of string patterns which in a manner similar
+to lists allow strings to be partitioned and portions of strings matched
+and extracted. String values are atomic, and it is relatively expensive
+to extract a sub-string; so our string matching strategy tries to avoid
+actually partitioning a string until it is absolutely necessary. Instead
+we use integer offsets from the value string to represent sub-strings,
+together with special string matching instructions which are able to
+match portions of a string. Sub-string extraction is reserved for
+assigning to user variables and when a pattern program is invoked within
+a string match.
+
+@menu
+* String catenation operator::  
+* String closures::             
+@end menu
+
+@node String catenation operator
+@subsubsection String catenation operator
+@cindex String partitioning and the ++ operator
+
+@noindent
+Where a string pattern consists of two or more string patterns `glued'
+together with the @code{++} operator we use an integer valued local
+variable to represent the mid-point. As with list partitioning, string
+partitioning is inherently non-deterministic; we search for the correct
+partition by first assuming a partitioning with the front empty and the
+tail the whole string and adjusting the partition as necessary.
+
+Each occurrence of a @code{++} operator in a string match is represented
+by a register which holds an offset which represents an `interior point'
+within the string being matched. These interior points are adjusted
+during the string matching until they represent a partitioning of the
+string that satisfies all the criteria; at which point user variables
+which are bound to sub-strings are extracted based on these interior
+points.
+
+For example, given the @code{string} pattern:
+
+@smallexample
+string ++ "mid" ++ string
+@end smallexample
+
+@noindent
+there are two interior points on either side of the @code{"mid"} string;
+and a successful match is one where we can partition the value variable
+into three parts -- a front segment, a @code{"mid"} segment, and a back
+segment.
+
+For this pattern we generate the code sequence:
+
+@smallexample
+@group
+        ldstr   fp[@var{val}],fp[@var{TE}] ; length of input string
+        jmp     @var{LF}                ; Input not a string
+        movl    0,fp[@var{T1}]          ; Assume empty match first
+        jmp     L3
+L2:     mstep   fp[@var{T1}],fp[@var{T1}],fp[@var{TE}]      ; adjust front segment
+        jmp     @var{LF}              ;no string data left
+L3:     movl    "mid",fp[@var{T4}]
+        move    fp[@var{T1}],fp[@var{T2}]   ;prepare for exact string match
+        mstr    fp[@var{val}],fp[@var{T2}],fp[@var{T4}]        ;match string exact
+        jmp     L2
+        move    fp[@var{T2}],fp[@var{T3}]   ; load third interior point
+        jmp     L5
+L4:     mstep   fp[@var{T3}],fp[@var{T3}],fp[@var{TE}]     ; adjust third interior point
+        jmp     L2              ; no string data left
+L5:     neq     fp[@var{T3}],fp[@var{TE}]   ;Test for end of string
+        jmp     L4              ; Have to try harder
+@end group
+@end smallexample
+@findex ldstr
+@findex initv
+@findex mstep
+@findex mstr
+@findex neq
+
+@noindent
+The first instruction sets the `end-point' for the partitioning: based
+on the length of the string in @code{fp[@var{val}]} using the
+@code{ldstr} instruction  -- @pxref{ldstr}. If the value variable does not
+contain a string then the @code{ldstr} instruction fails -- and the
+following @code{jmp} instruction is executed.
+
+The next instructions set up the first `interior' point -- in
+@code{fp[@var{T1}]} -- of the string match and @code{jmp} to the
+sequence of instructions to match the literal sub-string @code{"mid"}.
+If we need to re-adjust the first interior point, the code for this
+consists of the @code{mstep} instruction, which adds 1 to
+@code{fp[@var{T1}]} and compares the result to @code{fp[@var{TE}]} --
+which holds the length of the string. If incrementing
+@code{fp[@var{T1}]} would result in a value greater than the length of
+the string then the @code{mstep} instruction will fail.
+
+The literal match is accomplished by loading the literal value -- or
+value of a @code{string}-valued expression -- into the local variable
+@code{fp[@var{T4}]} -- and using the @code{mstr} instruction to perform
+the string match itself. This instruction matches the string in
+@code{fp[@var{val}]} starting at the offset in @code{fp[@var{T2}]}
+against the string in @code{fp[@var{T4}]}.
+
+If the match is successful, @code{fp[@var{T2}]} is adjusted to the
+offset of the first character @emph{after} the literal string.  The
+@code{mstr} instruction also establishes @code{fp[@var{T2}]} as the
+second interior point. With a literal string there are no internal
+possibilities for adjusting the following interior point -- it must be a
+fixed offset relative to the previous interior point -- but in general
+there might be potential for a variable interior point.
+
+If the match is not successful the @code{jmp} instruction after the
+@code{mstr} instruction takes us back to the code for re-adjusting the
+first interior point.
+
+The remaining instructions use @code{mstep} to step from the second interior
+point to the end of the string which we test for with the @code{neq}
+instruction -- @pxref{neq}. @code{fp[@var{T3}]} represents the third
+interior point which is really the end marker for the string -- we must
+explicitly verify that the end marker which is arrived at via matching
+portions of the string is also the real end of the string.
+
+@node String closures
+@subsubsection String closures
+@cindex String closures
+
+@noindent
+A string closure is a repeated string sub-pattern, which can occur zero
+or more times. @code{string} closures represent a case where the
+following interior point is a potentially variable distance from the
+prior interior point.
+
+We match string closures by first assuming a zero-length repetition and
+`backtracking' by trying to match the sub-pattern again. We do this by
+using the `following' interior point as the start point of a new match.
+
+For example, for the pattern:
+
+@smallexample
+string ++ "a"* ++ string
+@end smallexample
+
+@noindent
+we generate the code sequence:
+
+@smallexample
+@group
+        ldstr   fp[@var{val}],fp[@var{TE}] ; length of input string
+        jmp     @var{LF}                ; Input not a string
+        movl    0,fp[@var{T1}]          ; Assume empty match first
+        jmp     L3
+L2:     mstep   fp[@var{T1}],fp[@var{T1}],fp[@var{TE}]      ; adjust front segment
+        jmp     @var{LF}              ;no string data left
+L3:     move    fp[@var{T1}],fp[@var{T2}]       ; second interior point
+        jmp     Ly                      ; assume empty closure first
+Lx:     movl    "a",fp[@var{T4}]
+        move    fp[@var{T3}],fp[@var{T2}]   ;prepare for exact string match
+        mstr    fp[@var{val}],fp[@var{T2}],fp[@var{T4}]        ;match string exact
+        jmp     L2
+Ly:     move    fp[@var{T2}],fp[@var{T3}]   ; load third interior point
+        jmp     L5
+L4:     mstep   fp[@var{T3}],fp[@var{T3}],fp[@var{TE}]     ; adjust third interior point
+        jmp     Lx              ; no string data left
+L5:     neq     fp[@var{T3}],fp[@var{TE}]   ;Test for end of string
+        jmp     L4              ; Have to try harder
+@end group
+@end smallexample
+@findex ldstr
+@findex initv
+@findex mstep
+@findex mstr
+@findex neq
+
+@noindent
+Here, @code{Lx} is entered if we need to find an additional occurrence
+of the sub-string @code{"a"}, and @code{Ly} is the `exit' point of the
+the stirng closure.
+
+
+@node Guarded patterns
+@subsection Guarded patterns
+@cindex Guarded patterns
+
+@noindent
+A guarded pattern consists of a regular pattern and an associated
+predicate. The predicate is compiled in the same way as other predicates
+-- @pxref{Compiling predicates} -- and the failure label for the
+predicate test is the same as the failure label for the pattern itself.
+
+@node Matching functions and programs
+@subsection Matching functions and programs
+@cindex Matching functions and programs
+
+@noindent
+It is possible to match a program value -- such as a function, procedure
+or pattern program. We cannot test for the equality of the input to a
+particular function since that is in general not decidable. But we can
+verify that the value variable contains a valid function, procedure or
+pattern program and that the @emph{type} of the program matches the expected
+type.
+
+For a program to be applied to arguments it must first be in `closure
+form' -- this gives the complete execution environment for a program --
+this is the only form that we check for when checking for a program. A
+closure is represented as a special tuple with a particular symbol in
+its first element and the code segment itself in the second. In order to
+match a program value we look for the tuple of the appropriate form:
+
+@smallexample
+(<fclosure>, @var{code}, @dots{})
+@end smallexample
+
+@noindent
+When matching a program we look for a tuple of at least 2 elements, the
+first element must be the @code{<fclosure>} symbol and the second
+element must be a function code. We can do part of this with the
+@code{lmbclo} instruction -- @pxref{lmbclo} and verify the @emph{type
+signature} of the function using the @code{tsig} to extract the type
+signature from the @var{code} segment and @code{msig} to match the
+signature against the expected signature.
+
+Since the remaining elements of the tuple refer to the function's free
+variables which depend on the function itself and not on its type we
+cannot easily verify their correct form -- however in principle the code
+verifier can.
+
+The pattern:
+
+@smallexample
+@{(string)->handle@}?X 
+@end smallexample
+
+@noindent
+is handled using the code sequence:
+
+@smallexample
+        move    fp[@var{val}],fp[@var{X}]
+        lmbclo  fp[@var{val}],@var{LF}
+        indxfld fp[@var{val}],2,fp[@var{T1}]
+        tsig    fp[@var{T1}],fp[@var{T1}]
+        msign   fp[@var{T1}],"FT\1Sh"
+        jmp     @var{LF}
+@end smallexample
+@findex lmbclo
+@findex indxfld
+@findex tsig
+@findex msign
+
+@noindent
+where @code{"FT\1Sh"} is the type signature string that matches a
+function from @code{string}s to @code{handle}s.
+
+@node Compiling statements
+@section Compiling statements
+@cindex Compiling statements
+
+The compilation of most of @code{April} statements is fairly
+straightforward. We focus on a few of @code{April}'s more specific
+statement types such as the message receive statement.
+
+@menu
+* Compiling a message receive::  
+@end menu
+
+@node Compiling a message receive
+@subsection Compiling a message receive
+@cindex Compiling a message receive
+
+@noindent
+A message receive statement is actually an implicit iteration. The
+semantics of a message receive statement such as:
+
+@smallexample
+receive@{
+  @var{ptn} -> @var{statement}
+@}
+@end smallexample
+
+@noindent
+is:
+
+@quotation
+For each message that is in the process'es message queue, if @var{ptn}
+matches the message then accept the message and execute
+@var{statement}. If the @var{ptn} does not match the message then skip
+over the message and consider the following message; and if there are no
+messages (left) in the message queue then suspend the process until a
+message arrives.
+@end quotation
+
+@noindent
+Two additional complications that must be considered are deep guards and
+timeouts. The test whether a message is acceptable or not can itself
+involve sending and receiving messages. Consider the message receive
+statement:
+
+@smallexample
+msg(?Data) :: valof @{
+  shouldI(Data,replyto) >> @var{another};
+  receive@{ yes :: sender == @var{another} -> valis true
+  | no :: sender == @var{another} -> valis no
+  @}
+@} -> @var{statement}
+@end smallexample
+
+@noindent
+This message receive statement will only accept a @code{msg(@var{data})}
+message if it receives confirmation from @var{another} that it should!
+This kind of situation is known as a @emph{deep guard} and represents a
+small but important class of programming techniques.
+
+To be able to handle deep guards the @code{April} machine numbers each
+message with a sequence number; these sequence numbers are used to `keep
+clear' which messages are being considered and which are not.
+
+Message @code{receive} statements are not directly handled by the
+compiler -- instead a standard macro is used to preprocess them into
+simpler statements.
+
+The standard macro for message @code{receive} is:
+
+@smallexample
+#macro receive ?B ==>@{
+  ##M : -10000;		/* Message number */
+  ##outer::@{
+    while (any? ##Msg, ? ##R, ? ##Sndr, ? ##NM).=__nextmsg(##M) do@{
+      ##M := ##NM;
+      ##inner :: @{
+        @{
+          B
+        | (_,_,_)@{
+            __replacemsg(##Msg,##R,##Sndr,##M);
+            leave ##inner;
+          @}
+        @}(##Sndr,##R,##Msg);	-- @r{This is a procedure with an explicit body}
+        leave ##outer;
+      @};
+    @}
+  @} 
+@};
+@end smallexample
+
+@noindent
+The @code{__nextmsg} built-in escape function attempts to pick up the
+first message in the process's message queue whose sequence number is
+greater than the value of @code{##M} -- which is initialized to -10000
+in order catch all messages initially. If there are no messages in the
+message queue, then this function call will suspend.
+
+If there is a message in the message queue, then it is tested against
+the expected message patterns; and if one of them succeeds then the
+statement is completed -- via the @samp{leave ##outer}
+statement. However, if no pattern matches, then the default 
+case:
+
+@smallexample
+| (_,_,_)@{
+    __replacemsg(##Msg,##R,##Sndr,##M);
+    leave ##inner;
+  @}
+@end smallexample
+
+@noindent
+is executed -- which is guaranteed to match. This invokes another
+built-in escape procedure @code{__replacemsg} which replaces the message
+in the message queue. The @samp{leave ##inner} statement forces the loop
+to be re-entered and a new message is requested.
+
+Note that any message which failed the pattern is still available for
+other patterns and other message receive statements. @code{April} does
+not require that messages are always processed in the order that they
+are received.
+
+Timeouts are handled using a variant of this technique and the
+@code{__waitmsg} function rather than the @code{__nextmsg} function.
+
+
+@node Compiling predicates
+@section Compiling predicates
+@cindex Compiling predicates
+
+@noindent
+The main feature about predicates and tests is that their output is
+normally used to select a choice of execution path -- otherwise a
+predicate is much the same as an expression. 
+
+Unlike most conventional `real' processors, the @code{AM} does not have
+a `condition codes register'. This is a register with a special bit
+interpretation which is usually set on an arithmetic instruction -- for
+example an addition might set the Zero flag, and the Overflow
+flag. April does not have a condition codes register -- instead most
+situations where a conditional jump instruction might test a bit pattern
+in the condition codes register, the @code{AM} instructions directly test
+the values of local variables.
+
+Often, in the @code{AM}, conditional execution is achieved by means of
+skipping instructions: the @code{le} instruction compares two values and
+if successful, the following word in the instruction stream is
+skipped. Generally that word contains a @code{jmp} instruction which
+represents the label to go to if the instruction fails. Nearly all of
+the @code{AM} instructions are one word long; so this strategy makes
+economic sense as no complex decoding of the following instruction is
+necessary.
+
+For example, the test:
+
+@smallexample
+if A < B then @var{S1} else @var{S2}
+@end smallexample
+
+@noindent
+is compiled into a comparison instruction between @code{A}and @code{B}
+which is followed by a single word `failure' instruction:
+
+@smallexample
+        le      fp[@var{B}],fp[@var{A}]
+        jmp     L1              @r{; jump if fp[@var{A}]>fp[@var{B}]}
+        @var{S1}                    @r{; Then statement }
+        jmp     @var{Exit}
+L1      @var{S2}                    @r{; Else statement}
+        @dots{}
+Exit:
+@end smallexample
+@findex le
+
+@noindent
+The @code{April} compiler compiles predicates with respect to two labels
+-- the failure label and the exit label. The failure label indicates
+what to do when a predicate failes and the exit label is where to go
+when everything is completed.
+
+This technique allows us to avoid generating unnecessary @code{jmp}
+to @code{jmp} instructions at the end of conditional blocks of code --
+especially when more than one conditional statement is nested together.
+
+Note also that the @code{AM} does not appear to have a `spanning set' of
+conditional test instructions -- for example, there is a @code{le}
+instruction -- @pxref{le} -- but no @code{ge} instruction; there is a
+@code{gt} instruction -- @pxref{gt} -- but no @code{lt}
+instruction. However, the symmetry of the basic design of the @code{AM}
+allows us to dispense with these extra instructions.
+
+
+@node Linking programs
+@section Linking programs
+@cindex Linking programs
+
+@noindent
+A complete executable program consists of a
+closure which has bound into it all the free variables that the program
+refers to. In particular, any other functions or procedures that  the
+program calls is also held as the value of a free variable. This is how
+programs are linked together: as the values of variables.
+
+A closure is represented as a particular form of tuple:
+
+@smallexample
+(<fclosure>, @var{code}, @var{F1},@dots{},@var{Fk})
+@end smallexample
+
+for a function -- we use @code{<sclosure>} to represent statement
+closures and @code{<pclosure>} to represent pattern closures. The
+@var{code} value is a code segment that contains the compiled
+instructions for the function.
+
+The closure tuple only mentions those free variables that the function
+actually mentions within the text of its definition.
+
+In the case of recursive or mutually recursive functions, the closure
+tuple will be circular -- it will contain references to itself
+embedded within one of the free variables. This is the only legal
+@code{April} data structure which may be circular -- regular
+@code{April} programs cannot create circular structures. The only @code{April}
+language construct that permits recursive functions to be defined is the
+@code{theta} expression.
+
+A program file -- that may contain a single executable program or a
+module -- is constructed as a special @code{lambda} expression. If a
+program source file contains the program:
+
+@smallexample
+program
+@{
+  main()
+  @{
+    "Hello world\n" >> stdout;
+  @}
+@} execute main;
+@end smallexample
+
+@noindent
+this is represented in a compiled code file as though it were a
+@code{lambda} expression:
+
+@smallexample
+lambda(handle?___0) -> 
+  lambda(handle?stdin,handle?stdout,handle?stderr)->
+    theta@{
+      main()
+      @{
+        "Hello world\n" >> stdout;
+      @}
+    @}.main
+@end smallexample
+
+@noindent
+I.e., a program is really the value of an expression; this value is
+computed when the program is loaded and particular values for
+@code{stdin}, @code{stdout} and @code{stderr} are supplied at that
+time. The @code{___0} parameter is also a handle is is used during
+program loading to enable modules to be imported.
+
+The standard protocol for loading a program involves evaluating the
+expression embedded within the code file; first of all supplying a
+handle value for @code{___0} and then supplying file handles. After that
+is done, the result is available for executing user code.
+
+A typical expression that loads a code file, and `unpacks it' into a
+final executable form is:
+
+@smallexample
+_load_code("filename")(helper)(stdin,stdout,stderr);
+@end smallexample
+
+@noindent
+This expression loads the raw code, invokes the outer @code{lambda}
+supplying it with a loader-helper handle, and then supplying it with the
+standard file parameters. The loader-helper is only used when loading
+modules that are imported with the main program. The final value of the
+expression is a procedure closure which can be applied to arguments
+extracted from the command line when the program is executed.
+
+The technique of making all programs `executable' makes it possible to
+embed a module language within @code{April} without requiring additional
+language constructs; it is also useful for inserting extra tests on code
+-- such as code integrity and so on.
+
+@code{April} uses a general data representation format for code files
+and messages between @code{April} invokations. This representation
+format is able to represent any @code{April} data value -- including
+programs and circular structures -- and is architecture
+independent. This format is described in the @code{April} reference
+manual. A universal term representation is an important generalization
+of conventional object code loader format since it integrates
+@code{April} code with data values. This is especially important in the
+context of mobile programs and persistent programs.

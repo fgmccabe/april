@@ -1,0 +1,5 @@
+/* automatically generated -- do not edit */
+/* Module interface file for ld.aam */
+({
+    ()=>char[]
+   }?ld) from "ld.aam";

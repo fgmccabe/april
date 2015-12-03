@@ -1,0 +1,17 @@
+.gdb_history
+.psrc
+Makefile
+Makefile.in
+april.spec
+config.cache
+config.h
+config.log
+config.status
+config.h.in
+configure
+libtool
+stamp-h*
+autom4te.cache
+depcomp
+elisp-comp
+.DS_Store

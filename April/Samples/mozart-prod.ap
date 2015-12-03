@@ -1,0 +1,8 @@
+program{
+producer(Adder,MAX){
+  'start >> Adder;
+  for N in 1..MAX do
+    N >> Adder;
+  0>>Adder
+}
+}execute producer;

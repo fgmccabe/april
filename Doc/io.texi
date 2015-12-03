@@ -1,0 +1,1784 @@
+@node Input and output
+@chapter Input and Output
+@cindex Input and output primitives
+
+@noindent
+In @code{April}, file oriented input and output is based on special file
+handling processes. Application @code{April} processes do not directly
+access the file system of the operating system -- instead, a process
+performs I/O by sending an appropriate message to a special
+file-handling process.
+
+Two benefits of this architecture are protection and uniformity of
+access. By encapsulating file access in this way it is easier to protect
+the file system against unwarranted access; this is especially important
+in the case of systems executing code from `external sources' -- recall
+that @code{April} programs may be sent in messages and may be executed
+remotely. Having a uniform method of access to the file system allows
+references to open files -- which are simply process @code{handle}s -- to
+be sent in messages, stored in structures, without requiring special
+techniques.
+
+In order to manage access to the file system, each @code{April} process
+references a particular process -- the @code{file_manager()} process
+(@pxref{file_manager}).  When an application wishes to open a file, then
+it sends a message to the @code{file_manager} which verifies that the
+file is available and returns the handle of another process which is
+actually responsible for handling the specific file.
+
+@iftex
+@tex
+\vskip 1ex
+\centerline{\psfig{figure=fmgr.eps,width=11cm}}
+@end tex
+
+@noindent
+@end iftex
+In order to make access to the file system relatively transparent,
+@code{April} provides a number of standard functions and procedures
+which encapsulate the message passing protocol. 
+
+In addition to regular files, with straightforward file accessing
+primitives, such as @code{inline} and @code{feof}, @code{April} has a
+simple streaming style of file. Where appropriate, streaming I/O
+(@pxref{Stream input & output}), can be considerably easier to use than
+the regular file I/O primitives. However, streaming I/O is not as
+flexible as regular file I/O when dealing with files as data sets (such
+as databases).
+
+@menu
+* Files and file descriptors::  @code{April}'s standard files
+* Opening and closing files::   Primitives to open, close and monitor files
+* File positioning::            Moving inside files
+* Files and Directories::       Creating directories etc.
+* String oriented input/output::  
+* Encoded Input/Output::        I/O using @code{April}'s internal format
+* Socket library::              Remote communications using TCP
+* Stream input & output::       
+@end menu
+
+@node Files and file descriptors
+@section Files and file descriptors
+@cindex Files and file descriptors
+
+@menu
+* File names::                  Format and conventions for file names
+* File open mode::              
+* File system access modes::    
+* File permission::             
+* file_manager::                Identify file manager process
+* Standard files::              The three standard files
+@end menu
+
+@node File names
+@subsection File names and conventions for file names
+@cindex Conventions for file names
+@cindex Special characters in file names
+
+@noindent
+When a process attempts to open a file, it sends the name of the file as
+a @code{string} to the @code{file_manager} process
+(@pxref{file_manager}). The @code{file_manager} interprets the file name
+according to normal file name conventions: if the file name contains
+embedded ``@code{/}'' characters then it assumes that a file within a
+sub-directory of the `home' directory is being accessed.
+
+The home directory is normally the directory which is current at the
+time that @code{April} is invoked.
+@cindex home directory
+
+@node File open mode
+@subsection File opening mode
+@cindex File opening mode
+@cindex Opening file mode
+
+@noindent
+The @code{_file_open_mode} type is used by @code{fopen} to determine how to open a file:
+
+@smallexample
+_file_open_mode ::= _open_read | _open_write | _open_read_write
+        | _open_append | _create_write | _create_append;
+@end smallexample
+
+@table @code
+@item _open_read
+Attempt to open a file for reading. The @code{fopen} function will raise
+an exception if the file is not present.
+
+@item _open_write
+Attempt to open a file for writing to.
+
+@item _open_read_write
+Attempt to open a file for both reading and writing.
+
+@item _open_append
+Attempt to open a file for writing to, and position file marker at the
+end of the file.
+
+@item _create_write
+Attempt to open a file for writing to. If the file is not there, create
+a new one.
+
+@item _create_append
+Attempt to open a file for writing to, and position file marker at the
+end of the file.  If the file is not there, create a new one.
+@end table
+
+@node File system access modes
+@subsection File system access modes
+@cindex File system access modes
+
+@noindent
+The @code{April} file manager uses the concept of a @emph{file mode} to
+determine the legal actions on a file. The legal file modes are
+defined in the standard type definition:
+
+@smallexample
+_access_right ::= allow_read | allow_write | allow_pipe | 
+        allow_connect | allow_server;
+@end smallexample
+
+@table @code
+@item allow_read
+This permission gives a process the right to read files from the file
+and/or file system.
+
+@item allow_write
+This permission gives a process the right to write to files and to
+create files in the file system.
+
+@item allow_pipe
+This permission gives a process the right to fork an operating system
+sub-process as a pipe; and to read or write (depending on other
+permissions) to that pipe.
+
+@item allow_connect
+This permission gives a process the right to use @code{tcp_connect} to
+services on other host computers.
+
+@item allow_server
+This permission gives a process the right to act as a @code{tcp_server}.
+@end table
+
+@noindent
+These permissions can and are often used in combination -- the file manager
+maintains a set of permissions which client processes may have. 
+
+@node File permission
+@subsection File permission
+@cindex File permission
+
+@noindent
+The file permission is the set of attributes associated with the file
+@emph{by the operating system} -- it does not necessarily reflect the
+rights of the @code{April} process on the file. In general, those are
+formed from the intersection of the file permissions and the file modes
+-- @pxref{File system access modes}.
+
+@smallexample
+_file_permission ::= _setuid | _setgid | _sticky
+        | _rusr | _wusr | _xusr
+        | _rgrp | _wgrp | _xgrp
+        | _roth | _woth | _xoth;
+@end smallexample
+
+@table @code
+@item _setuid
+This is present if the file has the @samp{SETUID} flag set. This
+flag is typically set on directories or executable files.
+@item _setgid
+This is present if the file has the @samp{SETGID} flag set. This
+flag is typically set on directories or executable files.
+@item _sticky
+This is present if the file has the @samp{STICKY} flag set. 
+@item _rusr
+This is present if the owner of the file has @samp{READ} permission for
+the file.
+@item _wusr
+This is present if the owner of the file has @samp{WRITE} permission for
+the file.
+@item _xusr
+This is present if the owner of the file has @samp{EXECUTE} permission
+for the file.
+@item _rgrp
+This is present if the owner's group of the file has @samp{READ}
+permission for the file.
+@item _wgrp
+This is present if the owner's group of the file has @samp{WRITE}
+permission for the file.
+@item _xgrp
+This is present if the owner's group of the file has @samp{EXECUTE}
+permission for the file.
+@item _roth
+This is present if all users have @samp{READ} permission for the file.
+@item _woth
+This is present if all users have @samp{WRITE} permission for the file.
+@item _xoth
+This is present if all users have @samp{EXECUTE} permission for the file.
+@end table
+
+@node file_manager
+@subsection File manager process
+@cindex Identity of the processes file manager process
+@findex @code{file_manager} @r{function}
+
+@noindent
+Function template:
+
+@smallexample
+file_manager() => handle
+@end smallexample
+
+@noindent
+This function returns the @code{handle} of the process'es file
+manager process (@pxref{File manager}). This process is assigned by the
+@code{April} system when the process is forked and governs the
+rights of the process to access files and to perform input and output.
+
+It is possible to @code{spawn} processes with specific file manager
+processes -- usually one based on restricted access to the file system.
+
+@node Standard files
+@subsection Standard files
+@cindex Standard files
+
+@noindent
+As noted 
+@iftex
+above,
+@end iftex
+@ifinfo
+in @ref{Input and output}
+@end ifinfo
+file processing is handled via special @emph{file processes}. In
+addition to files opened especially, the @code{April} system provides
+three special file processes automatically -- @code{stdin}, @code{stdout}
+and @code{stderr}:
+@refill
+
+@table @code
+@item stdout
+@cindex Standard output file @code{stdout}
+which corresponds to the standard output channel of a Unix process. By
+default, this is identified with the window in which the @code{April}
+command is invoked.
+@item stdin
+@cindex Standard input file @code{stdin}
+which corresponds to the standard input channel of a Unix
+process. Normally this is connected to the keyboard.
+@item stderr
+@cindex Standard error file @code{stderr}
+which is the standard error reporting channel. This channel should be
+used for reporting errors or making comments about the program input.
+
+Normally, this is connected to the same channel as @code{stdout},
+but it can be redirected separately from this channel.
+@end table
+
+@node Opening and closing files
+@section Opening and closing files
+@cindex Opening and closing files
+
+@menu
+* fopen::                       Open a file
+* fclose::                      Close an open file 
+* eof::                         Test for end-of-file
+* fready::                      Test for file ready for I/O
+* fflush::                      Flush file buffer
+* popen::                       Open a Unix pipe
+* sub_manager::                 Open a new file manager
+@end menu
+
+@node fopen
+@subsection Open a file
+@cindex Open a file
+@findex @code{fopen} @r{standard function}
+@cindex File modes
+
+@noindent
+Function template:
+@smallexample
+fopen(string?@var{filename},_file_open_mode?@var{mode}) => handle
+@end smallexample
+
+@noindent
+A file is opened using the @code{fopen} standard function -- which in
+turns asks the @code{file_manager} to open the file.
+
+@smallexample
+F = fopen(@var{filename},_open_read)
+@end smallexample
+
+@noindent
+The file manager responds with the identity of a process which is given
+the appropriate access rights to the file; or an error exception is
+raised. The specific way the file is opend (read-only, read-write) is
+governed by @var{mode} which is a @code{_file_open_mode}; @pxref{File
+open mode}.
+
+The process @code{handle} that is returned can be used in subsequent
+file access operations.
+
+The file name argument to @code{fopen} is subject to file name
+interpretation (@pxref{File names}).
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"problem in opening file"}
+@item
+@code{"file not found"}
+@item
+@code{"permission denied"}
+@end itemize
+
+@node fclose
+@subsection Close file process
+@cindex Close a file
+@findex @code{fclose} @r{standard procedure}
+
+@noindent
+Procedure template:
+@smallexample
+fclose(handle?@var{file})@{@}
+@end smallexample
+
+@noindent
+The standard @code{fclose} procedure is used to close a file. This
+standard procedure sends a @code{_close_} message to the file's
+process. Any messages sent to the @var{file} process after closing it
+will be ignored; and any functions or procedures which access the file
+will not return.
+
+@node eof
+@subsection Test for end of file
+@cindex Test for end of file
+@cindex End of file test
+@findex eof @r{standard function}
+
+@noindent
+Function template:
+@smallexample
+eof(handle?@var{file})=>logical
+@end smallexample
+
+@noindent
+The end-of-file status of a file can be checked using the @code{eof}
+standard function.  It returns either @code{true} or @code{false}
+depending on whether the file is at the end or not.
+
+Note that if the @var{file} is not `ready' -- for example if it is the
+keyboard or a file connected to a TCP/IP socket and no data is present
+for the file -- then the call to @code{eof} will @emph{suspend}. This
+results in the process suspending; although other processes may continue
+executing. When data becomes available (even if that means the end of
+the file) then the @code{eof} test will continue and a result will be
+returned.
+
+@node fready
+@subsection Test if file is ready for I/O
+@cindex Test file is ready for I/O
+@findex fready @r{standard function}
+
+@noindent
+Function template:
+@smallexample
+fready(handle?@var{file})=>logical
+@end smallexample
+
+@noindent
+The @code{fready} test is used to check if a file is ready for input or
+output (depending on the type of file). It useful in cases where the
+file is actually connected to the keyboard to another process (such as a
+pipe or socket connection).
+
+If @var{file} is an input file, then if @code{fready} returns
+@code{true}, an @code{eof} test
+@ifinfo
+(@pxref{eof})
+@end ifinfo
+on @var{file} is guaranteed not to block. Generally, it
+also means that it is safe to read at least one character from
+@var{file} (unless it is at end of file).
+@refill
+
+If @var{file} is an output file, then if @code{fready} returns
+@code{true}, then a write of a single character to the @var{file} is
+also guaranteed not to block. However, if @code{fready} returns
+@code{false} then a file operation on @var{file} may still not block due
+to timing considerations.
+
+@node fflush
+@subsection Flush output
+@cindex Flush output from buffered files
+@cindex Output buffering
+@findex @code{fflush} @r{standard procedure}
+
+@noindent
+Procedure template:
+@smallexample
+fflush(handle?@var{file})@{@}
+@end smallexample
+
+@noindent
+Normally, output is block buffered.  This can result in a delay before
+output appears, especially on the screen.
+
+Invoking the @code{fflush} procedure causes all pending output to be
+flushed immediately.  A typical use for this is to display a prompt on
+the screen and leave the cursor on the same line ready for input.
+
+Note that @code{fflush} is automatically invoked whenever the entire
+@code{April} engine must pause waiting for input; i.e., if all the
+processes inside a given @code{April} invocation pause -- whether they
+are waiting for input from a file or simply waiting for a message --
+then, just before the @code{April} engine itself pauses, it forces all
+output buffers to be flushed.
+
+@node popen
+@subsection Open a pipe
+@cindex Open a pipe connection
+@findex @code{popen} @r{function}
+
+@noindent
+Function template:
+@smallexample
+popen(string?@var{cmd},string[]?@var{args},string[]?@var{env}) 
+  => (handle, handle, handle)
+@end smallexample
+
+@noindent
+This function forks a child process and returns a tuple triple of three file
+handles that can be used to communicate with the child -- the first
+represents the standard output from the child and the second represents
+the standard input to the child process and the third represents the
+standard error from the child.
+
+The @var{cmd} @code{string} gives the path of the command to run in the
+background; the list @var{args} are the arguments to the program, and
+the @var{env} list gives the values of additional environment variables
+to set for the command. The form of the @var{env} list is the same as
+for @code{exec} (@pxref{exec}): a list of strings of the form `variable=value'.
+
+The returned file handles can be used in subsequent input/output
+operations in the same way that a regular file handles can be used --
+except that certain operations are not available for pipes, especially
+file positioning operations.
+
+@emph{Note:} the calling process that creates a pipe should ensure that it @emph{reads} from the child's standard output and that it @emph{writes} to the child's standard input. Similarly, the error output from the child process should be @emph{read} by the calling process.
+
+Possible errors are:
+@itemize @bullet
+@item
+@code{"cant open pipe"}
+@item
+@code{"permission denied"}
+@end itemize
+
+@noindent
+Note that @code{fclose()} can and should be used to close the two pipe
+handles returned by @code{popen}.
+
+@emph{Hint}
+@quotation
+Pipes can be used to `import' data from other Unix applications. For
+example, to find out the current working directory the expression:
+@smallexample
+valof @{
+  (i,o,e) .= popen("pwd",[],[]);
+  cwd = inline(i);
+  fclose(i);
+  fclose(o);
+  fclose(e);
+  valis cwd;
+@};
+@end smallexample
+@noindent
+could be used; although this particular information is available via the
+standard function @code{fpwd} -- @pxref{fpwd}.
+@end quotation
+
+@node sub_manager
+@subsection Create sub file-manager
+@cindex Create sub file-manager
+@findex sub_manager @r{function}
+
+@noindent
+Function template:
+@smallexample
+sub_manager(string?@var{dir},_access_right[]?@var{modes})=>handle
+@end smallexample
+
+@noindent
+This function `asks' for a new file manager to be
+created. The directory @var{dir} must be a sub-directory of the
+process's home directory, and the list of @var{modes} should be a subset
+of the process'es access permissions. 
+
+If successful, a new file manager process is created, with @var{dir} as
+its home directory and access permissions being the intersection of
+@var{modes} and the file manager's access permissions.
+
+This function is typically used with the @code{spawn}@dots{}@code{using}
+operator to fork a process with restricted access to the file system
+(@pxref{spawn}).
+
+@node File positioning
+@section File Positioning
+@cindex File positioning
+@cindex Moving within files
+
+@menu
+* ftell::                       Report file position
+* fseek::                       Set new file position
+@end menu
+
+@node ftell
+@subsection Report current file position
+@cindex Report current file position
+@findex @code{ftell} @r{function}
+
+@noindent
+Function template:
+@smallexample
+ftell(handle?@var{file})=>number
+@end smallexample
+
+@noindent
+The @code{ftell} function returns the current position of the read/write
+pointer in the currently open @var{file} -- expressed as the number of
+bytes from the beginning of the file.
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"argument not a file descriptor"}
+@item
+@code{"file not open"}
+@end itemize
+
+@node fseek
+@subsection Set file position
+@cindex Set file position
+@findex @code{fseek} @r{procedure}
+
+@noindent
+Procedure template:
+@smallexample
+fseek(handle?@var{file},number?@var{Pos},number?@var{M})@{@}
+@end smallexample
+
+@noindent
+This procedure requests that the file pointer of the open @var{file} is
+set to @var{Pos}. The new position is at the signed distance @var{Pos}
+bytes from the beginning, the current position, or the end of the file,
+depending on whether @var{M} has the value 0, 1, or 2 respectively. Any
+subsequent file input/output operation on the file will be relative
+to the new position.
+
+Note that the end of a text file is @emph{after} the last element, so that
+@smallexample
+fseek(@var{f},-1,2)
+@end smallexample
+@noindent
+will position the file pointer on the last real character
+(usually the CR at the end of the last line) of the file controlled by
+@var{f}.
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"invalid fseek mode"}
+@item
+@code{"cant fseek to position in file"}
+@item
+@code{"permission denied"}
+@end itemize
+
+@node Files and Directories
+@section Files and Directories
+@cindex  Files and Directories
+
+@noindent
+These operations permit the manipulation of files and
+directories without necessarily inspecting their contents. They all
+involve sending messages to the @code{file_manager()} process, which
+will verify that the requested operations are permitted to the
+requesting process.
+
+@menu
+* ffilename::                   Compute full file name
+* ffile::                       Test for file presence
+* fmode::                       Get file permissions
+* fchmod::                      Set file permissions
+* ffiletype::                   Get file type
+* fstat::                       Full file status
+* frm::                         Delete a file
+* fmv::                         Rename a file
+* fcd::                         Change current directory
+* fpwd::                        Report current directory
+* fhome::                       Report home directory
+* fmkdir::                      Create a new directory
+* frmdir::                      Delete a directory
+* fls::                         List contents of directory
+@end menu
+
+@node ffilename
+@subsection Compute full name of file
+@cindex Compute full name of file
+@findex ffilename @r{function}
+
+@noindent
+Function template:
+@smallexample
+ffilename(string?@var{F})=>string
+@end smallexample
+
+@noindent
+This is used to compute the complete path of a partially specified file
+name. Essentially, the file manager applies @code{April}'s file name
+interpretation to @var{F} and returns the result.
+
+Note that a successfull computation of a file's full path name does not
+imply that the file exists. 
+
+@emph{Hint:}
+@quotation
+This function can be used to help with distributed applications
+involving files.  Typically, with several machines involved in a single
+collaborative application, it is difficult to determine the proper
+location of files.  When a file name has to be transmitted to an
+@code{April} program on another machine, computing its full path name
+may make it more likely that the @code{April} program on the other
+machine will be able to locate the file.
+@end quotation
+
+Possible error:
+@itemize @bullet
+@item
+@code{"argument should be a string"}
+@item
+@code{"file not found"}
+@item
+@code{"permission denied"}
+@end itemize
+
+@node ffile
+@subsection Test for presence of file
+@cindex Test for presence of file
+@findex ffile @r{function}
+
+@noindent
+Function template:
+@smallexample
+ffile(string?@var{File})=>logical
+@end smallexample
+
+@noindent
+The @code{file_manager} function returns @code{true} if the file @var{File}
+exists and is readable, otherwise @code{false}.
+
+The @var{File} argument is subject to @code{April}'s file name
+interpretation.
+
+Possible error:
+@itemize @bullet
+@item
+@code{"permission denied"} This may happen if the requesting process
+does not have permission to read the file system.
+@end itemize
+
+@node fmode
+@subsection Get file permissions
+@cindex Get file permissions
+@findex @code{fmode} @r{function}
+
+@noindent
+Function template:
+@smallexample
+fmode(string?@var{File})=>_file_permission_[]
+@end smallexample
+
+@noindent
+@code{fmode} returns the permissions associated with a particular file
+-- as a list of @code{_file_permission_} symbols; @code{_file_permission_} is a
+standard predefined type. For each `enabled' permission, a particular
+@code{_file_permission} symbol is returned in the list -- @pxref{File
+permission}.
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"permission denied"}
+@item
+@code{"cant stat file"} which occurs when the file doesnt exist.
+@end itemize
+
+@node fchmod
+@subsection Set file permissions
+@cindex Set file permissions
+@findex @code{fchmod} @r{procedure}
+
+@noindent
+Procedure template:
+@smallexample
+fchmod(string?@var{File},_file_permission_[]?perms)@{@}
+@end smallexample
+
+@noindent
+@code{fchmod} sets the permissions on a particular file. The required
+permissions are passed as a list of @code{_file_permission_} symbols -- the
+same symbols as in @code{fmode} -- @pxref{fmode}.
+
+@node ffiletype
+@subsection Get type of file
+@cindex Get file type
+@findex @code{ffiletype} @r{function}
+
+@noindent
+Function template:
+@smallexample
+ffiletype(string?@var{File})=>_file_type
+@end smallexample
+
+@noindent
+This function returns a @code{_file_type} symbol describing the type of
+the file:
+
+@table @code
+@item _not_found
+This is returned if the @code{File} could not be found.
+
+@item _fifo_special
+The file is a special FIFO file.
+
+@item _char_special
+The file is a character special file -- i.e., a character device.
+
+@item _block_special
+The file is a block special file -- i.e., a block device such as a disk.
+
+@item _directory
+The file is a directory.
+
+@item _plain_file
+A regular file.
+
+@item _sym_link
+The file is a symbolic link to another file
+@end table
+
+@node fstat
+@subsection Get file status
+@cindex Get file status
+@findex @code{fstat} @r{function}
+
+@noindent
+Function template:
+@smallexample
+fstat(string?@var{File})=>_file_status
+@end smallexample
+
+@noindent
+This function returns a record of 13 integers 
+corresponding to the file status of the specified file.  The file name
+@var{File} is interpreted according to @code{April}'s file name
+interpretations.
+
+The returned record has the type:
+@smallexample
+@group
+_file_status ::= _file_stat(
+     number?device,        -- @r{device file resides on}
+      number?serial,       -- @r{file serial number} 
+      number?mode,         -- @r{file permissions} 
+      number?links,        -- @r{number of hard links to the file} 
+      number?usr,          -- @r{user ID of owner} 
+      number?grp,          -- @r{group ID of owner} 
+      number?dev,          -- @r{the device identifier (special files only)} 
+      number?size,         -- @r{total size of file, in bytes} 
+      number?access,       -- @r{file last access time (in @code{April} time)} 
+      number?modify,       -- @r{file last modify time (in @code{April} time)} 
+      number?change,       -- @r{file last status change time} 
+      number?bksize,       -- @r{preferred blocksize for file system input/output} 
+      number?noblks        -- @r{actual number of blocks allocated} 
+    )
+@end group
+@end smallexample
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"argument should be a file or name"}
+@item
+@code{"cant stat file"}
+@item
+@code{"permission denied"}
+@end itemize
+
+Note that the specifications of @code{fstat} may vary on different
+implementations of @code{April} -- due to differing operating system
+conventions about the infomation available about files.
+
+@node frm
+@subsection Delete a file
+@cindex Delete a file
+@findex @code{frm} @r{procedure}
+
+@noindent
+Procedure template:
+@smallexample
+frm(string?@var{File})@{@}
+@end smallexample
+
+@noindent
+Delete the named file @var{File} from the file system.  The file name is
+subject to @code{April}'s file name interpretation (@pxref{File names}).
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"argument should be a string"}
+@item
+@code{"cant remove file"}
+@item
+@code{"permission denied"}
+@end itemize
+
+@node fmv
+@subsection Rename a file
+@cindex Move a file
+@cindex Rename a file
+@cindex File renaming
+@findex @code{fmv} @r{procedure}
+
+@noindent
+Procedure template:
+@smallexample
+fmv(string?@var{File1},string?@var{File2})@{@}
+@end smallexample
+
+@noindent
+Ask the file manager to rename @var{File1} to be @var{File2}.  
+
+The file names @var{File1} and @var{File2} are subject to @code{April}'s
+file name interpretation (@pxref{File names}).
+
+@itemize @bullet
+@item
+@code{"cant move file"}
+@item
+@code{"permission denied"}
+@end itemize
+
+@node fcd
+@subsection Change current directory
+@cindex Change current directory
+@findex @code{fcd} @r{procedure}
+@cindex Change working directory
+@cindex Current directory
+
+@noindent
+Procedure template:
+@smallexample
+fcd(string?@var{Directory})@{@}
+@end smallexample
+
+@noindent
+This procedure request the file manager to change its current working
+directory to @var{Directory}.  This argument is the name of
+the new directory which is subject to @code{April}'s file name
+interpretation @pxref{File names}).
+
+The file manager will not necessarily permit this operation -- depending
+on the particular permissions set up for the requesting process. In
+particular, if the new directory lies outside the file manager's root
+then it will deny the command.
+
+Note also that this does not necessarily change the current working
+directory of the whole @code{April} invocation. There may be several
+file manager processes active in a given invocation -- each with a
+different working directory. This issue is most important when using the
+@code{exec} or @code{shell} procedures to execute Unix commands --
+@code{fcd} should @emph{not} be used to change the current directory for
+the purposes of those procedures.
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"argument should be a string"}
+@item
+@code{"cant change to directory"}
+@item
+@code{"permission denied"}
+@end itemize
+
+@node fpwd
+@subsection Report current directory
+@cindex Report current directory
+@cindex Current directory
+@findex @code{fpwd} @r{function}
+
+@noindent
+Function template:
+@smallexample
+fpwd()=>string
+@end smallexample
+
+@noindent
+This function returns the current working directory of the process'es
+working directory as a string. 
+
+Note that since different processes may have different file managers
+associated with them, they may well report different current
+directories.
+
+@node fhome
+@subsection Report home directory
+@cindex Report home directory
+@findex @code{fhome} @r{function}
+
+@noindent
+Function template:
+@smallexample
+fhome()=>string
+@end smallexample
+
+@noindent
+This function returns the file manager's home directory as a string.
+
+Note that since different processes may have different file managers
+associated with them, they may well report different home directories.
+
+@node fmkdir
+@subsection Create a new directory
+@cindex Create a new directory
+@findex @code{fmkdir} @r{procedure}
+
+@noindent
+Procedure template:
+@smallexample
+fmkdir(string?@var{Dir},_file_permission[]?@var{modes})@{@}
+@end smallexample
+
+@noindent
+Create a new directory -- called @var{Dir} -- with the specified modes.
+@var{modes} is a list of @code{_file_permission_} symbols which define the
+legal access modes for the directory.
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"1st argument should be a string"}
+@item
+@code{"cant create directory"}
+@item
+@code{"invalid mode"}
+@item
+@code{"permission denied"}
+@end itemize
+
+@node frmdir
+@subsection Remove a directory
+@cindex Remove a directory
+@findex @code{frmdir} @r{procedure}
+
+@noindent
+Procedure template:
+@smallexample
+frmdir(string?@var{Directory})@{@}
+@end smallexample
+
+@noindent
+Remove the directory @var{Directory}, if it exists, is empty and the
+requesting process has the relevant permissions.
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"cant remove directory"}
+@item
+@code{"permission denied"}
+@end itemize
+
+@node fls
+@subsection List files in directory
+@cindex List files in directory
+@cindex Directory list
+@findex @code{fls} @r{function}
+
+@noindent
+Function template:
+@smallexample
+fls(string?@var{Directory})=>string[]
+@end smallexample
+
+@noindent
+Returns a list of all the filenames in the specified @var{Directory} --
+providing that the requesting process has access to the directory.
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"cant access directory"}
+@item
+@code{"permission denied"}
+@end itemize
+
+@node String oriented input/output
+@section Reading and writing to files
+@cindex String oriented input/output primitives
+@cindex Reading and writing to files
+
+@noindent
+The `classic' way of writing to a file is to send the file process a
+message. File processes consume @code{string} messages and append the
+string value to the current position of the file.
+For example, to write the @code{"hello world"} string to the
+@code{stdout} use:
+
+@smallexample
+  "hello world\n" >> stdout
+@end smallexample
+
+@noindent
+@code{April} has a number of string formatting functions and operators
+(@pxref{String formatting})
+that make it straightforward to format values into @code{string}s in
+order to output them. For example, to display a @code{number} value in a
+fixed field of 4 characters use:
+
+@smallexample
+  "Fixed field ["++Val~4++"]\n" >> stdout
+@end smallexample
+
+@noindent
+In addition to the `tilda-hat' notation (@pxref{String formatting}) , a
+second major way of displaying results is the use of type coercion
+(@pxref{type coercion}). We can display an arbitrary value by coercing
+the value into a @code{string}:
+
+@smallexample
+  "Some value "++string%%Val++"\n" >> stdout
+@end smallexample
+
+@noindent
+It is fairly common to combine the use of the `tilda-hat' notation
+with type coercion and string concatenation
+(@pxref{concatenate strings}) to construct text file output.
+
+Other than writing strings, @code{April} supports the @code{fencode}
+(@pxref{fencode}) primitive for writing encoded values to files.
+
+@menu
+* inchar::                      Read a single character
+* inbytes::                     Read a block of binary data
+* inchars::                     Read a block string
+* inascii::                     Read a single byte from a file
+* inline::                      Read a line
+* outchar::                     Write a string
+@end menu
+
+@node inchar
+@subsection Read a single character
+@cindex Read a single character
+@findex @code{inchar} @r{function}
+
+@noindent
+Function template:
+@smallexample
+inchar(handle?@var{file})=>string
+@end smallexample
+
+@noindent
+Reads a single character from a file controlled by a file process. The
+returned character is returned as a single character string.
+
+The process will suspend if there is no data available -- in particular
+if the file is the keyboard (@code{stdin}) or a @code{popen}ed file.
+
+Reading at the end of file will cause the @code{"end of file"} run-time
+error. This error can be prevented by using the @code{eof} test
+(@pxref{eof}) or it can be `caught' using the @code{onerror} block:
+
+@smallexample
+  try
+    @var{X} := inchar(@var{file})
+  onerror @{
+    _ -> @dots{}
+  @};
+@end smallexample
+
+@noindent
+This will normally result in the variable @var{X} being assigned the
+next character from the file. But if @code{eof} is true before (or in
+the middle of) reading the item, then a run-time error will result --
+this error is caught by the @code{onerror} statement.
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"file not open for reading"}
+@item
+@code{"end of file"}
+@item
+@code{"permission denied"}
+@end itemize
+
+@node inchars
+@subsection Read a block string
+@cindex Read a block string
+@cindex File input, string read
+@cindex Block file input
+@findex @code{inbytes} @r{function}
+
+@noindent
+Function template:
+@smallexample
+inchars(handle?@var{file},number?@var{count})=>string
+@end smallexample
+
+@noindent
+Reads a block of characters from a file process and returns them in the form
+of a string. If the file is already at end-of-file, then an @code{end of
+file} error will be reported; otherwise if there are less than
+@var{count} bytes left in the file, then the remaining bytes will be
+returned.
+
+This implies that the length of the returned string should be checked if
+it is likely that it may be shorter that the amount originally requested.
+
+The process will suspend if there is no data available -- in particular
+if the file is the keyboard (@code{stdin}) or a @code{popen}ed file.
+
+As with other input functions, reading at the end of file will cause the
+run-time error @code{"end of file"}. This error can be prevented by
+using the @code{eof} test (@pxref{eof}) or it can be `caught' using the
+@code{onerror} block (@pxref{inchar}).
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"argument is not a valid file descriptor"}
+@item
+@code{"file not open for reading"}
+@item
+@code{"end of file"}
+@item
+@code{"permission denied"}
+@end itemize
+
+@node inbytes
+@subsection Read a block of bytes
+@cindex Read a block of bytes
+@cindex File input, byte block read
+@cindex Block file input
+@findex @code{inbytes} @r{function}
+
+@noindent
+Function template:
+@smallexample
+inbytes(handle?@var{file},number?@var{count})=>number[]
+@end smallexample
+
+@noindent
+Reads a block of bytes from a file process and returns them in the form
+of a list of numbers. If the file is already at end-of-file, then an @code{end of
+file} error will be reported; otherwise if there are less than
+@var{count} bytes left in the file, then the remaining bytes will be
+returned.
+
+This implies that the length of the returned list should be checked if
+it is likely that it may be shorter that the amount originally requested.
+
+The process will suspend if there is no data available -- in particular
+if the file is the keyboard (@code{stdin}) or a @code{popen}ed file.
+
+As with other input functions, reading at the end of file will cause the
+run-time error @code{"end of file"}. This error can be prevented by
+using the @code{eof} test (@pxref{eof}) or it can be `caught' using the
+@code{onerror} block (@pxref{inchar}).
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"argument is not a valid file descriptor"}
+@item
+@code{"file not open for reading"}
+@item
+@code{"end of file"}
+@item
+@code{"permission denied"}
+@end itemize
+
+@node inascii
+@subsection Read a byte as ASCII byte
+@cindex Read a byte as ASCII
+@findex @code{inascii} @r{function}
+
+@noindent
+Function template:
+@smallexample
+inascii(handle?@var{file})=>number
+@end smallexample
+
+@noindent
+Reads a byte from a file process and return it in the form of an integer
+ASCII code. If the file is already at end-of-file, then an @code{end of
+file} error will be reported.
+
+The process will suspend if there is no data available -- in particular
+if the file is the keyboard (@code{stdin}) or a @code{popen}ed file.
+
+As with other input functions, reading at the end of file will cause the
+run-time error @code{"end of file"}. This error can be prevented by
+using the @code{eof} test (@pxref{eof}) or it can be `caught' using the
+@code{onerror} block (@pxref{inchar}).
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"argument is not a valid file descriptor"}
+@item
+@code{"file not open for reading"}
+@item
+@code{"end of file"}
+@item
+@code{"permission denied"}
+@end itemize
+
+@node inline
+@subsection Read a line of text
+@cindex Read a text line
+@findex @code{inline} @r{function}
+
+@noindent
+Function template:
+@smallexample
+inline(handle?@var{file})=>string
+@end smallexample
+
+@noindent
+Reads characters from the file process until either end of file is
+reached or a new-line character is read. The line that was read is
+returned as a string -- not including the new-line character itself.
+
+The process will suspend if there is no data available -- in particular
+if the file is the keyboard (@code{stdin}) or a @code{popen}ed file.
+
+As with other input functions, reading at the end of file will cause the
+run-time error @code{"end of file"}. This error can be prevented by
+using the @code{eof} test (@pxref{eof}) or it can be `caught' using the
+@code{onerror} block (@pxref{inchar}).
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"argument is not a valid file descriptor"}
+@item
+@code{"file not open for reading"}
+@item
+@code{"heap exhausted"}
+@item
+@code{"end of file"}
+@item
+@code{"permission denied"}
+@end itemize
+
+@node outchar
+@subsection Write character string
+@cindex Write character string to file
+@findex @code{outchar} @r{standard procedure}
+
+@noindent
+Procedure template:
+@smallexample
+outchar(handle?@var{file},string?@var{text})@{@}
+@end smallexample
+
+@noindent
+The contents of the @code{string} @var{text} is written out to the file
+controlled by the file process. Note that special character sequences
+embedded in the string -- such as `@code{\n}' -- will be interpreted as
+the appropriate control codes;@footnote{Actually, this interpretation is
+performed by the @code{April} compiler not the @code{outchar}
+procedure.} and that if the @var{text} contains NULL characters they
+will also be written to the file.
+
+A version of this message protocol consists simply of the @var{text}
+string itself. I.e., the message:
+
+@smallexample
+"hello\n" >> file_process
+@end smallexample
+
+@noindent
+is approximately equivalent to:
+
+@smallexample
+outchar(file_process,"hello\n")
+@end smallexample
+
+@noindent
+except, that when a simple @code{string} is sent to a file process, it
+does not normally reply. This simplifies the handling of normal output;
+processes which perform output can avoid waiting for redundant replies
+from the file process.
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"file not open for writing"}
+@item
+@code{"problem in writing to file"}
+@item
+@code{"permission denied"}
+@end itemize
+
+@node Encoded Input/Output
+@section Encoded Input/Output
+@cindex Encoded Input/Output
+
+@noindent
+For compactness, efficiency of interpretation and portability,
+@code{April} communicates data using a term encoding scheme. The exact
+layout of data using this notation is described in @pxref{Encoded term format}
+ The following primitives allow @code{April}
+applications to read and write to files and streams using this notation.
+
+Reading and writing @code{April} data with this notation is more
+efficient that normal `source level' reading and writing; furthermore
+using encoded term I/O allows program code to be saved in files -- which
+is not possible using the normal `character' syntax of @code{April} data.
+
+@menu
+* fencode::                     Write an @code{April} value in encoded form
+* fdecode::                     Decode an encoded form
+@end menu
+
+@node fencode
+@subsection Write @code{April} value in encoded form
+@cindex Write an @code{April} value in encoded form
+@findex @code{fencode} @r{procedure}
+
+@noindent
+Procedure template:
+@smallexample
+fencode(handle?@var{file},any?@var{Term})@{@}
+@end smallexample
+
+@noindent
+The data @var{Term} is written out to the file in an encoded
+format (@pxref{Encoded term format}). This format preserves the integrity of the data -- including any embedded functions and procedures -- so that it may be reliably read back.
+
+@node fdecode
+@subsection Read encoded data value from file
+@cindex Read a data value in encoded form
+@findex @code{fdecode} @r{function}
+
+@noindent
+Function template:
+@smallexample
+fdecode(handle?@var{file})=>any
+@end smallexample
+
+@noindent
+Data is read from the file in encoded format.  The process
+will suspend if there is no data available.
+
+If end of file is reached while reading the encoded value, then an
+@code{"end of file"} error will be raised.
+
+Note that the return type of @code{fdecode} is type @code{any}
+-- which implies that this value must be typecast before it can be
+used in a sensible way. 
+
+@node Socket library
+@section The Socket library
+
+@noindent
+@code{April} provides a high-level way of establishing TCP connections
+with the outside world, and also of enabling an @code{April} program to
+act as a TCP server.@footnote{A client of an @code{April} server does
+not need to be aware of the fact that it is connected to a program
+written in @code{April}. Similarly, @code{April} programs can connect to
+non-@code{April} based services.}
+
+@menu
+* tcp_connect::                 Establish a TCP connection
+* tcp_server::                  Establish a TCP service
+@end menu
+
+@node tcp_connect
+@subsection Establish a TCP connection
+@cindex Establish a TCP connection
+@cindex TCP connection, establish a
+@findex tcp_connect @r{function}
+
+@noindent
+Function template:
+@smallexample
+tcp_connect(string?@var{host},integer?@var{port}) => (handle?@var{input},handle?@var{output})
+@end smallexample
+
+@noindent
+This function is used to establish a TCP connection to another host
+computer. The returned value is a pair of file processing handles --
+for handling the @var{input} and @var{output} of the connection.
+
+Once a connection is established, the @var{input} process represents the
+input connection from the remote connection and @var{output} represents
+the output connection. For example, a call to @code{inline} from
+@var{input} will read the next line from the connection
+and a @code{outchar} can be used to write to @var{output}.  Most of the
+standard file I/O functions will operate on these file processes --
+most notably except for @code{fseek} or @code{ftell}.
+
+If the remote service closes down, then the @var{input} file process will
+report an @code{end of file} condition. Using @code{fclose} on the
+@var{input} and @var{output} channels will cause the remote connection
+to be closed from the client's side.
+
+@emph{Note: }
+the @code{sio_connect} function can also be used to connect to a remote
+TCP server; except that the input and output files are streaming files.
+
+@node tcp_server
+@subsection Establish a TCP server
+@cindex Establish a TCP server
+@cindex TCP server, establish a
+@findex tcp_server @r{function}
+
+@noindent
+Function template:
+@smallexample
+tcp_server(integer?@var{port},@var{handler}?@var{P})=>handle
+@end smallexample
+
+@noindent
+This function is used to establish a TCP server on the current host on
+@var{port}. Whenever a remote client attempts to connect to this
+service, (either using the @code{tcp_connect} function or through a
+ client program), then a new @code{April} process is
+forked to handle the new connection.
+
+The @var{handler} is a procedure whose type must match:
+
+@smallexample
+(string?@var{host-ip},integer?@var{port},handle?@var{input},handle?@var{output})@{@}
+@end smallexample
+
+@noindent
+where @var{host-ip} is a string denoting the IP address of the remote
+computer -- expressed using standard quartet notation, @var{port} is a
+port number allocated for this session, @var{input} and @var{output} are
+two file handles that manage the incoming traffic and outgoing traffic
+on the connection.
+
+In effect, when the remote client establishes contact, @code{April} will
+execute a @code{spawn} call similar to:
+
+@smallexample
+spawn @var{P}(@var{host-ip},@code{port},@var{input},@var{output})
+@end smallexample
+
+@noindent
+except that the @code{creator} of this process (@pxref{creator}) will be
+the current process that created the listening channel -- i.e., the
+process which executed the @code{tcp_server} function. 
+
+In addition, a message of the form:
+
+@smallexample
+('new_connection,@var{cl})
+@end smallexample
+
+@noindent
+will be sent to the process which created the @code{tcp_server}; where
+@var{cl} is the @code{handle} of the process @code{spawn}ed to handle
+the connection.
+
+The intention is that the procedure @var{P} implements the server
+functionality itself. Each new connection will acquire a new copy of the
+@var{P} process which is specifically targetted to the new client
+connection. The identity of each new client handling process is returned to
+allow a centralized server manager process to manage several cients
+simultaneously.
+
+The @code{tcp_server} function itself terminates immediately -- it returns
+the file process handle which is responsible for managing new
+connections. This @code{handle} can be used to verify that
+@code{new_connection} messages that are received are valid.
+
+@emph{Hint:}
+@quotation
+For security reasons, the meaning of the string passed into the `server'
+procedure when a new connection is just the IP address of the remote
+connection -- expressed as a standard IP quartet.
+The programmer can use the @pxref{iptohost} function to find out the
+host name of the remote machine.
+@end quotation
+
+@emph{Note:}
+the @code{sio_server} function can also be used to implement a
+TCP server; except that the input and output files are streaming files.
+
+@node Stream input & output
+@section Stream Input and Output
+@cindex stream I/O
+@cindex Asynchronous stream oriented input/output
+
+@noindent
+The stream input/output package provides a more stream oriented
+asynchronous model for file I/O.@footnote{These facilities were
+introduced in Version 4.3.1e, and are experimental.} Essentially, a
+stream input file is a process that generates a stream of messages for
+its client containing the contents of the file; similarly, a stream
+output file is a client that accepts a stream of messages and appends
+the content of those messages to the file that it controls.
+
+There are streaming models for regular files -- as opened with the
+@code{sio_open} function (@pxref{sio_open}) -- and for TCP clients and
+servers (@pxref{sio_connect} and @pxref{sio_server}).
+
+When a stream is opened, the @emph{style} of the stream is set to one
+of:
+
+@table @code
+@item char_stream
+A @code{char_stream} generates a stream of single-character symbol
+messages.@footnote{For future reference: each single-character item will
+refer to a single `glyph' rather than a single byte.}
+
+Each element of the stream is presented in a message of the form:
+
+@smallexample
+sio_char(number?@var{No},symbol?@var{ch})
+@end smallexample
+
+@noindent
+where @var{No} represents the index of the character in the stream and
+@var{ch} is the character itself -- as a @code{symbol}
+
+@item line_stream
+A @code{line_stream} generates a stream of lines.
+
+Each line of text in the stream is presented in a message of the form:
+
+@smallexample
+sio_text(number?@var{No},string?@var{txt})
+@end smallexample
+
+@noindent
+where @var{No} represents the index of the line in the stream and
+@var{txt} is the line itself -- as a @code{string}.
+
+@item text_stream
+A @code{text_stream} generates a stream of blocks of text. The size of
+the text block is not determined -- it may vary from the entire file in
+the case of a regular file to
+small chunks of text in the case of a TCP stream or keyboard stream.
+
+Each block of text in the stream is presented in a message of the form:
+
+@smallexample
+sio_text(number?@var{No},string?@var{txt})
+@end smallexample
+
+@noindent
+where @var{No} represents the index of the line in the stream and
+@var{txt} is the text block itself -- as a @code{string}.
+
+Note that the precise division of the file into blocks is not mandated
+by this form of stream. However, in general, @code{April} will always
+attempt to `deliver' as much of the file as is currently available. That
+means that when reading regular files, a @code{text_stream} will usually
+consist of a single message -- consisting of a block containing the
+entire file contents. For more asynchronous file streams -- such as
+keyboard input or TCP streams -- the message stream will consist of
+smaller blocks of text that are made available as quickly as possible.
+ 
+@item coded_stream
+A @code{coded_stream} generates a stream of @code{April} values -- which
+have been encoded using @code{April}'s term encoding system. 
+
+Each element of the stream is presented in a message of the form:
+
+@smallexample
+sio_term(number?@var{No},%T?@var{value})
+@end smallexample
+
+@noindent
+where @var{No} is the index of the element in the stream, and
+@var{value} is the element itself.
+
+Note that the type of the element is not determined by this type template.
+@end table
+
+@noindent
+The message stream type is codified in the @code{April} type declaration:
+
+@smallexample
+_stream_mode ::= char_stream
+   | line_stream
+   | text_stream
+   | term_stream
+   | coded_stream
+   ;
+@end smallexample
+
+@noindent
+and the message type is codified in the @code{April} type declaration:
+
+@smallexample
+_stream_protocol(%a) ::= 
+     sio_char(number,symbol)
+   | sio_text(number,string)
+   | sio_term(number,%a)
+   | sio_end;
+@end smallexample
+
+@menu
+* sio_open::                    
+* sio_connect::                 
+* sio_server::                  
+@end menu
+
+@node sio_open
+@subsection Open a stream
+@cindex Open a stream
+@findex sio_open @r{standard function}
+
+@noindent
+The @code{sio_open} function can be used to open a file as a stream. The
+template of the @code{sio_open} function is:
+
+@noindent
+Function template:
+@smallexample
+sio_open(string?@var{filename},_file_open_mode?@var{mode},_stream_mode?@var{style},handle?@var{client}) => handle
+@end smallexample
+
+@noindent
+The @code{sio_open} functions requests that the process's file manager
+open the file @var{filename} as a stream. The supported
+@var{_file_open_mode}s are:
+
+@table @code
+@item _open_read
+Where the file already exists and is to be read.
+@item _open_write
+@item _create_write
+@item _open_append
+Where the file exists and new data is written to the end of the file.
+@item _create_append
+@end table
+
+@noindent
+The @var{style} indicates one of the legal stream styles.
+
+In the case of an input stream, the messages comprising the file's
+contents are sent to the @var{client} process. For output streams this
+argument is ignored.
+
+The form of the messages generated and consumed by a stream is defined
+by the type:
+
+@smallexample
+_stream_protocol(%a) ::= 
+     sio_char(number,symbol)
+   | sio_text(number,string)
+   | sio_term(number,%a)
+   | sio_end;
+@end smallexample
+
+@noindent
+Each message has a number associated with it; this is in an index
+number: an input stream generates messages in order and an output
+message expects messages in strictly ascending order.
+
+@code{sio_text} messages are used for @code{string} oriented streams and
+@code{sio_term} messages are used for others.
+
+An input message stream would typically be processed using a
+@code{repeat}@dots{}@code{until} loop:
+
+@smallexample
+  S = sio_open("@var{file}",line_stream,self());
+
+  repeat
+    sio_text(No,T) ->> 
+      "Line "++No^0++" "++T++"\n">>stdout
+  until sio_end
+@end smallexample
+
+An output stream consumes messages, also in the same form. When the
+output stream receives an @code{sio_end} message the stream closes:
+
+@smallexample
+  sio_text(1,"First line") >> out;
+  sio_text(2,"Second line") >> out;
+@dots{}
+  sio_text(100,"Last line") >> out;
+  sio_end >> out
+@end smallexample
+
+@node sio_connect
+@subsection Open a stream-oriented TCP connection
+@cindex Open a stream TCP connection
+@findex sio_connect @r{standard function}
+@cindex TCP streams
+
+@noindent
+The @code{sio_connect} is similar to the @code{tcp_connect} function,
+except the generating and consuming file processes are streams rather
+than regular file processes.
+
+@noindent
+Function template:
+@smallexample
+sio_connect(string?@var{host},string?@var{port},_stream_mode?@var{style},handle?@var{client}) => (InP,OutP)
+@end smallexample
+
+@noindent
+The @code{sio_connect} function attempts to connect to the @var{host}
+computer at port @var{port}. The returned processes are @var{style}
+stream processes. The input messages are delivered to the @var{client}
+process in an analogous manner to the @code{sio_open}.
+
+@node sio_server
+@subsection Open a stream-oriented TCP server
+@cindex Open a stream TCP server
+@findex sio_server
+@cindex TCP stream server
+
+@noindent
+Function template
+@smallexample
+sio_server(integer?@var{port},@var{handler}?@var{P},_stream_mode?@var{style})=>handle
+@end smallexample
+
+@noindent
+This creates a TCP server listening to port @var{port}. When a new
+connection is established, a new @code{April} process is forked to
+handle it. The forked process executes the @var{P} process with a call
+of the form:
+
+@smallexample
+@var{P}(@var{host-ip},@var{port},@var{in-stream},@var{out-stream})
+@end smallexample
+
+@noindent
+The streams will be @var{style} streams; the output of the
+in-@var{stream} will go to the newly-forked process.
+
+As with @code{tcp_server} (@pxref{tcp_server}), whenever a connection is
+established, a message of the form:
+
+@smallexample
+('new_connection,@var{cl})
+@end smallexample
+
+@noindent
+is sent to the establishing process. This message can be used to collate
+the connections and their managing processes.

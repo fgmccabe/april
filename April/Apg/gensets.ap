@@ -1,0 +1,78 @@
+/*
+ * Generate the closure and goto sets from rules
+ */
+
+#include "apg.ah";
+
+module
+import interface <stdio.af>
+in
+{
+  
+  nullable(nonterms,rules) => valof{
+    N : [];
+    done : false;
+
+    while not done do{
+      done := true;			-- assume no further change
+      for (nt::not nt in N) in nonterms do{
+        for rule(_,nt,rhs,_,_,_) in rules do{
+	  if valof{
+	    for R in rhs do{
+	      if not R in N then
+	        valis false;
+            };
+	    valis true} then {
+            N := [nt,..N];
+	    done := false;		-- we added something to nullable
+	  }
+	}
+      }
+    };
+
+    valis N;
+  };
+
+  -- extends(A,B) is true if there is an element of B that is not in A
+  extends(A,B) => valof {
+    for E in B do
+      if !(E in A) then
+        valis true;
+    valis false;
+  };
+
+  first(terms,nonterms,rules,nullable) => valof {
+    F : collect {			-- we initialize based on terminals
+      for T in terms do
+        elemis (T,[T])
+    };
+    done : false;			-- we use a relaxation iteration
+
+    while not done do{
+      done := true;			-- assume no further change
+      for nt in nonterms do{
+	FF : {if (nt,FL) in F then FL else []};
+	OFF = FF;
+
+        for rule(_,nt,rhs,_,_,_) in rules do{
+	  nl : true;
+	  RHS : rhs;
+
+	  while nl && [L,..R].=RHS do {
+	    FF := FF \/ { if (L,FL) in F then FL else []};
+	    RHS := R;
+	    nl := L in nullable;
+          };
+        };
+
+        if extends(OFF,FF) then {	-- have we changed anything?
+	  done := false;		-- update the table
+	  F := [(nt,FF)]<>(F ^\ (!nt,_));
+        };
+      };
+    };
+
+    valis F;
+  };
+
+} export (nullable,first,extends);

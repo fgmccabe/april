@@ -1,0 +1,5 @@
+/* automatically generated -- do not edit */
+/* Module interface file for world.aam */
+({
+    ()=>char[]
+   }?world) from "world.aam";

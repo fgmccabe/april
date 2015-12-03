@@ -1,0 +1,179 @@
+/* Main boot program for april run-time system */
+
+#macro _stderr_ ==> { #_nodebug_ { stderr : valof {
+  h : file_manager();
+  'stderr  >> h;
+  receive{ handle?fl :: replyto == h ->> valis fl }
+}}};
+
+
+#include "files.ah";
+
+_program import interface "files.af" in {
+  
+  _main(CWD)		        /* main program */
+  {  
+    mailer();           -- set up null external mail handler
+    
+    /* start the file manager process */
+    _set_file_manager(spawn dir_manager(CWD,
+	[_allow_read,_allow_write,_allow_pipe,_allow_connect,
+	  _allow_listen]));
+
+    _stderr_;		/* declare stderr */
+
+    X = command_line();
+    if listlen(X) <1 then{
+      "usage: april [-I invokation] [-N serverfile] [-L location]"
+	     " [-C icmServer ] [-P icmPort] [-g debugger]"
+             " [-s] program args ...\n">>stderr;
+      halt;
+    };
+
+    mon = spawn Monitor();	/* fork the monitor */
+    _set_monitor(mon);
+
+    helper = _loader_();
+    
+    pURL = __mergeURL(CWD,X#1);
+
+    main = _load_code_(pURL)(helper,pURL);
+    
+    try __call(main,tail(X,1))
+    onerror{
+      error(msg,C) ->{
+	__flushall();
+        "Run-time error: "++msg++"\n">>stderr;
+        exit(1);
+      }
+    | msg ->{
+	__flushall();
+        "Some other run-time error "++msg^0++"\n">>stderr;
+        exit(1);
+      }
+    };
+
+    _flush_ >> stderr;
+
+    halt;
+  };
+
+  /* Support program used to help reduce overhead in loading modules */
+  
+  _loader_() => 
+    {
+      DB : [];
+      me = self();
+      
+      loader(URL) => valof{
+        if (URL,Code) in DB then
+          valis Code
+        else{
+          Code = _load_code_(URL)(loader,URL);
+          
+          DB := [(URL,Code),..DB];
+          
+          valis Code
+        }
+      }
+    }.loader;
+
+  mailer()
+  {
+    _set_mailer(spawn {	/* set up the mail sender process */
+      repeat{
+        (to,sender,opts,msg) ->>
+           __log_msg("Message "++msg^3++" for "++to^0++" discarded")
+        | X ->> __log_msg("Other message: "++X^2)
+        } until '_quit_ :: sender == creator();
+      });
+  };
+
+  Monitor(){
+    monitors : [];	/* these processes are waiting for termination signals */
+    _stderr_;			-- Standard output 
+
+    while true do 
+    receive {
+      termin(H) ->> {
+	monitors := collect {
+	  for (Pr,Ms) in monitors do{
+	    if H==Pr then {
+	      termin(H) >>* Ms;		        -- forward the termination signal
+	    }
+	    else
+	      elemis (Pr, Ms)
+	  }
+	};
+      }
+    | monitor(P)  ->> { 
+	if (P,Ms) in monitors then {
+	  monitors := collect {
+	    for (H,Hs) in monitors do 
+	      if H==P then
+		elemis (P, Hs\/[replyto])
+	      else
+		elemis (H, Hs)
+	  };
+	}
+        else if done(P) then
+	  termin(P) >> replyto		/* replyto immediately */
+	else
+	  monitors := [(P, [replyto]),..monitors];
+      }
+
+    | unmonitor(P)  ->> { 
+	if (!P,Ms) in monitors then {
+	  monitors := collect {
+	    for (H,Hs) in monitors do 
+	      if H==P then
+		elemis (P, Hs \ [replyto])
+	      else
+		elemis (H, Hs)
+	  };
+	};
+
+      }
+
+    | _kill_(P)  ->> { 
+	try
+	  { if _creator(P)!=sender then
+	      error("permission denied",'privileged) >> replyto
+	    else{
+	      _kill(P); _killed_(P) >> replyto
+	    }
+	  } onerror{
+            error(E,X) -> 
+	      error(E,X) >> replyto
+	  }
+      }
+/*
+    | _attach_debugger_(H)  ->> { -- this should be made more secure
+	try {
+	  _debug_name(H,true);
+	  ('_debugger_attached_,H) >> replyto
+	} onerror {
+	  _ -> error("permission denied",'privileged) >> replyto
+	}
+      }
+    | _detach_debugger_  ->> { 
+	try {
+	  _debug_name(self(),false);
+	  _debugger_detached_ >> replyto
+        }onerror{
+	  _ -> error("permission denied",'privileged) >> replyto
+        }
+      }
+*/
+
+    | interrupt ->> {
+	"Terminating with control-C\n">>stderr;
+	halt;
+      }
+
+    | M  ->> {
+	"monitor message "++M^2++" from "++replyto^0++"\n">>stderr;
+      }
+    }
+  }
+}execute _main;

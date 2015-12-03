@@ -1,0 +1,14 @@
+program{
+  main(name) {
+    inp = fopen(name,"r");
+    out = stdout;
+    
+    _file_stat(_,_,_,_,_,_,_,count.=size,_,_,_,_,_) = fstat(name);
+
+    "File size is "++count^0++" bytes\n">>stdout;
+
+    data = inbytes(inp,count);
+
+    data >> out;
+  }
+} execute main;

@@ -1,0 +1,5 @@
+/* automatically generated -- do not edit */
+/* Module interface file for gendfa.aam */
+( %a-{
+    ((char[],regexp( %a))[],char[])=>(number,dfaE[],finalType( %a)[])[]
+   }?genDfa, %b-( %c-(( %b,dfaE[], %c[])[]){})?showDfaStates) from "gendfa.aam";

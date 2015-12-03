@@ -1,0 +1,13 @@
+/*
+ * Test the dns functions
+ */
+program
+{
+  main(host)
+  {
+    "IP address of "++host++" is "++hosttoip(host)^0++"\n">>stdout;
+  }
+} execute main;
+
+
+

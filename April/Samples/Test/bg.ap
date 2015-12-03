@@ -1,0 +1,9 @@
+program
+import interface <stdio.af>
+in
+{
+    main (Num,Base,Width,lead)
+    {
+      "|"++int2str(Num,Base,Width,''*,lead)++"|\n">>stdout
+    };
+} execute main;

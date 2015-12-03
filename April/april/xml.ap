@@ -1,0 +1,364 @@
+/*
+ * xml parser stream processor
+ */
+
+xmlTags ::= xmlStartTag(string,(string,string)[])
+   | xmlEmptyTag(string,(string,string)[])
+   | xmlEndTag(string)
+   | xmlTextTag(string)
+   | xmlEnd;
+
+streamObj ::= ({()=>char}?nextCh,{()=>char}?peekCh,char{}?backCh,
+                {()=>logical}?end,(){}?skipSpaces,
+		{char[]=>logical}?lookingAt, {char[]=>logical}?moveOver);
+
+
+module
+ import interface <stdio.af> in
+{
+  streamClass(F) => {
+    L : [];
+    TxNo : 1;				-- the next text segment to look for
+
+    anotherLine(){
+      while L==[] do {
+	receive{
+	  sio_text(!TxNo,Ln)::sender==F ->> {
+	    TxNo +:= 1;
+	    L := Ln
+	  }
+	| sio_end ->>
+	    L := [''\+ffff]		-- end of the input stream
+	}
+      }
+    };
+
+    nextCh() => valof{
+      if L==[] then
+        anotherLine();
+
+      if [''\+ffff].=L then
+        valis ''\+ffff
+      else{
+        [C,..L1] = L;
+        L := L1;
+        valis C;
+      }
+    };
+    
+    peekCh() => valof{
+      if L==[] then
+        anotherLine();
+
+      valis head(L);
+    };
+
+    end() => peekCh()==''\+ffff;
+    
+    skipSpaces(){
+      while isSpaceCh(peekCh()) do 
+        [_,..L] := L;
+    };
+
+    backCh(C){
+      L := [C,..L];
+    };
+
+    lookingAt(T) => valof {
+      if L==[] then
+        anotherLine();
+      valis T<>_ .= L;
+    };
+  
+    moveOver(T) => valof{
+      if L==[] then
+        anotherLine();
+
+      if T<>L1 .= L then{
+        L := L1;
+        valis true;
+      }
+      else
+	valis false;
+    };
+  }.(nextCh=nextCh,peekCh=peekCh,backCh=backCh,end=end,
+      skipSpaces=skipSpaces,lookingAt=lookingAt,moveOver=moveOver);
+
+  isDigit(X) => isNdChar(X);
+
+  isNameChar(X) => isLetter(X) || isDigit(X) || X==''_ || 
+  X==''. || X==''- || X=='': ;
+
+  isSpaceCh(X) => X==''\  || X==''\n || X==''\t || isZsChar(X);
+
+  readIdent(streamObj?F) => valof {
+    buff : [];
+    ch : F.nextCh();
+
+    if isLetter(ch) || ch==''_ || ch=='': then {
+      buff := [ch];
+      while isNameChar(valof{ ch:=F.nextCh(); valis ch}) do
+        buff := [ch,..buff];
+
+      F.backCh(ch);
+
+      valis rev(buff,[])
+    }
+    else{
+      F.backCh(ch);
+      exception error("not a name",'inval)
+    }
+  };
+
+  readStr(streamObj?F) => valof {
+    F.skipSpaces();
+    if F.lookingAt([''\"]) || F.lookingAt([''\']) then{
+      buff : [];
+      delim = F.nextCh();
+
+      ch : F.nextCh();
+
+      while ch!= delim && ch!=''\+ffff do{
+        if ch==''& then {
+          if F.moveOver([''a,''m,''p,'';]) then
+            buff := [''&,..buff]
+          else if F.moveOver([''l,''t,'';]) then
+            buff := [''<,..buff]
+          else if F.moveOver([''g,''t,'';]) then
+            buff := [''>,..buff]
+          else if F.moveOver([''a,''p,''o,''s,'';]) then
+            buff := [''\',..buff]
+          else if F.moveOver([''q,''u,''o,''t,'';]) then
+            buff := [''\",..buff]
+	  else
+            buff := [ch,..buff];
+        }
+        else
+          buff := [ch,..buff];
+        ch := F.nextCh();
+      };
+
+      valis rev(buff,[])
+    }
+    else
+      exception error("not a string",'inval)
+  };
+
+  isEqual(streamObj?F) => valof{
+    F.skipSpaces();
+    valis F.moveOver([''=]);
+  };
+
+  parseText(streamObj?F) => valof {
+    buff : [];
+
+    F.skipSpaces();
+
+    while !F.end() && F.peekCh()!=''< do{
+      ch = F.nextCh();
+
+      if ch==''& then {
+        if F.moveOver([''a,''m,''p,'';]) then
+          buff := [''&,..buff]
+        else if F.moveOver([''l,''t,'';]) then
+          buff := [''<,..buff]
+        else if F.moveOver([''g,''t,'';]) then
+          buff := [''>,..buff]
+        else if F.moveOver([''a,''p,''o,''s,'';]) then
+          buff := [''\',..buff]
+        else if F.moveOver([''q,''u,''o,''t,'';]) then
+          buff := [''\",..buff]
+	else
+	  buff := [ch,..buff];
+      }
+      else
+	buff := [ch,..buff];
+    };
+
+    valis xmlTextTag(trimString(rev(trimString(buff),[])));
+  };
+
+  trimString = {
+    [C,..S]::isSpaceCh(C) => trimString(S)
+  | X => X
+  };
+
+  rev = {
+    ([],L) => L
+  | ([C,..L],R) => rev(L,[C,..R])
+  };
+
+  readAttVal(streamObj?F) => valof {
+    try{
+      F.skipSpaces();
+      N = readIdent(F);
+      if isEqual(F) then {
+        val = readStr(F);
+        valis (N,val)
+      };
+    } onerror {
+      _ -> {}
+    };
+    exception failed
+  };
+
+  skipComment(streamObj?F) {
+    Buff : [];
+
+    while (not Rs ++ [''-,''-,''>] .= Buff) do {
+      Buff := Buff ++ [F.nextCh()];
+    }
+  };
+
+  readAtag(streamObj?F) => valof {
+    F.skipSpaces();
+    if !F.end() then {
+      if F.moveOver([''<]) then {	-- do we have markup?
+        if F.moveOver([''/]) then {	-- do we have an end tag?
+          name = readIdent(F);		-- look for the tag name
+          F.skipSpaces();
+          if !F.moveOver([''>]) then
+            exception error("badly formed end tag",'fail)
+          else
+            valis xmlEndTag(name)	-- we have an end tag
+        }
+        else if F.moveOver([''!,''-,''-]) then {    -- do we have a comment
+          skipComment(F);
+          valis readAtag(F);
+        }
+        else{
+          tag = readIdent(F);		-- read the tag name
+	  atts : [];			-- list of attribute/value pairs
+	  try{
+            while Att .= readAttVal(F) do 
+              atts := [Att,..atts];
+          } onerror {
+            failed -> {}		-- end of the attribute/value pairs
+          | E -> exception E		-- other kind of error
+          };
+	  F.skipSpaces();
+	  if F.moveOver([''/,''>]) then	-- empty tag?
+	    valis xmlEmptyTag(tag,atts)
+	  else if F.moveOver([''>]) then
+	    valis xmlStartTag(tag,atts)
+	  else
+	    exception error("garbage in tag",'fail)
+	}
+      }
+      else
+	valis parseText(F)
+    }
+    else
+      valis xmlEnd;			-- end of the stream
+  };
+
+  parse(streamObj?F) => valof{
+    stack : [];
+    case readAtag(F) in {
+      xmlEnd -> exception error("end of file",'eof)
+    | xmlTextTag(N) -> valis xmlText(N)
+    | xmlEmptyTag(N,A) -> valis xmlNode(N,A,[])
+    | xmlStartTag(N,A) -> stack:=[(N,A,[])]
+    };
+
+    subNodes : [];
+
+    while stack!=[] do{
+      case readAtag(F) in {
+	xmlEnd -> exception error("unexpected EOF",'eof)
+      | xmlTextTag(N) -> {
+          if N!="" then
+	    subNodes := subNodes<>[xmlText(N)]
+        }
+      | xmlEmptyTag(N,A) -> subNodes := subNodes<>[xmlNode(N,A,[])]
+      | xmlStartTag(NN,AA) -> {
+          [(N,A,_),..Sub] .= stack;
+          stack := [(NN,AA,[]),(N,A,subNodes),..Sub];
+          subNodes := [];
+        }
+      | xmlEndTag(N) -> {
+	if [(N,A,S),..subStack] .= stack then {
+          if [(NN,AA,SS),..ss] .= subStack then {
+            stack := [(NN,AA,[]),..ss];
+	    subNodes := SS<>[xmlNode(N,A,subNodes)];
+          }
+	  else
+            valis xmlNode(N,A,subNodes)
+        }
+	else
+	  exception error("invalid end tag: "++string%%N,'fail);
+      }
+      }
+    };
+  };
+
+  xmlInFilter(Client,F){
+    S = streamClass(F);
+    No : 0;
+
+    while !S.end() do{
+      No := No+1;
+      try
+	sio_term(No,parse(S)) >> Client
+      onerror
+	E -> E>>Client
+    };
+    sio_end >> Client;
+  };
+  
+  xmlQuoteMeta = {
+    "" => ""
+  | [C,..R] => valof {
+      case C in {
+	''& -> valis "&amp;"++xmlQuoteMeta(R)
+      | ''< -> valis "&lt;"++xmlQuoteMeta(R)
+      | ''> -> valis "&gt;"++xmlQuoteMeta(R)
+      | ''\' -> valis "&apos;"++xmlQuoteMeta(R)
+      | ''\" -> valis "&quot;"++xmlQuoteMeta(R)
+      | _ -> valis C,+xmlQuoteMeta(R)
+      }
+    }
+  };
+    
+  xmlGen = {
+    xmlNode(N,A,[]) => 
+      "<"++N ++ genAtts(A) ++ "/>"
+  | xmlNode(N,A,S) => 
+      "<"++N ++ genAtts(A) ++ ">"++
+	 genSubNodes(S) ++ "</"++N++">"
+  | xmlText(T) => xmlQuoteMeta(T)
+  };
+
+  genSubNodes = {
+    [] => ""
+  | [xmlText(T),xmlText(T1),..Nd] => 
+      xmlGen(xmlText(T)) ++ "<!---->" ++ genSubNodes([xmlText(T1),..Nd])
+  | [N,..Nd] => xmlGen(N)++genSubNodes(Nd)
+  };
+
+  genAtts = {
+    [] => ""
+  | [(At,Vl),..A] => " "++At++"=\""++Vl++"\"" ++ genAtts(A)
+  };
+
+  showStack(St){
+    "Dump of stack\n">>stderr;
+    i : 0;
+    for (N,A,S) in St do{
+      "Stack level: "++N++"["++i^0++"]\n">>stderr;
+      for SN in S do
+	xmlGen(SN)++"\n">>stderr;
+
+      i := i+1;
+    };
+  };
+
+  xmlOutFilter(out) => 
+  spawn{
+    repeat
+      sio_term(No,T) ->> 
+        sio_text(No,xmlGen(T)) >> out
+    until sio_end;
+    sio_end >> out;
+  };
+} export (xmlInFilter,xmlOutFilter,xmlGen);

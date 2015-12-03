@@ -1,0 +1,76 @@
+/*
+ * A simple calculator program in April -- which uses DialoX for display
+ */
+
+program{
+  main(handle?dialox)
+  {
+    string[]?stack := [];
+    string?arg :="";
+
+    (window, "April calculator", (column, [
+      (right, (entry, entry, (text,entry))),
+      (grid, [ [(button, "{", open_paren),
+	        (button, "}", close_paren),
+		(button, "9", (digit, "9"))],
+
+	       [(button, "7", (digit, "7")),
+	        (button, "8", (digit, "8")),
+		(button, "9", (digit, "9"))],
+ 	       [(button, "4", (digit, "4")),
+	        (button, "5", (digit, "5")),
+		(button, "6", (digit, "6"))],
+ 	       [(button, "1", (digit, "1")),
+	        (button, "2", (digit, "2")),
+		(button, "3", (digit, "3"))],
+	       [(button, "0", (digit, "0")),
+	        (button, ".", (digit, ".")),
+		(button, "+/-", sign)]]),
+      (row, [(button, "Quit", quit)])])) >> dialox;
+
+    repeat{
+      (digit, string?D) -> {
+        arg :=arg++D;
+        (set_variable, entry, arg) >> dialox;
+      }
+    | sign -> {
+        if strprefix(arg,"-")==0 then
+          arg := substr(arg,2,strlen(arg)-1)
+        else
+          arg := "-"++arg;
+        (set_variable, entry, arg) >> dialox;
+      }
+
+    | open_paren -> {
+        stack := [arg,..stack];
+        arg := "";
+        (set_variable, entry, arg) >> dialox;
+      }
+
+    | close_paren -> {
+        try {
+          [string?a,..string[]?s] = stack;
+          stack := s;
+          arg := a;
+          (set_variable, entry, arg) >> dialox;
+        }
+        onerror {
+          error(?,?) -> beep()
+        }
+     }    
+        
+    | (text, string?S) ->
+        arg := S
+    | any?O -> writef(stdout,"Funny message: `%2w'\n",(O))
+    } until quit;
+  };
+
+  beep()
+  {
+    "\a">>stdout;
+    fflush(stdout);
+  }
+
+} execute main;
+        
+ 

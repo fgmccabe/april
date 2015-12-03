@@ -1,0 +1,3 @@
+module{
+  ld() => "ld";
+} export ld;

@@ -1,0 +1,164 @@
+/*
+  Platform module, gives April access to the SCS communications infrastructure
+  (c) 2001 F.G. McCabe
+
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation; either version 2 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program; if not, write to the Free Software
+  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+  Contact: Francis McCabe <fgm@fla.fujitsu.com>
+*/
+
+module
+  import {
+     interface <stdio.af>
+  } in
+{      
+    
+  defaultHost(H,D) => { 
+    if H!="" then H
+    else{
+      try
+        getenv("SCS_COMMS_HOST")
+      onerror
+        _ => D
+    }
+  };
+  
+  defaultPort(P,D) => {
+    if P!=0 then P else{
+      try
+        number%%getenv("SCS_COMMS_PORT")
+      onerror
+        _ => D
+    }
+  };
+  
+  handleName(hdl(_,N))=>N;
+    
+  rdMsg(str) => fdecode(str);
+  
+  wrMsg(str,M){
+    fencode(str,M);
+  };
+
+  exportOptions(Opts) => collect{
+    for O in Opts do{
+      case O in {
+        replyTo(H) -> elemis ('reply,any(H))
+      | leaseTime(N) -> elemis ('lease,any(N))
+      | receiptRequest(X) -> elemis ('receipt,X)
+      | auditTrail(H) -> elemis ('audit,any(H))
+      }
+    }
+  };
+
+  importOptions(Opts) => collect{
+    for (K,O) in Opts do {
+      case K in {
+        'reply :: any(H) .= O -> 
+          elemis replyTo(H)
+      | 'lease::any(N) .= O -> elemis leaseTime(N)
+      | 'receipt -> elemis receiptRequest(O)
+      | 'audit :: any(H).=O -> elemis auditTrail(H)
+      | _ -> {}
+      }
+    }
+  };
+
+  /* Establish and maintain a connection to the ACS */
+  scsConnect(proc,commsHost,commsPort){
+    (cI,cO) = tcp_connect(defaultHost(commsHost,"localhost"),defaultPort(commsPort,4545));
+    try{
+      wrMsg(cO,any(('register,handleName(self()))));
+      
+      case rdMsg(cI) in {
+        any('Ok) -> {
+          _set_mailer(spawn{ repeat{
+                      (ToH,FromH,Opts,Msg) ->> 
+                        wrMsg(cO,any((ToH,FromH,sencode(any((ToH,FromH,exportOptions(Opts),Msg))))))
+                    } until 'quit });
+     
+          _ = spawn{
+            while !eof(cI) do{
+              any((_,_,Msg)).=rdMsg(cI);
+
+              try{
+                decoded = sdecode(Msg);
+
+                if any((toH,fromH,O,M)).=decoded then{
+                  if !done(toH) then{
+                    __send(toH,importOptions(O),M,fromH);
+                  }
+                  else
+                    __log_msg("Message for "++toH^0++" discarded");
+                }
+              }
+              onerror{
+                 _ -> "Cant understand incoming msg "++sdecode(Msg)^0++"\n">>stdout
+              }
+            }
+          };
+          proc();
+          fclose(cI);
+          fclose(cO);
+        }
+      | any('Duplicate) ->
+          exception error(handleName(self())^0++" already registered",'failed)
+      | X -> 
+          exception error("can't establish proper address",'failed)
+      }
+    }
+    onerror{
+      X -> {
+        fclose(cI);
+        fclose(cO);
+        exception X
+      }
+    };
+  };
+  
+  scsConnectAs(proc,A,server,port){
+    waitfor(spawn scsConnect(proc,server,port) as A)
+  };
+  
+    /* Handle messages that should go via the TCP connection */
+  packOptions(L)=>collect {
+    for R in L do {
+      case R in {
+        replyTo(W) -> elemis ('icmReplyto,any W)
+      | leaseTime(W) -> elemis ('icmLeaseTime,any W)
+      | auditTrail(W) -> elemis ('icmAuditTrail,any W)
+      | receiptRequest(R) -> elemis ('icmReceiptRequest,R)
+      }
+    }
+  };
+
+  unpackOptions(L) => collect {
+    for X in L do{
+      case X in {
+        ('icmReplyto,any(Y)) -> 
+            elemis replyTo(Y)
+      | ('icmLeaseTime,any(Y)) -> 
+            elemis leaseTime(Y)
+      | ('icmAuditTrail,any(L)) -> 
+            elemis auditTrail(L)
+      | ('icmReceiptRequest,R) -> 
+            elemis receiptRequest(R)
+      | _ -> {}
+      }
+    }
+  };
+
+} export {scsConnect,scsConnectAs};
+

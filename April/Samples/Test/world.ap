@@ -1,0 +1,5 @@
+module
+  import interface "wor/ld.af" in
+{
+  world() => "wor"<>ld();
+} export (world);

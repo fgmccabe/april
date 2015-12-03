@@ -1,0 +1,215 @@
+@node Types and type signatures
+@appendix Types and type signatures
+@cindex Types and type signatures
+
+@noindent
+Type signatures are used extensively within the @code{April} machine to
+permit run-time type testing and verification of values; especially for
+programs and messages.
+
+A type signature is a string which encodes a type expression; type
+expressions may represent any valid @code{April} type including function
+types and recursive types.
+
+@menu
+* Base type signatures::        
+* Compound type signatures::    
+* Program types::               
+@end menu
+
+@node Base type signatures
+@section Base type signatures
+@cindex Base type signatures
+
+@table @code
+@item N
+The @code{N} signature identifies the @code{number} type -- either integer or
+floating point.
+
+@item s
+The @code{s} signature identifies the @code{symbol} type.
+
+@item S
+The @code{S} signature identifies the @code{string} basic type.
+
+@item h
+The @code{h} signature identifies the @code{handle} basic type.
+
+@item l
+The @code{l} signature identifies the @code{logical} type.
+
+@item A
+The @code{A} signature identifies the @code{any} type. 
+
+Note that the representation of values of type @code{any} includes a
+type signature string which gives the true type of the @code{any} value.
+
+@item $
+
+The @code{$} signature identifies a type variable. Imediately following
+the @code{$} character is a byte which identifies one of 256 type
+variables.
+
+A type variable type signature refers to a type which is compatible with
+any type; however all occurrences of a given type variable within a type
+signature all refer to the same type.
+@end table
+
+@node Compound type signatures
+@section Compound type signatures
+@cindex Compound type signatures
+
+@noindent
+Compound types -- such as lists, tuples and program types -- `operate' on
+other types. The strategy for representing compound types in a type
+signature is to use an initial byte which identifies the form of the
+type followed by the signatures of any composite types.
+
+@table @code
+@item L
+A list type is represented by the @code{L} character followed by the
+type signature of the type of the list elements. For example, a list of
+lists of numbers is represented by the type signature:
+
+@smallexample
+LLN
+@end smallexample
+
+@item T
+A tuple type is represented by the @code{T} character followed by the
+arity of the tuple -- represented as a single byte value -- followed by
+the type signatures of the elements of the tuple.
+
+For example, a tuple of @code{string} and @code{symbol} pairs is
+represented by the type signature:
+
+@smallexample
+T\002Ss
+@end smallexample
+
+@noindent
+Note that the maximum arity of a tuple type is 255.
+
+@item |
+The alternative or choice type is represented by a @code{|} character
+followed by two type signatures -- which may also be alternative types.
+
+In @code{April}, the alternative type can only be used in conjunction
+with constructor functions introduced in the context of a type
+definition.
+
+@item C
+Constructor functions are introduced in @code{April} programs via type
+definitions. A constructor function type is represented by a @code{C}
+character, followed by the constructor function name surrounded by
+`delimiter' characters and then a type signature which gives the types
+of the arguments of the constructor function.
+
+The delimiter character can be any ASCII value; and is chosen so that
+it does not occur within the constructor function name itself.
+
+For example, the type introduced in the definition:
+
+@smallexample
+h_tree ::= node(any,string,any)
+@end smallexample
+
+@noindent
+could be represented using the type signature:
+
+@smallexample
+C'node'T\003ASA
+@end smallexample
+
+@item *
+Recursive types are represented using `bound' type variables. A bound
+type variable type is represented by the @code{*} character, followed by
+the identity of the type variable -- a single ASCII byte -- followed by
+the type to which it is bound. Typically this type will refer to the
+same type variable.
+
+Bound types are often used in conjunction with user-defined types. For
+example, the type definition:
+
+@smallexample
+n_tree ::= empty | node(n_tree, number, n_tree)
+@end smallexample
+
+@noindent
+is a recursive type which is represented by the type signature:
+
+@smallexample
+*\0|C'empty'T\0C'node'T\3$\0N$\0
+@end smallexample
+
+@noindent
+Bound type variables can be combined with un-bound type variables,
+@end table
+
+
+@node Program types
+@section Program types
+@cindex Program types
+
+@noindent
+@code{April} supports 3 program types -- functions, procedures and patterns.
+
+@table @code
+@item F
+Function types represent functional objects. A function type is
+represented by the character @code{F}  followed by two type signatures
+-- a tuple type signature representing the tuple of arguments to the
+function and a type signature representing the return value of the
+function.
+
+For example, a function type such as:
+
+@smallexample
+(alpha[] alpha[]) -> alpha[]
+@end smallexample
+
+@noindent
+where @code{alpha} is a type variable, is represented using a type
+signature:
+
+@smallexample
+FT\2L$\0L$\0L\$0
+@end smallexample
+
+@item P
+A procedure type signature consists of the character @code{P} followed
+by the type signature of the tuple of its arguments. For example, the
+procedure type:
+
+@smallexample
+(handle,string)@{@}
+@end smallexample
+
+@noindent
+is represented using the type signature string:
+@smallexample
+PT\2hS
+@end smallexample
+
+@item O
+A pattern program type is represented by the character @code{O} followed
+by the tuple of types of returned values and the type of the pattern
+program's pattern.
+
+For example, the type:
+
+@smallexample
+(any)<-string
+@end smallexample
+
+@noindent
+is represented using the type signature:
+
+@smallexample
+OT\1AS
+@end smallexample
+@end table
+
+
+
+

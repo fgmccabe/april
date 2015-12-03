@@ -1,0 +1,1879 @@
+@node Data values and types
+@chapter @code{April} data values and types
+@cindex @code{April} data values and types
+
+@noindent
+We can classify @code{April} values into three main catagories:
+primitive values, complex or compound values and values of user-defined
+types. @code{April} is a higher-order language -- which means that the
+range of values is greater than many conventional languages;
+in particular procedures, functions and collections of them are also
+values in the language. 
+
+In addition to being a higher-order language, @code{April} is also a
+symbolic language. What this means is that, compared to so-called
+`engineering' languages, @code{April}'s values have a standard
+`written representation' -- that is, it is possible to write an explicit
+literal value of any particular type. For example, the expression:
+
+@smallexample
+10.34
+@end smallexample
+
+@noindent
+refers to a number, and
+
+@smallexample
+["alpha","beta"]
+@end smallexample
+
+@noindent
+is a list of strings. As we introduce the various types of values we
+also describe how to write literals in the type. However, the programmer
+should be aware that the way of writing a particular class of values can
+be dramatically altered if user-defined operators are involved.
+
+In this chapter we describe the standard types of @code{April} and how to
+write values of these types. 
+
+@menu
+* Primitive types::             
+* Compound types::              
+* Type definitions::            
+* Standard April Types::        
+* Types and type inferencing::  
+@end menu
+
+@node Primitive types
+@section Primitive types
+@cindex Primitive types
+
+@noindent
+A primitive or scalar type is one whose values have no `internal
+structure' -- they can be manipulated and processed but they cannot be
+inspected. The simplest example of a primitive value is number -- it
+makes no sense to talk about the `first component' of an integer for
+example.
+
+@menu
+* number type::                 
+* symbol type::                 
+* char type::
+* string type::                 
+@end menu
+
+@node number type
+@subsection @code{number} type
+@cindex @code{number} values
+@cindex type, @code{number}
+
+@noindent
+@code{April} numbers are either integers or floating points -- the
+precision of arithmetic is implementation dependent, but is at
+least equivalent to IEEE double precision.@footnote{The current version
+of the @code{April} engine uses 64-bit integers when representing
+integral values. This implies that integers have a larger range than
+floating point numbers@dots{}}
+
+@code{April} does not distinguish between the two kinds of numbers
+(i.e., 
+@ifinfo
+@code{1} = @code{1.0})
+@end ifinfo
+@tex
+$1 \equiv\ 1.0$).
+@end tex
+Nearly all of the standard arithmetic functions handle integers as
+easily as floating point numbers -- with the exception of some binary
+arithmetic functions such as `bitwise and' -- @pxref{Bitwise and}.
+@refill
+
+@code{April} supports octal and hexadecimal literal integer notation as
+well as regular decimal notation. For example, the numbers:
+
+@smallexample
+16  0x10  020 
+@end smallexample
+
+@noindent
+all refer to the same number (sixteen). See @ref{Number syntax} for the
+precise rules for writing numeric values in programs.
+
+The type of numeric values is @code{number}. As is explained in
+@ref{number pattern}, not only is @code{number} a type but it is also
+also a run-time pattern test.
+
+@node symbol type
+@subsection @code{symbol} type
+@cindex @code{symbol} type
+@cindex type,@code{symbol} 
+@findex symbol @r{type}
+
+@noindent
+The @code{symbol} type refers to symbol literals in the program. Symbols
+are identified by prefixing an identifier with a quote character:
+
+@smallexample
+'foo
+@end smallexample
+
+
+@node char type
+@subsection @code{char} type
+@cindex @code{char} literal
+@cindex type, @code{char}
+
+
+@node string type
+@subsection @code{string} type
+@cindex @code{string} values
+@cindex type, @code{string}
+
+@noindent
+A @code{string} is a data type that may hold arbitrary sequences of Unicode characters. In fact, a @code{string} is a synonym for a list of @code{char}acters.
+
+As noted in @pxref{string syntax}, @code{string} values are written as
+sequences of characters surrounded by double-quote characters:
+
+@smallexample
+"This is a string of 33 characters"
+@end smallexample
+
+This is entirely equivalent to the list:
+
+@smallexample
+[''T,''h,''i,''s,'' ,''i,''s,'' ,''a,'' ,''s,''t,''r,''i,''n,''g,
+  '' ,''o,''f,'' ,''3,''3,'' ,''c,''h,''a,''r,''a,''c,''t,''e,''r,''s]
+@end smallexample
+
+@node Compound types
+@section Compound types
+@cindex Compound types
+
+@noindent
+@code{April} has three built-in methods for composing objects -- lists,
+tuples and records. In addition, a labelled record is a form of
+tuple/record which is introduced by means of a user-defined type
+declaration. Records are similar to tuples where individual components
+of the tuple are identified by name rather than by position. In
+addition, there are other styles of compound type -- such as function
+and procedure types; the `encapsulated' type @code{any} provides
+a mechanism for `escaping' the type system.
+
+@menu
+* list type::                   Lists of values
+* tuple type::                  Tuples of values
+* record type::                 Record tuples
+* function type::               Type of functions
+* procedure type::              Type of procedures
+* any type::                    Encapsulated values
+* Quantified types::            
+@end menu
+
+@node list type
+@subsection List type
+@cindex List values
+@cindex type, list
+
+@noindent
+A list is an ordered sequence of values , all of which have the
+@emph{same} type. Lists are written as a comma-separated sequence
+surrounded by @code{[]}s. For example, a list of the first 5 prime
+numbers would be written:
+
+@smallexample
+[2, 3, 5, 7, 11]
+@end smallexample
+
+@noindent
+and the @emph{type} of this list would be written:
+
+@smallexample
+number[]
+@end smallexample
+
+@noindent
+There are two special forms of list that should be discussed -- the empty
+list which is written:
+
+@smallexample
+[]
+@end smallexample
+
+@noindent
+and @emph{list patterns} which look like:
+
+@smallexample
+[@var{e1},@dots{},@var{ek},..@var{tail}]
+@end smallexample
+
+@noindent
+The type inference system will deduce that the type of an empty-list
+literal is:
+
+@smallexample
+%A[]
+@end smallexample
+
+@noindent
+where @code{%A} signifies an unbound type variable (@pxref{Type
+variables}). I.e., the type of an empty list literal is
+@var{list-of-something} where the @var{something} is not yet apparent
+and is represented as a type variable. In all likelihood, the context
+of the empty list literal will further constrain the types so that
+@var{something} can be deduced -- but this is not essential.
+
+A @var{list} expression is a generalization of literal lists. It allows
+us to write down a literal list where the tail of the list is not known
+to be @code{[]} but is the value of an expression.
+
+In the program:
+
+@smallexample
+@group
+app = @{
+  ([],Y) => Y
+| ([E,..Z],Y) => [E,..app(Y,Z)]
+@}
+@end group
+@end smallexample
+
+@noindent
+we use list expressions in two contexts -- as a pattern and as a regular
+expression. In the expression @code{[E,..app(Y,Z)]} we know the first
+element of the list -- @code{E} -- but the tail of the list is computed
+from the function call -- @code{app(Y,Z)}.
+
+A list expression as a pattern allows us to extract the head of a list
+and the tail of the list without needing to know how long the list
+is. The pattern @code{[?E,..?Z]} could match the list:
+
+@smallexample
+[2, 3, 5, 7, 11]
+@end smallexample
+
+@noindent
+by assigning @code{E} to @code{2} and assigning @code{Z} to @code{[3, 5,
+7, 11]}.
+
+The type inference system can compute the type of a list literal
+automatically -- based on the types of the elements. All the elements of
+a list must have the same type, a fact that the type inference system
+will verify. The rule for computing the type of a list expression is
+completely analogous, but note that the type of the `tail' expression is
+the same type as the whole list itself.
+
+@node tuple type
+@subsection Tuple type
+@cindex Tuple values
+@cindex type, tuple
+
+@noindent
+A tuple is a ordered sequence of values, each of which is potentially of a
+@emph{different} type. Tuples are written as a comma-separated sequence
+surrounded by @code{()}s. For example, a tuple consisting of a string
+and a number representing the name and age of a client may be:
+
+@smallexample
+("Fred. U. Are", 40)
+@end smallexample
+
+@noindent
+The @emph{type} of a tuple such as this is also a tuple -- a tuple of
+the types of the tuple elements:
+
+@smallexample
+(string, number)
+@end smallexample
+
+@noindent
+The components of a tuple such as this can only be accessed via a
+pattern matching expression.
+
+@node record type
+@subsection Record type
+@cindex Record values
+@cindex type, record
+
+@noindent
+A record is a tuple in which the elements are identified by a field
+name. A record type is similarly a tuple type in which elements of the
+type are identified by field name. 
+
+A normal record literal is written using a notation such as:
+
+@smallexample
+(name="Fred. U. Are", age=40)
+@end smallexample
+
+@noindent
+the type description for a name/age record such as this
+might be:
+
+@smallexample
+(string?name, number@?age)
+@end smallexample
+
+@noindent
+where @code{name} and @code{age} are symbolic field names identifying
+the first and second elements of the record.
+
+@code{April} requires that elements of record literals
+follow the same order as in the appropriate type description. For
+example, the nearly `equivalent' record:
+
+@smallexample
+(age=40, name="Fred. U. Are")
+@end smallexample
+
+@noindent
+has a different, incompatible, type.
+
+Note that a record value is not compatible with a tuple
+value@footnote{This is new in version 4.2.7, prior to this version
+tuples were compatible with records. However, there are semantic
+problems associated with this confusion.} A record value such as the one
+above is @emph{not} of the same type as:
+
+@smallexample
+(40,"Fred. U. Are")
+@end smallexample
+
+@noindent
+A major example of a record is the theta expression --
+@pxref{theta expression}. Theta expressions are used to contain
+functions and procedures.
+
+Field names are most often used in conjunction with the `dot' operator
+(@pxref{Dot expression}), for example we can access the name of a client
+using:
+
+@smallexample
+R.name
+@end smallexample
+
+@noindent
+Note, however, that the dot operator in @code{April} is considerably
+more powerful than in most programming languages. 
+
+@node function type
+@subsection Function type
+@cindex function type
+@cindex type, function
+
+@noindent
+As with any higher order programming language, a function is a first
+class object in @code{April}, and has a type. We explore functions more
+completely in @ref{Function} and @ref{programs and theta
+expressions}. Here we note the form of a function type; the type of a
+function, such as:
+
+@smallexample
+(@var{P1},@dots{},@var{Pk}) => @var{E}
+@end smallexample
+
+@noindent
+is
+
+@smallexample
+(@var{T1},@dots{},@var{Tk}) => @var{T}
+@end smallexample
+
+@noindent
+where the type system can infer that the types of the patterns @var{Pi}
+are @var{Ti} and the type of @var{E} is @var{T} respectively.
+
+@node procedure type
+@subsection Procedure type
+@cindex procedure type
+@cindex type, procedure
+
+@noindent
+Like functions, a procedure is a first class object in @code{April}, and
+has a type. We explore procedures more completely in @ref{Procedure} and
+@ref{programs and theta expressions}. Here we note the form
+of a procedure type; the type of a procedure, such as:
+
+@smallexample
+(@var{Ptn1},@dots{},@var{Ptnk})->@var{Statement}
+@end smallexample
+
+@noindent
+is
+
+@smallexample
+(@var{T1},@dots{},@var{Tk})@{@}
+@end smallexample
+
+@noindent
+where the type system can infer that the types of the patterns
+@var{Ptni} are @var{Ti} respectively.
+
+@node any type
+@subsection @code{any} type
+@cindex @code{any} values
+@cindex type, @code{any}
+
+@noindent
+The @code{any} type is a kind of universal type; more accurately, the
+@code{any} type acts as a kind of encapsulation of other values. An
+@code{any} value can be safely sent in messages across the network,
+saved in files, and both the original value and its type can be
+recovered.@footnote{The syntax and semantics of @code{any} values 
+changed with version 4.2.7.}
+
+An @code{any} value is written using the @code{any} constructor:
+
+@smallexample
+any(foo)
+@end smallexample
+
+@noindent
+the type of this expression is @code{any}.  Type @code{any} can
+encapsulate any @code{April} value; however most operators will not
+accept an @code{any} value directly.
+
+This means that it is possible, for example, to construct a list of
+heterogenous values where the types of the list elements cannot be
+predicted at compile time.
+
+For example, to construct a list of numbers and strings one could use:
+
+@smallexample
+a_list : [any(10), any("foo"), any(12.4)]
+@end smallexample
+
+@noindent
+In order to access an element of this list, and to be able to operate on
+it, it is necessary to use an @code{any} pattern to extract the value:
+
+@smallexample
+if any(X) .= a_list#2 then 
+  @dots{}
+@end smallexample
+
+@noindent
+Such an @code{any} pattern will verify that the actual type of the
+`payload' of the @code{any} value is consistent with the expected use of
+the value. In this case, the second element of the @code{a_list} list
+will be checked against the constraints on the use of @code{X} implied
+in the rest of the program. For example, if @code{X} is involved in an
+arithmetic operation:
+
+@smallexample
+Y : 10;
+if any(X) .= a_list#2 then 
+  Y := Y+X
+@end smallexample
+
+@noindent
+then @code{X} must be a @code{number} and the list element will be
+verified that it is a @code{number} (at run-time). A more explicit
+pattern that does the same might be:
+
+@smallexample
+Y : 10;
+if any(number?X) .= a_list#2 then 
+  Y := Y+X
+@end smallexample
+
+@noindent
+If @code{a_list#2} were not a @code{number} then the match would fail.
+
+@emph{Hint:}
+@quotation
+It is likely that most of the time, programmers will not need to
+consider @code{any} values. However, the @code{April} system uses them
+to wrap messages that may be sent between processes.
+@end quotation
+
+@node Quantified types
+@subsection Quantified types
+@cindex Quantified types
+
+@noindent
+Since @code{April} is a polymorphic language, we can expect there to be
+types that are more general than individual literal types. Such types
+have @emph{type variables} in them. In the context of a given type
+expression, a type variable may be @emph{free} or @emph{bound}. A bound
+type variable expression introduces a type variable and at the same time
+delimits the scope of that type variable.
+
+A universally quantified type expression denotes a `universal' or
+polymorphic type. For example, the type expression:
+
+@smallexample
+%x-((%x)@{@},()=>%x)
+@end smallexample
+
+@noindent
+denotes a tuple -- a pair -- consisting of a procedure and a
+function. The procedure `consumes' a value and the function `produces' a
+value of the same type. The universal quantifier gives an explicit scope
+to the type variable @code{%x}.@footnote{Universal quantifiers are a new
+feature of version 4.2.7}
+
+@node Type definitions
+@section Type definitions
+@cindex Type definition,statement
+@cindex Statement,Type definition
+@cindex User defined types
+
+@noindent
+A user-defined type is a new type introduced by the programmer using a
+type definition statement:
+
+@smallexample
+@var{type-head} ::= @var{type-body}
+@end smallexample
+
+@noindent
+where @var{type-head} is either a symbol or of the form:
+
+@smallexample
+@var{name}(@var{tv1},@dots{},@var{tvk})
+@end smallexample
+
+@noindent
+where @var{tvi} are @emph{type variables}.
+
+The body of a user-defined type is built from three fundamental
+components -- @code{symbol}s, labelled types and disjunctions.
+
+Semantically, there are two kinds of user-defined type definition: a
+completely new type or a new name for an existing type. The @code{April}
+compiler can (usually) tell the difference automatically.
+@cindex type, renaming
+
+A truly new type, involving constructor functions, is especially useful
+in certain contexts where values need to be communicated with other
+applications.
+
+@menu
+* Type renaming::               
+* User defined type definition::  
+* Scope of type definitions::   
+@end menu
+
+@node Type renaming
+@subsection Type renaming definition
+@cindex Type, renaming
+@cindex Introducing new names for types
+
+@noindent
+A type renaming has a simple form:
+
+@smallexample
+@var{type-head} ::= @var{existing-type}
+@end smallexample
+
+@noindent
+where @var{existing-type} is a type expression involving previously
+declared or built-in types. In particular, a type re-naming definition
+does not introduce any new constructor functions or enumerated symbols
+(@pxref{User defined type definition}),
+neither does it involve a disjunction. Conversely, a type definition
+which introduces a completeley new type is not permitted to rename an
+existing type.
+
+A type renaming definition is essentially a macro; all occurrences of
+the new type are replaced by the @var{existing-type}. This form of type
+definition is essentially a convenience feature that makes it easier to
+construct clear and readable programs. One common use for this feature
+is to define types in terms of built-in types such as lists and records.
+
+Type renaming definitions can be polymorphic, and they can refer to
+polymorphic types. Generally, a renamed type is less polymorphic than
+the types is renames to.
+
+@node User defined type definition
+@subsection User defined type definition
+@cindex User defined type definition
+@cindex Defining new types
+
+@noindent
+A new type definition introduces a new type into the language together
+with one or more new @emph{enumerated symbols} and @var{constructor
+functions}. The form of a new type definition is:
+
+@smallexample
+@var{type-head} ::= @var{type-body}
+@end smallexample
+
+@noindent
+where @var{type-body} is typically a disjunction of @var{symbol
+enumerations} and @var{constructor function} definitions.
+
+For example, the @code{weekday} type --
+which introduces the days of the week -- can be defined using:
+@cindex enumerated symbols
+
+@smallexample
+weekday ::= monday | tuesday | wednesday | thursday | friday |
+            saturday | sunday;
+@end smallexample
+
+@noindent
+Any symbols introduced in this way must be unique -- i.e., not occurring
+in any other type definition that is currently in scope.
+
+A constructor function definition looks like:
+@smallexample
+@var{name} @var{type}
+@end smallexample
+
+@noindent
+although we typically enclose the @var{type} argument in parentheses.
+For example, given the type definition:
+
+@smallexample
+kqmlItem ::= ontology(string) | language(string) | @dots{} ;
+@end smallexample
+
+@noindent
+a reference to the @samp{ontology} constructor looks like:
+
+@smallexample
+X : ontology("animal-world")
+@end smallexample
+
+@noindent
+Constructor functions are so-named because semantically they are
+functions: with the particular property that every expression involving
+the constructor function has an exact inverse. This property allows
+constructor functions to be used as patterns as well as in other
+expressions.
+
+More formally, a type definition such as:
+
+@smallexample
+tr(%t) ::= e | n(tr(%t),%t,tr(%t));
+@end smallexample
+
+@noindent
+can be viewed as introducing a new type or a class of types --
+@code{tr(@var{type})} -- together with one or more enumerated symbols
+and @var{constructor functions} that return values of that type. In this
+case, the enumerated symbol @code{e} introduced has type:
+
+@smallexample
+tr(%t)
+@end smallexample
+and the constructor function @code{n} has type
+@smallexample
+%t-((tr(%t),%t,tr(%t)) => tr(%t))
+@end smallexample
+
+@emph{Hint:}
+@quotation
+A significant benefit of user defined types arises when we want to communicate
+values between programs: typically two programs will have a specific
+protocol for the messages that can be sent. We can often express the
+elements of the protocol -- as opposed to any required ordering between
+messages in the protocol -- as a user-defined type:
+
+@smallexample
+myProtocol ::= openX(string) | closeX(string) | 
+        inform(kqmlMsg) |@dots{};
+@end smallexample
+
+@noindent
+Such a type definition gives added documentation about the form of the
+messages between processes.
+@end quotation
+
+@node Scope of type definitions
+@subsection Scope of type definitions
+@cindex Scope of type definition
+@cindex Type definition, scope of
+
+@noindent
+A type definition statement is only valid at the top-level and at the
+top-level within an theta expression (@pxref{theta
+expression}). Furthermore, only types introduced within theta records
+may be mutually recursive.
+
+The scope of a type definition introduced globally is the remainder of
+the source of the program; whereas the scope of a type definition
+introduced in a record expression is the whole of the record
+body -- including any text in the record @emph{before} the
+type definition.
+
+This extension of scope is necessary for type definitions (as it is for
+function and procedure definitions in record expressions) in order
+to permit mutually recursive type definitions.
+
+
+@node Standard April Types
+@section Standard @code{April} Types
+@cindex Standard @code{April} Types
+
+@noindent
+The complete @code{April} language system includes a number of standard
+types -- these are types which may be defined using type definition
+statements (@pxref{Type definitions}) but nevertheless are considered to
+be part of the @code{April} language.
+
+@menu
+* logical type::                
+* handle type::                 Type of a process handle
+* error type::                  
+* type_of type function::       
+@end menu
+
+@node logical type
+@subsection @code{logical} type
+@cindex @code{logical} values
+@cindex type, @code{logical}
+
+@noindent
+The @code{logical} type is a pre-defined type that is defined to be
+equivalent to the definition (@pxref{Type definitions}):
+
+@smallexample
+logical ::= true | false
+@end smallexample
+
+@noindent
+@code{logical} values are obviously very important in any programming
+language -- since expressions of this type are often used to control the
+flow of execution.
+
+@node handle type
+@subsection @code{handle} type
+@cindex @code{handle} values
+@cindex type, @code{handle}
+@findex handle @r{type}
+
+@noindent
+@code{handle}s are objects which identify processes. When a new process
+is @code{spawn}ed (@pxref{spawn}) a new @code{handle} is generated to
+correspond to the new process. The @code{handle} type is a standard type
+associated with process handles.
+
+A process @code{handle} can identify a process sufficiently to allow
+messages to be sent to it from anywhere in the
+Internet.@footnote{Notwithstanding minor barriers to communication such
+as security `Fire-walls'.}
+
+Process @code{handle}s are constructed around a standard form of
+constructor function (@pxref{User defined type definition}). The
+@code{handle} type is a system declared type of the form:
+
+@smallexample
+handle ::= nullhandle | hdl(symbol,symbol);
+@end smallexample
+
+@noindent
+where the first symbol in the @code{hdl} term gives a process identifier within a named group, and the second symbol is the name of the group.
+
+The @code{nullhandle} enumerated symbol is a special handle that is guaranteed not to represent any executing process.
+
+@node error type
+@subsection @code{error} type
+@cindex @code{error} type
+
+@noindent
+Values of the @code{error} type is used by many built-in functions and
+procedures to encapsulate critical data when an exception is raised. The
+standard definition of the @code{error} type is:
+
+@smallexample
+error ::= error(string,symbol) | failed | timedout | clickedout;
+@end smallexample
+
+@noindent
+The @code{error} constructor is the most common instance of an
+@code{error} value. The @code{string} field is a descriptive string that
+denotes the cause of the error or exception, and the @code{code} field
+gives a formalized classification of the error. For errors raised in
+application programs any symbolic value may be used for the error code;
+for system built-ins, the legal error codes and their interpretations
+are listed in @ref{Standard error codes}.@footnote{The form of the
+@code{error} type changed in version 4.4.0-pre2.}
+
+The @code{failed} value is raised when an equation or statement clause
+fails to apply to a set of arguments.
+
+@node type_of type function
+@subsection @code{type_of} type function
+@cindex @code{type_of} type function
+@findex type_of @r{type function}
+@cindex The type of an expression as a type
+
+@noindent
+The @code{type_of} `function' can be used to access explicitly the type
+of an expression and make it available as a type
+expression. @code{type_of} is not a function -- in the sense that it
+does not have any run-time value associated with it -- the value of a
+@code{type_of} expression is a type.
+
+Thus, the type associated with the type expression:
+
+@smallexample
+type_of(@var{exp})
+@end smallexample
+
+@noindent
+is the type of @var{exp}. This can be used to explicitly link the types
+of two expressions which would not otherwise normally be linked; for
+example in:
+
+@smallexample
+type_of(3) ? X = @var{exp}
+@end smallexample
+
+@noindent
+is entirely equivalent to:
+
+@smallexample
+number ? X = @var{exp}
+@end smallexample
+
+@noindent
+because the type of the literal @samp{3} is @code{number}. More
+normally, a @code{type_of} expression involves variables, as in:
+
+@smallexample
+type_of(E) ? X = @var{exp}
+@end smallexample
+
+@noindent
+Here, we are declaring that the type of @samp{X} is the same type as the
+type of @samp{E}; but there need be no run-time connection between
+@samp{X} and @samp{E}. 
+
+@node Types and type inferencing
+@section Types and type inferencing
+@cindex Types and type inferencing
+
+@noindent
+The @code{April} compiler uses @emph{type inferencing} to deduce the
+types of variables and expressions in programs. Type inferencing is a
+powerful tool that permits most programs to have very sparse type
+information written in them, while at the same time ensuring strong type
+safety.
+
+For example, the compiler is able to infer the type of the variable
+@code{S} in the declaration:
+
+@smallexample
+S : "foo";
+@end smallexample
+
+@noindent
+as a @code{string}. This means that it is not necessary for the
+programmer to assert the type of @code{S} -- although the compiler will
+accept such assertions and verify them:
+
+@smallexample
+string?S = "foo";
+@end smallexample
+
+@noindent
+The rules for inferring the type of an expression, and for verifying
+type integrity of variable assignments and expressions, are quite
+straightforward. 
+
+@menu
+* Type variables::              
+* Type abstraction and reification::  
+* Equality of type expressions::  
+* Type derivation::             
+* Types and patterns::          
+* Types and statements::        
+* Type parameters::             
+@end menu
+
+@node Type variables
+@subsection Type variables
+@cindex Type variables
+
+@noindent
+A type variable is a compiler's variable -- not a programmer's
+variable. It refers to the type of some attribute of the program -- such
+as the type of a variable (programmer's that is) or the type of a
+function.
+
+The compiler assigns a type variable to any program fragment that could
+reasonably have type associated with it -- program variables,
+functions  procedures, and so on. In addition, the programmer can
+explicitly introduce type variables within type expressions. The form of
+a programmer introduced type variable is:
+
+@smallexample
+%@var{ident}
+@end smallexample
+
+where @var{ident} is an identifier.
+
+Type variables are important because they can be @emph{instantiated} as
+a result of satisfying some constraint implied by the program. For
+example, in:
+
+@smallexample
+S : "foo";
+@end smallexample
+
+@noindent
+a type variable is attached to @code{S} -- @var{%TV1} say -- as a result
+of the declaration of @code{S}. The compiler knows that literal strings
+have type @code{string}, so this match statement induces a @emph{type
+constraint} of the form:
+
+@smallexample
+@var{%TV1} = string
+@end smallexample
+
+@noindent
+which can be satisfied by @emph{instantiating} or @emph{binding}
+@var{%TV1} to @code{string}. Subsequent occurrences of the variable
+@code{S} will introduce additional constraints, which may also result in
+further type variables being introduced and constrained.
+
+Each variable declaration is associated with a separate type variable
+and each occurrence of the variable implies one or more additional type
+constraints.  The most common constraint takes the form:
+
+@smallexample
+@var{%TV} = @var{type}
+@end smallexample
+
+@noindent
+All these equations must be satisfied simultaneously, which means that
+in general, the type checker must solve equations of the form:
+
+@smallexample
+@var{typeA} = @var{typeB}
+@end smallexample
+
+@noindent
+The @code{April} type checker uses a unification-based algorithm to do
+this -- in effect two types are equal if they can be reduced to the same
+syntactic form. For example, the equation:
+
+@smallexample
+(@var{typeA}, @var{%TV1}) = (@var{%TV2}, @var{typeB})
+@end smallexample
+
+@noindent
+is solveable by instantiating @var{%TV1} to @var{typeB} and @var{%TV2} to
+@var{typeA}. However, the equation:
+
+@smallexample
+(@var{typeA}, @var{%TV1}) = (@var{%TV2}, @var{typeB})[]
+@end smallexample
+
+@noindent
+has no solution because no list is ever equal to a tuple. If the type
+checker is faced with this kind of constraint then it will report a type
+error about the program.
+
+@node Type abstraction and reification
+@subsection Type abstraction and reification
+@cindex Type abstraction and reification
+@cindex Type generalization
+@cindex Generalization of types
+@cindex Computing fresh types
+
+@noindent
+In some contexts -- notably when determining the type of function 
+and similar expressions and when checking the types in a function or
+procedure application -- it becomes important to know how type variables
+are treated.
+
+We use two concepts to clarify how types are handled in these situations
+-- type generalization (or type abstraction) and type `freshening' (or
+type reification). Both of these can be expressed in terms of the scope
+of type variables in relation to the position of the binding quantifiers
+for the variables. Type abstraction is used when computing the type of a
+function or procedure, and type reification is used when computing the
+types in a function application or procedure call.
+
+@menu
+* Type abstraction::            Compute the type of a function or procedure
+* Type reification::            Remove bounds from a bound type expression
+@end menu
+
+@node Type abstraction
+@subsubsection Type abstraction
+
+@noindent
+In order to compute the type of a function (or by extension a procedure)
+the type inference system proceeds by assuming that the types of the
+arguments of the function are unknown -- i.e., are type variables -- and
+computes the type of the right hand side of the function:
+
+@smallexample
+foo(X,Y) => X<>Y
+@end smallexample
+
+@noindent
+results initially in the type assignments:
+
+@smallexample
+X/%A1
+Y/%A2
+@end smallexample
+
+@noindent
+where @code{%A1} and @code{%A2} are completely new type variables not
+occuring anywhere else. After computing the type of the right hand side
+expression, these type assignments are constrained to:
+
+@smallexample
+X/%A3[]
+Y/%A3[]
+@end smallexample
+
+@noindent
+where @code{%A3} also is a type variable.  I.e., the types of the input
+arguments must be `lists of something', and the `something' should be
+the same type.
+
+We can now determine the type of the function as:
+
+@smallexample
+(%A3[],%A3[]) => %A3[]
+@end smallexample
+
+@noindent
+This @code{foo} function can be applied to any arguments provided that
+they are lists, and are lists of the same type.
+
+However, the type variable in this type expression -- @code{%A3} -- is
+really what is known as a quantified type variable:
+
+@smallexample
+%A3 - ( (%A3[],%A3[])=>%A3[])
+@end smallexample
+
+@noindent
+The key feature of this expression is that its meaning is preserved when
+we change the quantified variable to something else:
+
+@smallexample
+%U - ((%U[],%U[])=>%U[])
+@end smallexample
+
+@noindent
+even if this expression appeared in a larger type expression that also
+mentions the original type variable @code{%A3} and those other
+occurrences are not replaced.
+
+This becomes useful when we want to apply functions in more than one
+kind of situation.
+
+Type abstraction then is the process of attaching quantifiers to the
+computed type of a function. The specific rule for this is that the type
+of a function expression of the form:
+
+@smallexample
+@var{Ptn} => @var{Exp}
+@end smallexample
+
+@noindent
+is
+
+@smallexample
+%a1-(%a2-@dots{}-(@var{Tp} => @var{Te}))
+@end smallexample
+
+@noindent
+where @var{Tp} is the type of the pattern @var{Ptn}, @var{Te} is the
+type of the expression @var{Exp} and @var{ai} are all the type variables
+that occurr in @code{Tp} and @var{Te} that @emph{do not} appear
+elsewhere in the program.
+
+@node Type reification
+@subsubsection Type reification
+@cindex Type reification
+
+@noindent
+Type reification@footnote{According to Websters on-line: 
+Main Entry: re톓fy@*
+Function: transitive verb@*
+Inflected Form(s): re톓fied; re톓fy톓ng@*
+Etymology: Latin res thing -- more at REAL@*
+Date: 1854@*
+: to regard (something abstract) as a material or concrete thing.
+} refers to the
+process of removing the quantifiers in a quantified type expression,
+especially in the context of type checking a function application. 
+
+In a function application, such as:
+
+@smallexample
+foo([1,2,3],X)
+@end smallexample
+
+@noindent
+the type checker computes the type of @code{foo} and determines if it is
+applicable to the arguments -- @code{[1,2,3]} and @code{X} in this
+case. When the type of @code{foo} is determined, it will be an
+expression of the form:
+
+@smallexample
+%U-(%U[],%U[])=>%U[]
+@end smallexample
+
+@noindent
+as determined by the definition of @code{foo}
+@ifinfo
+-- see @pxref{Type abstraction}.
+@end ifinfo
+@iftex
+(see above).
+@end iftex
+Additionally, the type checker can compute the types associated with the
+arguments to be:
+
+@smallexample
+(number[],%A33)
+@end smallexample
+
+@noindent
+for example. In order to apply the constraint imposed by @code{foo}
+correctly we have to match the left hand side of @code{foo}'s type with
+the type of the arguments. However, before we can do that, we must
+`strip off' the bounds on the type variable @code{%U}. This process is
+called type reification.
+
+Logically, we can observe the equivalence:
+
+@ifinfo
+@smallexample
+forall X. ((forall Y. X @var{R} Y) and (forall Y. X @var{S} Y))
+@expansion{}
+forall X. forall Y1. forall Y2. ( X @var{R} Y1 and X @var{S} Y2)
+@end smallexample
+@end ifinfo
+@tex
+$$
+\forall X.(\forall Y. X \oplus Y) \wedge (\forall Y.X \otimes Y)
+\equiv
+\forall X. \forall Y_1. \forall Y_2. (X \oplus Y_1) \wedge (X \otimes Y_2)
+$$
+@end tex
+
+@noindent
+I.e., we can remove the bounds on a type expression by renaming the
+bound type variable to something completely new and moving the
+quantifier to the start of the entire type expression.
+
+Elsewhere in the type checking literature, this process of type
+reification is sometimes called `computing a fresh type', and we
+sometimes use the same terminology here.
+
+@node Equality of type expressions
+@subsection Equality of type expressions
+@cindex Type equality
+
+@noindent
+The @code{April} type inference system needs to test the equality of
+types in two main situations: where two expressions might be used to
+compute a value the types of the two expressions must be equal, and
+where a function or procedure is applied to arguments, the type of the
+function or procedure being applied must be `compatible' with the types
+of the arguments.
+
+For the most part, type equality and type compatibility are identical
+concepts. They differ only in the treatment of quantification and the
+compatibility of functions and procedures.
+
+The rules for type equality -- i.e., when are two types the same -- are
+straightforward:
+
+@table @var
+@item identical literals
+Two type literals are equal if they are identical. For example, 
+
+@smallexample
+string = string
+@end smallexample
+
+@noindent
+and, so is
+
+@smallexample
+weekday = weekday
+@end smallexample
+
+@noindent
+if @code{weekday} is a symbol of a user-defined type.
+
+@item list types
+Two @emph{list types} (@pxref{list type}) are equal if their element
+types are:
+
+@smallexample
+@var{typeA}[] = @var{typeB}[]
+@end smallexample
+
+@noindent
+providing that
+@smallexample
+@var{typeA} = @var{typeB}
+@end smallexample
+
+@item tuple types
+Two tuple types are equal provided that they have the same
+arity and their component types are equal:
+
+@smallexample
+(@var{typeA1},@dots{}@var{typeAk}) = (@var{typeB1},@dots{}@var{typeBk})
+@end smallexample
+
+@noindent
+providing that
+@smallexample
+@var{typeA1} = @var{typeB1}
+@dots{}
+@var{typeAk} = @var{typeBk}
+@end smallexample
+
+@item user defined types
+Two occurrences of a user defined type are equal provided that they have
+the same name, and if the type has an argument type, the argument types
+themselves are also equal.
+
+@item function types
+Two functions types are equal if their argument tuple and result types
+are equal:
+
+@smallexample
+(@var{typeA1},@dots{}@var{typeAk}) => @var{typeA} = (@var{typeB1},@dots{}@var{typeBk}) => @var{typeB}
+@end smallexample
+
+@noindent
+providing that:
+
+@smallexample
+@var{typeA1} = @var{typeB1}
+@dots{}
+@var{typeAk} = @var{typeBk}
+
+@var{typeA} = @var{typeB}
+@end smallexample
+
+@item procedure types
+Two procedure types are equal if their argument tuples
+are equal:
+
+@smallexample
+(@var{typeA1},@dots{}@var{typeAk})@{@} = (@var{typeB1},@dots{}@var{typeBk})@{@}
+@end smallexample
+
+@noindent
+providing that:
+
+@smallexample
+@var{typeA1} = @var{typeB1}
+@dots{}
+@var{typeAk} = @var{typeBk}
+@end smallexample
+
+@item quantified types
+Two quantified types are equal iff the quantified variables are the same
+and the quantified expressions are the same. Note that the meaning of a
+quantified formula is unchanged if the quantified variables are renamed
+(provided that the new name does not iteself occur in the quantified
+formula). 
+
+So, we can show that two quantified types are equal iff we can rename
+one or more of the quantified variables (remembering to replace all
+occurrences of the old variable with the new one) and then after such
+renaming the two quantified types are equal.
+
+For example, the two quantified type expressions:
+
+@smallexample
+%a-((%a[])=>(%a))
+@end smallexample
+@noindent
+and
+@smallexample
+%b-((%b[])=>(%b))
+@end smallexample
+@noindent
+are equal because we can rename @code{%a} to @code{%b}.
+
+More formally, we can say that
+@smallexample
+@var{%a}-@var{typeA} = @var{%b}-@var{typeB}
+@end smallexample
+@noindent
+iff there is a @var{%c} which does not occur in either of @var{typeA} or
+@var{typeB} and:
+@smallexample
+@var{typeA'} = @var{typeB'}
+@end smallexample
+@noindent
+where @var{typeA'} results from replacing all
+occurrences of @var{%a} by @var{%c} in @var{typeA} and @var{typeB'}
+results from replacing all
+occurrences of @var{%b} by @var{%c} in @var{typeB}
+@end table
+
+@node Type derivation
+@subsection Type derivation
+@cindex Type derivation
+@cindex Computing the type of a program fragment
+
+@noindent
+In addition to computing whether two types are equal, the @code{April}
+type checker must also be able to determine what the type of each program
+fragment is. As we shall see, this depends on the type equality relation
+we saw in @ref{Equality of type expressions}.
+
+The rules for computing the type associated with a program fragment are
+based on the core syntax of @code{April} program. Here we define a
+@code{type-of} `function' with two parameters:
+
+@smallexample
+type-of(@var{Exp}, @var{Env})
+@end smallexample
+
+@noindent
+where @var{Exp} is a program fragment, and @var{Env} is a list of pairs
+of the form:
+
+@smallexample
+(symbol,@var{type})
+@end smallexample
+
+@noindent
+The @var{Env} is effectively an environment giving the appropriate
+interpretation of any symbols that may occur in the program.
+
+@menu
+* Numeric literal type::        
+* String literal type::         
+* Symbolic literal type::       
+* Literal symbol type::         
+* Empty list literal type::     
+* Non empty list literal type::  
+* Tuple literal type::          
+* Record literal type::         
+* Function application expression type::  
+* Type of constructor function expressions::  
+* Dot expression type::         
+* valof expression type::       
+* collect/setof expression type::  
+* any expression type::         
+* Function type::               
+* Procedure type::              
+@end menu
+
+@node Numeric literal type
+@subsubsection Numeric literal type
+
+@noindent
+The type of a numeric literal -- such as @code{34.5} -- is
+@code{number}:
+
+@smallexample
+type-of(@var{X},@var{Env}) = number  @r{for all literal numbers @var{X}}
+@end smallexample
+
+@node String literal type
+@subsubsection String literal
+
+@noindent
+The type of a string literal -- such as @code{"FooBar"} -- is
+@code{string}.
+
+@smallexample
+type-of(@var{X},@var{Env}) = string  @r{for all literal strings @var{X}}
+@end smallexample
+
+@node Symbolic literal type
+@subsubsection Symbolic literal type
+
+@noindent
+The type of a symbol literal is @code{symbol}:
+
+@smallexample
+type-of('@var{X},@var{Env}) = symbol
+type-of(''@var{X},@var{Env}) = symbol
+@end smallexample
+
+@node Literal symbol type
+@subsubsection Literal symbol type
+
+@noindent
+The type of a symbol or identifier is found by looking in the
+environment; each program feature such as a variable or a function will have
+an entry in the environment:
+
+@smallexample
+type-of(@var{X},@var{Env}) = @var{type} if @var{type}?@var{X} in @var{Env}
+@end smallexample
+
+@noindent
+We will see how the environment is extended below.
+
+@node Empty list literal type
+@subsubsection Empty list literal type
+
+@noindent
+The type of the empty list literal -- @code{[]} -- is given by:
+
+@smallexample
+type-of([],@var{Env}) = (@var{%TV})[]
+@end smallexample
+
+@noindent
+where @var{%TV} is a new type variable. In effect, this is saying that
+the type of @code{[]} is a list -- but we do not yet have sufficient
+information to determine what kind of list.
+
+@node Non empty list literal type
+@subsubsection Non empty list literal type
+
+@noindent
+Where there is a non-empty list expression; then we compute the type as
+follows:
+
+@smallexample
+type-of([@var{Head},..@var{Tail}],@var{Env}) = type-of(@var{Tail},@var{Env})
+@end smallexample
+@noindent
+where
+@smallexample
+type-of(@code{Head},@var{Env})[] = type-of(@var{Tail},@var{Env})
+@end smallexample
+
+@noindent
+I.e., we compute the type of the head of the list, and the type of the
+tail of the list, then we make sure that the tail's type is compatible
+with the type of the head, and the type of the whole of the list is the
+same as the type of the tail (after the additional constraint relating
+to the head).
+
+@node Tuple literal type
+@subsubsection Tuple literal type
+
+@noindent
+The type of a tuple is a tuple of the types of the elements of the tuple
+literal:
+
+@smallexample
+type-of((@var{e1},@dots{},@var{ek}),@var{Env}) =
+        (type-of(@var{e1},@var{Env}),@dots{},type-of(@var{ek},@var{Env}))
+@end smallexample
+
+@node Record literal type
+@subsubsection Record literal type
+
+@noindent
+The type of a record literal is a set of the types of the elements of
+the record literal:
+
+@smallexample
+type-of((@var{e1}=@var{F1},@dots{},@var{ek}=@var{Fk}),@var{Env}) =
+        @{type-of(@var{e1},@var{Env})?@var{F1},@dots{},type-of(@var{ek},@var{Env})?@var{Fk}@}
+@end smallexample
+
+@node Function application expression type
+@subsubsection Function application expression type
+
+@noindent
+The type of a function application expression is computed as:
+
+@smallexample
+type-of(@var{F} @var{Arg}, @var{Env}) = @var{type}
+@end smallexample
+where
+@smallexample
+fresh(type-of(@var{F},@var{Env})) = @var{A} => @var{type}
+type-of(@var{Arg},@var{Env}) = @var{A}
+@end smallexample
+
+@noindent
+where @code{fresh} is a function that `reifies' a type
+ -- see @pxref{Type reification}. This process
+involves removing any quantifiers and replacing the quantified variables
+with fresh variables not occurring elsewhere in the program.
+
+@node Type of constructor function expressions
+@subsubsection Type of constructor function expressions
+@cindex labelled type, type of
+@cindex constructor functions, type of
+
+@noindent
+We can understand the types of constructor expressions (and enumerated
+symbols) by seeing them as occurrences of `constructor functions'.
+
+A type declaration such as:
+
+@smallexample
+tree(%a) ::= empty | node(tree(%a),%a,tree(%a))
+@end smallexample
+
+@noindent
+introduces two new `functions' -- @code{empty} and @code{node}. The type
+of the @code{node} function is given as:
+
+@smallexample
+%a-(tree(%a),%a,tree(%a) => tree(%a))
+@end smallexample
+
+@noindent
+An expression such as:
+
+@smallexample
+node(empty,"foo",empty)
+@end smallexample
+
+@noindent
+can then be typed using the same type rules as for regular functions, in
+this case the type is
+
+@smallexample
+tree(string)
+@end smallexample
+
+@noindent
+The @code{empty} symbol is associated with the type:
+
+@smallexample
+tree(%a)
+@end smallexample
+
+@noindent
+where @code{%a} is a new type variable, and any occurrence of
+@code{empty} in the text of the program will be given a similar type.
+
+@node Dot expression type
+@subsubsection Dot expression type
+
+@noindent
+The type of a @code{`.'} expression is determined as follows:
+
+@smallexample
+type-of(@var{R}.@var{E},@var{Env}) = type-of(@var{E},type-of(@var{R},@var{Env})\/@var{Env})
+@end smallexample
+
+@noindent
+I.e., we compute the type of the record @var{R} and compute the type of
+@var{E} in an environment that has been extended by the set that forms
+the type of @var{R}. This extension is similar to a union -- except
+that the elements in the type of @var{R} override any prior types
+associated with names that match the fields of @var{R}.
+
+@node valof expression type
+@subsubsection @code{valof} expression type
+
+@noindent
+The type of a @code{valof} expression is the type of the expression
+associated with the @code{valis} statements within the @code{valof}
+body. The types associated with each @code{valis} statement must all
+agree within a given @code{valof} body.
+
+@node collect/setof expression type
+@subsubsection @code{collect}/@code{setof} expression type
+
+@noindent
+The type of a @code{collect} or @code{setof} expression is
+@code{@var{TV}[]} where @var{TV} is the type associated with all the
+@code{elemis} statements occurring within the body of the @code{collect}
+or @code{setof}.
+
+@node any expression type
+@subsubsection any expression type
+
+@noindent
+An @code{any} expression is used to partially escape the type inference
+system. However, there is still some type inference involved in an
+@code{any} expression:
+
+@smallexample
+type-of(any(@var{exp}),@var{Env}) = any
+@end smallexample
+
+@noindent
+where the type of the expression @var{exp} is still computed. (It is not
+used directly during normal type inference.)
+
+@node Function type
+@subsubsection Function expression type
+
+@noindent
+There are two cases for functions -- equations and function union. The
+type of a function equation is determined as follows:
+
+@smallexample
+type-of(@var{Ptn} => @var{Exp}, @var{Env}) = 
+        generalize(type-of(@var{Ptn},@var{Env})=>type-of(@var{Exp},@var{ExtE}))
+@end smallexample
+
+@noindent
+where @var{ExtE} is computed as:
+@smallexample
+@var{ExtE} = EnvOf(@var{Ptn},@var{Env})
+@end smallexample
+where @code{EnvOf} extends the @code{Env} with new type variables for
+each of the variables declared within the head pattern of @var{Ptn} and
+@code{generalize} is a function that `generalizes' the type computed by
+@code{type-of} -- see @pxref{Type abstraction}.
+
+Where a @emph{function union} is concerned, the type is derived from the
+component functions:
+
+@smallexample
+type-of(@{@var{F} | @var{G} @},@var{Env}) = @var{Type}
+@r{where}
+        @var{Type} = type-of(@var{F},@var{Env})
+@r{and}
+        @var{Type} = type-of(@var{G},@var{Env})
+@end smallexample
+
+@noindent
+I.e., the types of the two components of the function union are
+determined, and their types must be the same. In the type inference
+algorithm, this is achieved using type unification.
+
+@node Procedure type
+@subsubsection Procedure type
+
+@noindent
+As for functions, there are two kinds of procedures: a clause and a
+procedure union. The type of a procedure clause is determined as follows:
+
+@smallexample
+type-of(@var{Ptn}@{@var{Stmt}@}, @var{Env}) = 
+        generalize(type-of(@var{Ptn},@var{Env})@{@})
+@r{where}
+stmt-type-constraint(@var{Stmt},@var{ExtE})
+@end smallexample
+
+@noindent
+where @var{ExtE} is computed as:
+@smallexample
+@var{ExtE} = EnvOf(@var{Ptn},@var{Env})
+@end smallexample
+and where @code{stmt-type-constrain} enforces type constraints implied by
+the statements in @var{Stmt}.
+
+Note that @code{April} restricts the type of the arguments of a
+procedure to be a tuple form.
+
+@node Types and patterns
+@subsection Types and patterns
+@cindex Types of patterns
+
+@noindent
+A pattern also has a type associated with it; however, in addition to a
+type, a pattern also has an `output' environment. In many situations, a
+variable in a pattern has scope that extends beyond the pattern
+itself. Therefore, in the elaboration of the types of patterns below, we
+describe the @code{tP} function which takes the general form:
+
+@smallexample
+tP(@var{Ptn},@var{Env}) = (@var{Type},@var{New-env})
+@end smallexample
+
+@menu
+* Numeric pattern type::        
+* Literal symbol pattern type::  
+@end menu
+
+@node Numeric pattern type
+@subsubsection Numeric pattern type
+
+@noindent
+The type of a numeric literal pattern is @code{number}:
+
+@smallexample
+tP(@var{N},@var{E}) = (number,@var{E}) @r{where @var{N} is a number}
+@end smallexample
+
+@noindent
+Notice that the environment is not extended by this type of pattern.
+
+@node Literal symbol pattern type
+@subsubsection Literal symbol pattern type
+@cindex Literal symbol pattern type
+
+@noindent
+The type of a literal symbol expression is @code{symbol}:
+
+@smallexample
+tP('@var{S},@var{E}) = (symbol,@var{E})
+tP(''@var{S},@var{E}) = (symbol,@var{E})
+@end smallexample
+
+@node Types and statements
+@subsection Types and statements
+@cindex Types and statements
+
+@noindent
+Generally, statements do not themselves have a type -- they are not
+values -- but they do give rise to new type expressions and type
+constraints. While a statement does not have a type, it can be
+said to have an @emph{environment} associated with it. The environment
+makes explicit the scope of program variables as they appear in the
+program.
+
+Thus for any statement, we can ask what its effect is on the
+environment:
+
+@smallexample
+env-of(@var{S},@var{Env})
+@end smallexample
+
+@noindent
+where @var{Env} is the environment of the statement's context: i.e., the
+environment associated with the statement in which @code{S} is embedded.
+
+@menu
+* variable declaration statement type environment::  
+* assignment statement type environment::  
+* match statement type environment::  
+* statement sequence type environment::  
+* conditional statement type environment::  
+@end menu
+
+@node variable declaration statement type environment
+@subsubsection Variable declaration statement type environment
+
+@noindent
+A variable declaration statement takes the form:
+
+@smallexample
+@var{X} : @var{E}
+@end smallexample
+
+@noindent
+for a mutable variable, or
+
+@smallexample
+@var{X} = @var{E}
+@end smallexample
+
+@noindent
+for a non-mutable variable. In either case, this results in an extended
+environment which contains the new variable @var{X}:
+
+@smallexample
+env-of(@var{X} : @var{E},@var{env}) = @var{new-env} @r{where}
+  @var{new-env} = extend-env(@var{X},@var{env}) @r{and}
+  type-of(@var{X},@var{new-env}) = type-of(@var{E},@var{env})
+env-of(@var{X} = @var{E},@var{env}) = @var{new-env} @r{where}
+  @var{new-env} = extend-env(@var{X},@var{env}) @r{and}
+  type-of(@var{X},@var{new-env}) = type-of(@var{E},@var{env})
+@end smallexample
+
+@node assignment statement type environment
+@subsubsection Assignment statement type environment
+
+@noindent
+An assignment statement, which is of the form:
+
+@smallexample
+@var{lhs} := @var{rhs}
+@end smallexample
+
+@noindent
+induces the type constraint:
+
+@smallexample
+type-of(@var{lhs},@var{env}) = type-of(@var{rhs},@var{env})
+env-of(@var{lhs} := @var{rhs},@var{env}) = @var{env}
+@end smallexample
+
+@noindent
+I.e., an assignment statement does not extend the environment in any
+way, and variables which may be declared within @var{rhs} do not extend
+their scope beyond the assignment statement.
+
+@node match statement type environment
+@subsubsection Match statement type environment
+
+@noindent
+A match statement, which is of the form:
+
+@smallexample
+@var{lhs} .= @var{rhs}
+@end smallexample
+
+@noindent
+also induces the type constraint:
+
+@smallexample
+env-of(@var{lhs}=@var{rhs},@var{env}) = @var{new-env} @r{where}
+  @var{new-env}=extend-env(@var{lhs},@var{env}) @r{and}
+  type-of(@var{lhs},@var{new-env}) = type-of(@var{rhs},@var{env})
+@end smallexample
+
+@noindent
+Note that a match statement can introduce variable declarations, and
+this is reflected in the fact that the environment is extended as a
+result of the match statement -- as well as introducing a type
+constraint.
+
+@node statement sequence type environment
+@subsubsection Statement sequence type environment
+
+@noindent
+A sequence of statements -- separated by the @code{;} operator -- does
+not itself extend the environment, although the environment may be
+extended within the sequence:
+
+@smallexample
+env-of(@var{S1};@var{S2},@var{env}) = @var{env} @r{where}
+  @var{new-env} = env-of(@var{S2},env-of(@var{S1},@var{env}))
+@end smallexample
+
+@noindent
+I.e., the environment of @var{S2} is extended by @var{S1}, but that
+extension is not communicated out of the sequence. In practice this rule
+enforces @code{April}'s scope rules for statement sequences.
+
+@node conditional statement type environment
+@subsubsection Conditional statement type environment
+
+@noindent
+In the case of a conditional statement:
+
+@smallexample
+if @var{Test} then
+  @var{S1}
+else
+  @var{S2}
+@end smallexample
+
+@noindent
+the environment for `@code{then}' statement @var{S1} is the same as the
+extended environment; however, the environment for the `@code{else}'
+statement @var{S2} is @emph{not} extended by the @var{Test}. 
+
+As a whole, a conditional statement does not extend the environment of
+any sequence of statements that it is embedded within.
+
+@smallexample
+env-of(if @var{test} then @var{S1} else @var{S2},@var{env}) = @var{env} @r{where}
+  @var{env1} = env-of(@var{S1},extend-env(@var{test},@var{env})) @r{and}
+  @var{env2} = env-of(@var{S1},@var{env})
+@end smallexample
+
+@node Type parameters
+@subsection Type parameters
+@cindex Parameters in user type definitions
+
+@noindent
+A user type definition (of either variety) may contain @emph{type
+parameters}. These parameters are interpreted by the type checker as
+names of type variables; in particular they are `generic' type
+variables.
+
+A type definition of the form:
+
+@smallexample
+user(%alpha,@dots{},%beta) ::= @var{body}
+@end smallexample
+
+@noindent
+introduces type variables @var{%alpha} @dots{} @var{%beta} for each
+different occurrence of a value of type @code{user(@dots{})}.

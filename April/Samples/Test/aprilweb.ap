@@ -1,0 +1,692 @@
+/*********************************************************************************************************
+   APRILWeb Server
+   version 0.3
+   9-June-1998
+   Jonathan Dale
+**********************************************************************************************************
+   To do: 1. Add CGI support
+          2. Add Allow/Deny support
+          3. Check for all error conditions
+          4. Work out how to compute the day (Mon, etc.)
+          5. Prevent the server from accessing files above SERVER_ROOT
+          6. Enforce files access (only access files that are readable by 'other')
+          7. Read default values from a log file, rather than #macro values
+**********************************************************************************************************
+   Notes: This server implements part of the HTTP 1.0 specification and it supports GET, HEAD and POST
+          methods. GET can be used to both retrieve a document and a pass form data to a CGI script. HEAD
+          can be used to retrieve header information about a document or a CGI script. POST is used to
+          pass form data to a CGI script.
+
+          Currently, the server does not support an API or access to other APRIL programs.
+*********************************************************************************************************/
+
+/* --- Constants --- */
+#macro PNAME    ==> "APRILWeb";
+#macro DB_LEV_1 ==> true;
+#macro DB_LEV_2 ==> false;
+
+/* --- Includes --- */
+#include "aprilweb.ah";
+
+program
+{
+  /*******************************************************************************************************
+     Global Variables
+  *******************************************************************************************************/
+  Days : ["Mon", "Tue", "Wed", "Thur", "Fri", "Sat", "Sun"];
+  Months : ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Nov", "Dec"];
+
+ 
+  /*******************************************************************************************************
+     CurrentDate - Returns the current date as a string formatted as 'DDD, dd MMM YYY HH:MM:SS GMT'
+     <-string    - A string representing the formatted date
+  *******************************************************************************************************/
+  CurrentDate () => valof
+  {
+    {
+      if DB_LEV_1 then
+        PNAME ++ ": Entering CurrentDate...\n" >> stdout;
+
+      /* --- Determine the date in GMT and format it --- */
+      GMTDate : timetogmt (now ());
+      valis {sprintf ("%S, %02d %S %04d %02d:%02d:%02d GMT", ("Xxx", GMTDate.day,
+                          Months [GMTDate.month], GMTDate.year, GMTDate.hour, GMTDate.min, GMTDate.sec))};
+    }
+    onerror
+    {
+      (error, string?ErrorMessage, any?ErrorCode) -->
+        exception (error, "CurrentDate: " ++ ErrorMessage, ErrorCode)
+    };
+  };
+
+
+  /*******************************************************************************************************
+     AccessLog  - Write an entry to the access log in Apache format
+     ->Request  - The information pertaining to the access
+     ->Client   - A string that indicates the name of the client
+     ->Code     - An integer that indicates the status code of the access
+     ->FileSize - An integer that indicate the size of the file returned to the client
+  *******************************************************************************************************/
+  AccessLog (Request, Client, Code, FileSize)
+  {
+    {
+      if DB_LEV_1 then
+        PNAME ++ ": Entering AccessLog...\n" >> stdout;
+
+      /* --- Determine the date and format it --- */
+      NowTime : now ();
+      Date : timetodate (NowTime);
+      GMTDate : timetogmt (NowTime);
+      FmttdDate : sprintf ("[%02d/%S/%02d:%02d:%02d:%02d %04d]", (Date.day, Months [Date.month],
+                             Date.year, Date.hour, Date.min, Date.sec, {Date.hour - GMTDate.hour} * 100));
+
+      /* --- Write the log information to the access log --- */
+      LogHandle : fopen (ACCESS_LOG, APPEND_FILE);
+      writef (LogHandle, "%S - - %S \"%S\" %S %d\n", (Client, FmttdDate, Request, Code, FileSize));
+      fclose (LogHandle);
+    }
+    onerror
+    {
+      (error, string?ErrorMessage, any?ErrorCode) -->
+        exception (error, "AccessLog: " ++ ErrorMessage, ErrorCode)
+    };
+  };
+
+
+  /*******************************************************************************************************
+     ErrorLog    - Write an entry to the error log in Apache format
+     ->ErrorMess - A string that indicates what error occurred
+  *******************************************************************************************************/
+  ErrorLog (ErrorMess)
+  {
+    {
+      if DB_LEV_1 then
+        PNAME ++ ": Entering ErrorLog...\n" >> stdout;
+
+      /* --- Determine the date and format it --- */
+      Date : timetodate (now ());
+      FmttdDate : sprintf ("[%S %S %02S %02d:%02d:%02d %04d]", ("Xxx", Months [Date.month],
+                                             string??Date.day, Date.hour, Date.min, Date.sec, Date.year));
+
+      /* --- Write the log information to the error log --- */
+      LogHandle : fopen (ERROR_LOG, APPEND_FILE);
+      writef (LogHandle, "%S %S\n", (FmttdDate, ErrorMess));
+      fclose (LogHandle);
+    }
+    onerror
+    {
+      (error, string?ErrorMessage, any?ErrorCode) -->
+        exception (error, "ErrorLog: " ++ ErrorMessage, ErrorCode)
+    };
+  };
+
+  /*******************************************************************************************************
+     ReadFile   - This function determines the size of a given file and reads its entire contents into
+                  memory
+     ->Client   - A string that indicates the name of the host that has made the connection
+     ->Filename - A string that indicates which file to read
+     ->Request  - A string that contains the original request of the client
+     ->Input    - A handle that indicates the input stream of the host
+     ->Output   - A handle that indicates the output stream of the host
+  *******************************************************************************************************/
+  ReadFile (Client, Filename, Request, Input, Output) => valof
+  {
+    ProcessReadFile::
+    {
+      if DB_LEV_1 then
+        PNAME ++ ": Entering ReadFile...\n" >> stdout;
+
+      Contents : "";
+      _file_stat(_,_,_,_,_,_,_,Filesize.=size,_,_,_,_,_) = fstat(Filename);
+
+      try
+      {
+        /* --- Open the file and read its entire content --- */
+        FileHandle : fopen (Filename, READ_FILE);
+        Contents := inchars (FileHandle, Filesize);
+        fclose (FileHandle);
+      }
+      onerror
+      {
+        /* --- A file error occurred --- */
+        (error, string?ErrorMessage, any?ErrorCode) -->
+        {
+          -- NOTE: Probably should check the return error
+
+          if DB_LEV_1 then
+            PNAME ++ ": File error on accessing " ++ Filename ++ "...\n" >> stdout;
+
+          Bytes : ErrorHandler (Request, Client, FORBIDDEN, [Filename], Input, Output, true);
+          ErrorLog ("access to " ++ Filename ++ " failed for " ++ Client ++
+                                                         ", reason: file permissions deny server access");
+          AccessLog (Request, Client, FORBIDDEN, Bytes);
+          leave ProcessReadFile;
+        }
+      };
+
+      if DB_LEV_1 then
+        PNAME ++ ": " ++ string??FileProps.size ++ " bytes read from " ++ Filename ++ "\n" >> stdout;
+
+      /* --- Return the contents of the file --- */
+      valis {Contents};
+    }
+    onerror
+    {
+      (error, string?ErrorMessage, any?ErrorCode) -->
+        exception (error, "ReadFile: " ++ ErrorMessage, ErrorCode)
+    };
+  };
+
+
+  /*******************************************************************************************************
+     ProcessGetMethod - 
+     ->Client         - A string that indicates the name of the host that has made the connection
+     ->Request        - A string that contains the original request of the client
+     ->RequestEls     - A list of strings that contains the parsed original request of the client
+     ->Input          - A handle that indicates the input stream of the host
+     ->Output         - A handle that indicates the output stream of the host
+  *******************************************************************************************************/
+  ProcessGetMethod (Client, Request, RequestEls, Input, Output)
+  {
+    ProcessGet::
+    {
+      if DB_LEV_1 then
+        PNAME ++ ": Entering ProcessGetMethod...\n" >> stdout;
+
+      /* --- Read all of the input data from the client --- */
+      -- Referer : inline (Input);
+      -- Connection : inline (Input);
+      -- UserAgent : inline (Input);
+      -- Pragma : inline (Input);
+      -- Host : inline (Input);
+      -- Accept : inline (Input);
+      -- AcceptLanguage : inline (Input);
+      -- AcceptCharset : inline (Input);
+
+      /* --- Parse the url into filename and arguments --- */
+      FileEls : expand (RequestEls [2], "?");
+
+      /* --- Determine if the document is not present or is inaccessible --- */
+      try
+      {
+       Test : fopen (SERVER_ROOT ++ RequestEls [2], READ_FILE);
+       fclose (Test);
+      }
+      onerror
+      {
+        (error, string?ErrorMessage, any?ErrorCode) -->
+        {
+          ErrorMessage ++ "\n\n" >> stdout;
+          case ErrorMessage in
+          {
+            "file not found" -->
+            {
+              if DB_LEV_1 then
+                PNAME ++ ": File not found on accessing " ++ FileEls [1] ++ "...\n" >> stdout;
+
+              /* --- File does not exist --- */
+              Bytes : ErrorHandler (Request, Client, NOT_FOUND, [FileEls [1]], Input, Output, true);
+              ErrorLog ("access to " ++ FileEls [1] ++ " failed for " ++ Client ++
+                                                                         ", reason: File does not exist");
+              AccessLog (Request, Client, NOT_FOUND, Bytes);
+              leave ProcessGet;
+            }
+
+          | "permission denied" -->
+            {
+              if DB_LEV_1 then
+                PNAME ++ ": Permission denied on accessing " ++ FileEls [1] ++ "...\n" >> stdout;
+
+              /* --- File cannot be accessed --- */
+              Bytes : ErrorHandler (Request, Client, FORBIDDEN, [FileEls [1]], Input, Output, true);
+              ErrorLog ("access to " ++ FileEls [1] ++ " failed for " ++ Client ++
+                                                         ", reason: file permissions deny server access");
+              AccessLog (Request, Client, FORBIDDEN, Bytes);
+              leave ProcessGet;
+            }
+
+          | "problem in opening file" -->
+            {
+              if DB_LEV_1 then
+                PNAME ++ ": Permission denied on accessing " ++ FileEls [1] ++ "...\n" >> stdout;
+
+              /* --- File cannot be accessed --- */
+              Bytes : ErrorHandler (Request, Client, FORBIDDEN, [FileEls [1]], Input, Output, true);
+              ErrorLog ("access to " ++ FileEls [1] ++ " failed for " ++ Client ++
+                                                         ", reason: file permissions deny server access");
+              AccessLog (Request, Client, FORBIDDEN, Bytes);
+              leave ProcessGet;
+            }
+          }
+        }
+      };
+
+      Suffix : "";
+
+      /* --- See if we have to check for index.html or cv.html in a directory --- */
+      if ffiletype (SERVER_ROOT ++ RequestEls [2]) == _directory then
+      {
+        if ffile (SERVER_ROOT ++ RequestEls [2] ++ INDEX_HTML) then
+          Suffix := INDEX_HTML
+        else if ffile (SERVER_ROOT ++ RequestEls [2] ++ CV_HTML) then
+          Suffix := CV_HTML
+        else
+        {
+          -- NOTE: We *should* return the directory listing here, but hey...
+
+          /* --- File does not exist --- */
+          Bytes : ErrorHandler (Request, Client, NOT_FOUND, [FileEls [1]], Input, Output, true);
+          ErrorLog ("access to " ++ FileEls [1] ++ " failed for " ++ Client ++
+                                                                         ", reason: File does not exist");
+          AccessLog (Request, Client, NOT_FOUND, Bytes);
+          leave ProcessGet;
+        }; 
+      };
+
+      /* --- Return the content --- */
+      Contents : ReadFile (Client, SERVER_ROOT ++ RequestEls [2] ++ Suffix, Request, Input, Output);
+      Contents >> Output;
+
+      /* --- Write to the access log --- */
+      AccessLog (Request, Client, OKAY, strlen (Contents));
+    }
+    onerror
+    {
+      (error, string?ErrorMessage, any?ErrorCode) -->
+        exception (error, "ProcessGetMethod: " ++ ErrorMessage, ErrorCode)
+    };
+  };
+
+
+  /*******************************************************************************************************
+     ProcessPostMethod - 
+     ->Client          - A string that indicates the name of the host that has made the connection
+     ->Request         - A string that contains the original request of the client
+     ->RequestEls      - A list of strings that contains the parsed original request of the client
+     ->Input           - A handle that indicates the input stream of the host
+     ->Output          - A handle that indicates the output stream of the host
+  *******************************************************************************************************/
+  ProcessPostMethod (Client, Request, RequestEls, Input, Output)
+  {
+    ProcessPost::
+    {
+      if DB_LEV_1 then
+        PNAME ++ ": Entering ProcessPostMethod...\n" >> stdout;
+
+      /* --- Read all of the input data from the client --- */
+      -- Referer : inline (Input);
+      -- Connection : inline (Input);
+      -- UserAgent : inline (Input);
+      -- Host : inline (Input);
+      -- Accept : inline (Input);
+      -- AcceptLanguage : inline (Input);
+      -- AcceptCharset : inline (Input);
+      -- ContentType : inline (Input);
+      -- ContentLength : inline (Input);
+      -- Blank : inline (Input);
+      -- FormData : inline (Input);
+
+      /* --- Parse the url into filename and arguments --- */
+      FileEls : expand (RequestEls [2], "?");
+
+      /* --- Read the output of the CGI Script --- */
+      (?ReadFD, ?WriteFD) .= popen (SERVER_ROOT ++ FileEls [1]);
+
+
+      -- Read until \r
+      -- Fill in missing fields
+      -- Read until EOF
+      -- Send data to client
+
+
+      /* --- Send the CGI output back to the client --- */
+      while not eof (ReadFD) do
+      {
+        InputLine = inline(ReadFD);
+
+
+        if strprefix ("Location: ", InputLine) != -1 then
+        {
+          LocationEls : expand (InputLine, " ");
+
+          /* --- Write the status line --- */
+          HTTP_PROTOCOL ++ "/" ++ HTTP_VERSION ++ " " ++ MOVED_TEMPORARILY ++ " \n" >> Output;
+
+          /* --- Write the General Headers --- */
+          "Date: " ++ CurrentDate () >> Output;
+          -- Pragma
+
+          /* --- Write the Response Headers --- */
+          "Location: " ++ LocationEls [2] ++ "\n" >> Output;
+          "Server: " ++ APRIL_VERSION ++ " " ++ APRILWEB_VERSION ++ "\n" >> Output;
+          -- WWW-Authenticate
+
+          /* --- Write the Entity Headers --- */
+          -- Allow
+          -- Content-Length
+          -- Content-Encoding
+          "Content-Type: text/html\n" >> Output;
+          -- Expires
+          -- Last-Modified
+
+          /* -- Write a CRLF --- */
+          "\r\n" >> Output;
+        }
+        else
+        {
+          InputLine ++ "\n" >> Output;
+        };
+      };
+
+      fclose (ReadFD);
+      fclose (WriteFD);
+    }
+    onerror
+    {
+      (error, string?ErrorMessage, any?ErrorCode) -->
+        exception (error, "ProcessPostMethod: " ++ ErrorMessage, ErrorCode)
+    };
+  };
+
+
+  /*******************************************************************************************************
+     ErrorHandler   - This procedure writes an error message to the error log file, the access log file
+                      and also to the client
+     ->Client       - A string that indicates the name of the host that has made the connection
+     ->Request      - A string that contains the original request of the client
+     ->ErrorCode    - An integer that indicates the type of error that is to be reported
+     ->ErrorArgs    - A list of strings that indicate and messages that are associated with the error
+     ->Input        - A handle that indicates the input stream of the host
+     ->Output       - A handle that indicates the output stream of the host
+     ->Headers      - A boolean that indicates if response headers should be returned to the client
+     <-integer      - An integer that indicates how many bytes were returned to the client
+  *******************************************************************************************************/
+  ErrorHandler (Request, Client, ErrorCode, ErrorArgs, Input, Output, Headers) => valof
+  {
+    {
+      if DB_LEV_1 then
+        PNAME ++ ": Entering ErrorHandler...\n" >> stdout;
+
+      ErrorTitle : "";
+      ErrorText : "";
+
+      /* --- Setup the error information based upon the error code --- */
+      case ErrorCode in
+      {
+        -- 2xx Success
+
+        -- 3xx Redirection
+        NOT_FOUND -->
+        {
+          ErrorTitle := "File Not Found";
+          ErrorText := "The requested URL " ++ ErrorArgs [1] ++ " was not found on this server.";
+        }
+
+        -- 4xx Client Error
+      | BAD_REQUEST -->
+        {
+          ErrorTitle := "Bad Request";
+          ErrorText := "Your browser sent a request that this server could not understand.";
+        }
+
+      | FORBIDDEN -->
+        {
+          ErrorTitle := "Forbidden";
+          ErrorText := "You don't have permission to access " ++ ErrorArgs [1] ++ " on this server.";
+        }
+
+        -- 5xx Server Error
+      | NOT_IMPLEMENTED -->
+        {
+          ErrorTitle := "Method Not Implemented";
+          ErrorText := ErrorArgs [1] ++ " to "  ++ ErrorArgs [2] ++ " not supported.";
+        }
+      };
+
+      /* --- Write the response to the client --- */
+      OutputString : HTTP_PROTOCOL ++ "/" ++ HTTP_VERSION ++ " " ++ ErrorCode ++ " " ++ ErrorTitle;
+      OutputString := OutputString ++ "\nDate: " ++ CurrentDate ();
+      OutputString := OutputString ++ "\nServer: " ++ APRILWEB_VERSION;
+      OutputString := OutputString ++
+                                    "\nAllow: " ++ GET_METHOD ++ " " ++ HEAD_METHOD ++ " " ++ POST_METHOD;
+      OutputString := OutputString ++ "\nConnection: close";
+      OutputString := OutputString ++ "\nContent-Type: text/html\n\r";
+      OutputString := OutputString ++ "\n<HTML><HEAD>\n<TITLE>" ++ ErrorCode ++ " " ++ ErrorTitle ++
+       "</TITLE>\n</HEAD><BODY>\n<H1>" ++ ErrorTitle ++ "</H1>\n" ++ ErrorText ++ "<P>\n</BODY></HTML>\n";
+      OutputString >> Output;
+
+      /* --- Return the number of bytes written to the client --- */
+      valis {strlen (OutputString)};
+    }
+    onerror
+    {
+      (error, string?ErrorMessage, any?ErrorCode) -->
+        exception (error, "ErrorHandler: " ++ ErrorMessage, ErrorCode)
+    };
+  };
+
+
+  /*******************************************************************************************************
+     ReadProtocol        - This function will read all of the protocol and entity data from a HTTP request
+                           or response
+     ->Input             - A handle that indicates the input stream of the host
+     ->ReadBody          - A logical that indicates if the entity data from the client should be read
+     <-(string,string)[] - A list of double-string tuples that represents the header, value pairs read
+                           and entity data (if applicable)
+  *******************************************************************************************************/
+  ReadProtocol (Input, ReadEntityData) => valof
+  {
+    {
+      if DB_LEV_1 then
+        PNAME ++ ": Entering ReadProtocol...\n" >> stdout;
+
+      NextBytes : "";
+      Request : "";
+      LineCount : 1;
+      ReadList : [];
+
+      /* --- Read all of the headers from the client --- */
+      ReadHeaders::
+      {
+        while true do
+        {
+          NextLine : inline (Input);
+
+          /* Headers are finished when a single \r is detected */
+          if NextLine == "\r" then
+            leave ReadHeaders;
+
+          /* Make a special case of the first line read, since it is the actual request and is a triple */
+          if LineCount == 1 then
+            Request := NextLine;
+
+          /* Add the header, value tuples into the request list */
+          ReadEls : expand (NextLine, " :\r") \ [""];
+          ReadList <>:= [(ReadEls [1], ReadEls[2])];
+          LineCount := LineCount + 1;
+        };
+      };
+
+      if ReadEntityData then
+      {
+        /* --- Read the entity body from the client --- */
+        while not eof (Input) do
+        {
+          /* Try to be efficient by reading in blocks of 1K, rather than a character at a time */
+          NextBytes := NextBytes ++ inchars (Input, 1024);
+        };
+
+        /* Add the entity body to the request list */
+        ReadList <>:= [("Entity-Body", NextBytes)];
+      };
+
+      string??ReadList ++ "\n\n" >> stdout;
+      Request ++ "\n\n" >> stdout;
+
+      /* --- Return the request list --- */
+      valis {(Request, ReadList)};
+    }
+    onerror
+    {
+      (error, string?ErrorMessage, any?ErrorCode) -->
+        exception (error, "ReadProtocol: " ++ ErrorMessage, ErrorCode)
+    };
+  };
+
+
+  /*******************************************************************************************************
+     ConnectionHandler - This procedure handles a connection from a client and processes the request
+     ->Client          - A string that indicates the name of the host that has made the connection
+     ->Port            - An integer that indicates the port number of the host
+     ->Input           - A handle that indicates the input stream of the host
+     ->Output          - A handle that indicates the output stream of the host
+  *******************************************************************************************************/
+  ConnectionHandler (Client, Port, Input, Output)
+  {
+    ProcessConnection::
+    {
+      if DB_LEV_1 then
+        PNAME ++ ": Entering ConnectionHandler...\n" >> stdout;
+
+      if DB_LEV_1 then
+        PNAME ++ ": Connection from " ++ Client ++ ":" ++ string??Port ++ "\n" >> stdout;
+
+      /* --- Read all protocol headers from the client --- */
+      (?Request, ?RequestList) .= ReadProtocol (Input, false);
+
+      /* --- Parse the request into method, URI and protocol elements --- */
+      RequestEls : expand (Request, " ");
+
+      /* --- Make sure that the request at least appears well formed --- */
+      if |RequestEls| < 2 or |RequestEls| > 3 then
+      {
+        if DB_LEV_1 then
+          PNAME ++ ": " ++ Request ++ " represents a malformed request...\n" >> stdout;
+
+        Bytes : ErrorHandler (Request, Client, BAD_REQUEST, [], Input, Output, false);
+        ErrorLog ("Invalid URI in request " ++ Request);
+        AccessLog (Request, Client, BAD_REQUEST, Bytes);
+        leave ProcessConnection;
+      };
+
+      /* --- Make sure that the file specification starts with a leading / --- */
+      if strprefix ("/", RequestEls [2]) != 0 then
+      {
+        if DB_LEV_1 then
+          PNAME ++ ": " ++ RequestEls [2] ++ " represents a malformed file spec...\n" >> stdout;
+
+        Bytes : ErrorHandler (Request, Client, BAD_REQUEST, [], Input, Output, false);
+        ErrorLog ("Invalid URI in request " ++ Request);
+        AccessLog (Request, Client, BAD_REQUEST, Bytes);
+        leave ProcessConnection;
+      };
+
+      /* --- If a protocol and version of present, test them --- */
+      if |RequestEls| > 2 then
+      {
+        ProtocolEls : expand (RequestEls [3], "/");
+
+        /* --- Make sure that the correct protocol and version are being used --- */
+        if ProtocolEls [1] != HTTP_PROTOCOL or ProtocolEls [2] != HTTP_VERSION then
+        {
+          if DB_LEV_1 then
+            PNAME ++ ": " ++ ProtocolEls [1] ++ "/" ++ ProtocolEls [2] ++
+                                      " represents an unsupported protocol and/or version...\n" >> stdout;
+
+          FileEls : expand (RequestEls [2], "?");
+          Bytes : ErrorHandler (Request, Client, BAD_REQUEST, [], Input, Output, false);
+          ErrorLog ("access to " ++ FileEls [1] ++ " failed for " ++ Client ++
+                                                           ", reason: incorrect protocol and/or version");
+          AccessLog (Request, Client, BAD_REQUEST, Bytes);
+          leave ProcessConnection;
+        };
+      };
+
+      /* --- Make sure that the action is valid for this protocol and version --- */ 
+      if RequestEls [1] != GET_METHOD and RequestEls [1] != HEAD_METHOD and
+                                                                        RequestEls [1] != POST_METHOD then
+      {
+        if DB_LEV_1 then
+          PNAME ++ ": " ++ RequestEls [1] ++ " represents an unsupported method...\n" >> stdout;
+
+        /* --- Parse the url into filename and arguments --- */
+        FileEls : expand (RequestEls [2], "?");
+        Bytes : ErrorHandler (Request, Client, NOT_IMPLEMENTED, [RequestEls [1], FileEls [1]],
+                                                                                     Input, Output, true);
+        ErrorLog ("Invalid method in request " ++ Request);
+        AccessLog (Request, Client, NOT_IMPLEMENTED, Bytes);
+        leave ProcessConnection;
+      };
+
+      /* --- Switch on the method to be processed --- */
+      case RequestEls [1] in
+      {
+        GET_METHOD -->
+          ProcessGetMethod (Client, Request, RequestEls, Input, Output)
+
+      | HEAD_METHOD -->
+          ProcessGetMethod (Client, Request, RequestEls, Input, Output)
+
+      | POST_METHOD -->
+          ProcessPostMethod (Client, Request, RequestEls, Input, Output)
+      };
+    }
+    onerror
+    {
+      (error, string?ErrorMessage, any?ErrorCode) -->
+        PNAME ++ ": ConnectionHandler: " ++ ErrorMessage ++ " - " ++ string??ErrorCode ++ "\n" >> stdout
+    };
+  };
+
+
+  /*******************************************************************************************************
+     SetupServer - Sets up the web server to accept connections on the given port
+     ->Port      - An integer indicating the port number to listen on
+  *******************************************************************************************************/
+  SetupServer(Port)
+  {
+    {
+      if DB_LEV_1 then
+        PNAME ++ ": Entering SetupServer...\n" >> stdout;
+
+      /* --- Setup the APRILWeb to handle TCP connect requests --- */
+      ManagerProcess : tcp_server (Port, ConnectionHandler);
+
+      /* --- Catch any exceptions or a quit message --- */
+      repeat
+      {
+        (error, string?ErrorMessage, any?ErrorCode) ->
+          exception (error, ErrorMessage, ErrorCode)
+      } until (QUIT);
+    }
+    onerror
+    {
+      (error, string?ErrorMessage, any?ErrorCode) -->
+        PNAME ++ ": SetupServer: " ++ ErrorMessage ++ " - " ++ string??ErrorCode ++ "\n" >> stdout
+    };
+  };
+
+
+  /*******************************************************************************************************
+     APRILWeb -
+     ->Port    - An integer indicating the port number to listen on
+  *******************************************************************************************************/
+  APRILWeb (Port)
+  {
+    {
+      if DB_LEV_1 then
+        PNAME ++ ": APRILWeb entering...\n" >> stdout;
+
+      /* --- Give the agent a public name and start message handling --- */
+      hdl('web,PNAME) public_spawn SetupServer (Port);
+
+      /* --- Wait until the agent exits --- */
+      waitfor(hdl('web,PNAME));
+    }
+    onerror
+    {
+      (error, string?ErrorMessage, any?ErrorCode) -->
+        PNAME ++ ": " ++ ErrorMessage ++ " - " ++ string??ErrorCode ++ "\n" >> stdout
+    };
+  };
+} execute APRILWeb;

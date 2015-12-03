@@ -1,0 +1,10 @@
+Makefile
+Makefile.in
+alex
+alex.aam
+genapril.aam
+gendfa.aam
+genregexp.aam
+*.af
+
+

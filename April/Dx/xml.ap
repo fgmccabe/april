@@ -1,0 +1,373 @@
+/*
+ * Parse a string that is an XML structure
+ */
+ 
+module 
+  import interface <stdio.af> in
+{
+
+  xmlTags ::= xmlStartTag(string,(string,string)[])
+   | xmlEmptyTag(string,(string,string)[])
+   | xmlEndTag(string)
+   | xmlTextTag(string)
+   | xmlPITag
+   | xmlCDATATag
+   | xmlEnd;
+
+  isDigit(X) => isNdChar(X);
+
+  isNameChar(X) => isLetter(X) || X==''. || X==''- || X=='': || X==''.;
+
+  isSpaceCh(X) => X==''\  || X==''\n || X==''\t || isZsChar(X);
+  
+  skip(Str) => valof{
+    S : Str;
+    
+    while [H,..T].=S && isSpaceCh(H) do
+      S := T;
+    
+    valis S;
+  };
+  
+  skipComment(Str) => valof{
+    S : Str;
+    
+    while S!=[] do {
+      if [''-,''-,''>,..rS].=S then
+        valis rS
+      else if [_,..rS].=S then
+        S := rS
+    };
+    valis S
+  };
+  
+  rdIden(Str) => valof {
+    if [H,..T].=Str && isLetter(H) then {
+      xS : T;
+      Id = [H,..collect{
+        while [Ch,..rS].=xS && isNameChar(Ch) do{
+          elemis Ch;
+          xS := rS
+        };
+      }];
+      valis (Id,xS)
+    }
+    else
+      valis ("",Str)
+  };
+  
+  rdText(Str,Delim) => valof {
+    S : Str;
+    
+    Chars = collect {
+      while [Ch,..xS].=S && Ch!=Delim do{
+        if Ch==''& then {
+          if [''a,''m,''p,'';,..R].=xS then{
+            elemis ''&;
+            S := R;
+          }
+          else if [''l,''t,'';,..R].=xS then{
+            elemis ''<;
+            S := R;
+          }
+          else if [''g,''t,'';,..R].=xS then{
+            elemis ''>;
+            S := R;
+          }
+          else if [''a,''p,''o,''s,'';,..R].=xS then{
+            elemis ''\';
+            S := R;
+          }
+          else if [''q,''u,''o,''t,'';,..R].=xS then{
+            elemis ''\";
+            S := R;
+          }
+          else{
+            elemis Ch;
+            S := xS;
+          }
+        }
+        else{
+          elemis Ch;
+          S := xS;
+        }
+      }
+    };
+    
+    valis (Chars,S)             -- don't consume the delimiter
+  };
+  
+  rdString(Str) => valof {
+    if [''\',..S].=Str then{
+      (Txt,S1) = rdText(S,''\');
+      
+      if [''\',..S2].=S1 then
+        valis (Txt,S2)
+      else
+        valis (Txt,S1)
+    }
+    else if [''\",..S].=Str then{
+      (Txt,S1) = rdText(S,''\");
+      
+      if [''\",..S2].=S1 then
+        valis (Txt,S2)
+      else
+        valis (Txt,S1)
+    }
+    else 
+      exception error("invalid string",'fail)
+  };
+  
+  rdAttributes(Str) => valof{
+    S : skip(Str);
+    
+    Atts = collect{
+      AttLoop::{
+        while true do{
+          (Id,S1) = rdIden(S);          -- try to read an identifier
+      
+          if Id!="" then {
+            if [''=,..S2] .= skip(S1) then {
+              (Vl,S3) = rdString(skip(S2));
+              
+              elemis (Id,Vl);
+              S := skip(S3);
+            }
+            else{
+              elemis (Id,"true");
+              S := skip(S1)
+            }
+          }
+          else
+            leave AttLoop
+        }
+      }
+    };
+    
+    valis (Atts,S)
+  };
+    
+  rdTag(Str) => valof{
+    S : skip(Str);
+
+    if S!=[] then {
+      if [''<,''/,..xS].=S then{
+        (Id,S1) = rdIden(skip(xS));
+        if [''>,..S2] .= skip(S1) then
+          valis (xmlEndTag(Id),S2)
+        else
+          exception error("invalid end tag",'fail)
+      }
+      else if [''<,''?,..xS].=S then
+        valis (xmlPITag,xS)
+      else if [''<,''!,''-,''-,..xS].=S then
+        valis rdTag(skip(skipComment(xS)))
+      else if [''<,''!,''[,''C,''D,''A,''T,''A,''\[,..xS] .= S then
+        valis (xmlCDATATag,xS)
+      else if [''<,..xS].=S then {
+        (Id,S1) = rdIden(skip(xS));
+        (Atts,S2) = rdAttributes(skip(S1));
+        
+        if [''/,''>,..S3] .= skip(S2) then
+          valis (xmlEmptyTag(Id,Atts),S3)
+        else if [''>,..S3] .= skip(S2) then
+          valis (xmlStartTag(Id,Atts),S3)
+        else
+          exception error("garbage in element",'fail)
+      }
+      else{
+        (Text,xS) = rdText(S,''<);
+        valis (xmlTextTag(Text),xS)
+      }
+        
+    }
+    else
+      valis (xmlEnd,[])
+  };
+  
+  rdCData(Str) => valof{
+    S : Str;
+    T : [];
+    CLoop::{
+      while [X,..Tl].=S do{
+        if [''],''],''>,..S1].=S then
+          valis (reverse(T),S1)
+        else{
+          T := [X,..T];
+          S := Tl;
+        }
+      }
+    };
+    valis (reverse(T),S)
+  };
+
+  parse(Str) => valof{
+    (Tag,S) : rdTag(Str);
+    stack : [];
+    
+    case Tag in {
+      xmlEnd ->
+        exception error("empty document",'fail)
+    | xmlTextTag(Text) -> 
+        valis xmlText(Text)
+    | xmlCDATATag -> {
+        (Cdata,_) = rdCData(S);
+        valis xmlText(Cdata)
+      }
+    | xmlEmptyTag(Id,Atts) ->
+        valis xmlNode(Id,Atts,[])
+    | xmlStartTag(Id,Atts) ->
+        stack := [(Id,Atts,[])]
+    };
+    
+    subNodes : [];
+    
+    while stack!=[] do{
+      (Tg,S1) = rdTag(skip(S));
+      S := S1;
+      
+      case Tg in {
+        xmlEnd ->
+          exception error("unexpected eof",'fail)
+      | xmlTextTag(T) -> {
+          if T!="" then
+            subNodes := subNodes<>[xmlText(reverse(trim(reverse(trim(T)))))]
+        }
+      | xmlCDATATag -> {
+          (T,S2) = rdCData(S);
+          if T!="" then
+            subNodes := subNodes<>[xmlText(T)];
+          S := S2;
+        }
+      | xmlEmptyTag(N,A) -> subNodes := subNodes<>[xmlNode(N,A,[])]
+      | xmlStartTag(NN,AA) -> {
+          [(N,A,_),..Sub] .= stack;
+          stack := [(NN,AA,[]),(N,A,subNodes),..Sub];
+          subNodes := [];
+        }
+      | xmlEndTag(N) -> {
+	  if [(N,A,_),..subStack] .= stack then {
+            if [(NN,AA,SS),..ss] .= subStack then {
+              stack := [(NN,AA,[]),..ss];
+	      subNodes := SS<>[xmlNode(N,A,subNodes)];
+            }
+	    else
+              valis xmlNode(N,A,subNodes)
+          }
+	  else
+	    exception error("invalid end tag: "++string%%N,'fail);
+        }
+      }
+    }
+  };
+  
+  trim(Str) => {
+    if [X,..S].=Str && isSpaceCh(X) then
+      trim(S)
+    else
+      Str
+  };
+  
+  reverse(L) => valof{
+    X : [];
+    
+    for E in L do
+      X := [E,..X];
+    valis X;
+  };
+  
+  nameSpaceMap(El,Map) => valof{
+    if xmlNode(Id,Atts,Sub).=El then
+      valis mapNameSpaces(xmlNode(Id,Atts,Sub),defineNameSpaces(Atts,Map))
+    else
+      valis El
+  };
+            
+  defineNameSpaces(Atts,Map) => valof{
+    xMap : Map;
+    
+    for (Att,Val) in Atts do{
+      if [''x,''m,''l,''n,''s,'':,..Local].=Att then{
+        xMap := [(Local,Val),..xMap]
+      }
+    };
+    
+    valis xMap;
+  };
+  
+  mapNameSpaces(Node,Map) => {
+    case Node in {
+      xmlText(T) => Node
+    | xmlNode(Id,Atts,Sub) => 
+        xmlNode(mapName(Id,Map),Atts//((.(At,Vl).)=>(mapName(At,Map),Vl)),
+                   Sub//((El)=>nameSpaceMap(El,Map)))
+    }
+  };
+  
+  mapName(Id,Map) => {
+    if Local<>['':,..Suffix].=Id && (Local,Prefix) in Map then
+      Prefix<>['':,..Suffix]
+    else if ("xmlns",Deflt) in Map then
+      Deflt<>['':,..Id]
+    else
+      Id
+  };
+  
+  parseXML(Str) => nameSpaceMap(parse(Str),[]);
+  
+  dispXML(Node) => {
+    case Node in {
+      xmlText(T) => qtStr(T)
+    | xmlNode(N,A,[]) => "<"<>N<>dispAtts(A)<>"/>"
+    | xmlNode(N,A,S) => "<"<>N<>dispAtts(A)<>">"<>dispXMList(S)<>
+                        "</"<>N<>">"
+    }
+  };
+    
+  dispXMList(L) => {
+    if L==[] then []
+    else if [H,..T].=L then
+      dispXML(H)<>dispXMList(T)
+    else
+      []
+  };
+  
+  dispAtts(Atts) => {
+    if [(A,V),..T].=Atts then
+      " "<>A<>"=\""<>qtStr(V)<>"\""<>dispAtts(T)
+    else
+      ""
+  };
+      
+  
+  qtStr(Str) => {
+    if [''&,..S] .= Str then
+      [''&,''a,''m,''p,'';,..qtStr(S)]
+    else if [''\',..S] .= Str then
+      [''&,''a,''p,''o,''s,'';,..qtStr(S)]
+    else  if [''\",..S] .= Str then
+      [''&,''q,''u,''o,''t,'';,..qtStr(S)]
+    else  if [''<,..S] .= Str then
+      [''&,''l,''t,'';,..qtStr(S)]
+    else  if [''\>,..S] .= Str then
+      [''&,''g,''t,'';,..qtStr(S)]
+    else if [X,..S].=Str then
+      [X,..qtStr(S)]
+    else
+      []
+  };
+  
+  showXML(Nd) => dispXML(Nd);
+  
+  showStack(St){
+    "Dump of stack\n">>stderr;
+    i : 0;
+    for (N,A,S) in St do{
+      "Stack level: "++N++"["++i^0++"]\n">>stderr;
+      for SN in S do
+	showXML(SN)++"\n">>stderr;
+
+      i := i+1;
+    };
+  };
+} export (parseXML,showXML);

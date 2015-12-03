@@ -1,0 +1,86 @@
+@node GoScript syntax
+@chapter @code{GoScript} syntax
+@cindex @code{GoScript} syntax
+
+A @code{GoScript} program consists of a set of plans. Each plan is a way
+of accomplishing a desired goal. An agent can have any number of plans,
+and plans can be communicated between agents -- enabling agents to
+extend their problem solving capabilities dynamically.
+
+The format of a @code{GoScript} plan is:
+
+@smallexample
+to @var{goal}
+  precond @var{conditions}
+  do @var{actions}
+result @var{value(s)}
+@end smallexample
+
+@noindent
+All of these sections -- apart from the initial header -- are
+optional. The final @code{result} section is used for plans that return
+a value -- such as computing the value of a variable.
+
+There can be any number of plans with the same @var{goal} although only
+one plan for a given goal is used. Which plan is used depends on the
+various preconditions specified.
+
+A plan's @code{precond}itions are triggers that must be satisfied before
+the plan can be acted on. Once all of a plan's preconditions are
+satisfied then the plan is @emph{selected} and its actions are
+executed. At this point any other plans for the same goal are discarded.
+
+The form of a plan's preconditions is a predicate -- including
+conjunctions and disjunctions. The `base' of any precondition predicate
+is the existence of a message on an agent communications space.
+
+The action part of a plan is a sequence of one or more actions --
+separated by the normal `@code{;}' statement separater. Although the
+actions of a plan can be any legal @code{April} statement,
+@code{GoScript} has a number of standard actions, of which the most
+important are @code{post}, @code{eval} and @code{achieve}.
+
+@menu
+* Agent communications and plan preconditions::  
+@end menu
+
+@node Agent communications and plan preconditions
+@section Agent communications and plan preconditions
+@cindex Agent communications and plan preconditions
+
+@noindent
+Agents communicate with each other via one or more shared communications
+spaces. Each communications space represents a kind of intersection of
+interest between two or more agents. Communication takes place by
+`posting' a message on a communications space on the one hand and
+mentioning a message template in a plan precondition on the other.
+
+One particular feature of communication between @code{GoScript} agents
+is that it is `receiver-less': an agent posting a message on a
+communications space does not necessarily know which agent will pick up
+the message. Often messages represent problems to be solved -- or
+solutions to problems -- and the agent does not need to be aware of
+whose problem it is. This represents a higher-level of communication
+than in standard @code{April} where the sender needs to know the
+identity of the receiver before it can send a message.
+
+Instead of knowing the receiver of a message, an agent must be aware of
+which communications space the message is to be posted on. Each agent
+has at least one CS by which it communicates with other agents; however
+a complex agent may well have more than one CS for internal structuring
+reasons.
+
+A plan precondition is the primary means that an agent specifies the
+messages it is willing to handle. The most basic form of message
+template is:
+
+@smallexample
+@var{ptn} in @var{CS}
+@end smallexample
+
+@noindent
+where @var{ptn} is any legal @code{April} pattern and @var{CS} is the
+name of a communications space. If @code{own} is used for @var{CS} then
+it refers to the agent's own primary communications space; otherwise it
+refers to a communications space that the agent has created or has acquired.
+

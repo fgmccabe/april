@@ -1,0 +1,10 @@
+/* Record of a file transaction */
+dt ::= (string?file,string?content);
+
+/* Our agent protocol ... */
+protocol ::= quit | come_home | moveto(string) | 
+	pickup(string) | i_have_it(string) | here_you_are(string,string) | 
+	sorry |	dir | listing(string[]) | 
+	say_hello | hi_there(string) | come_to_me(handle) | over_to_you |
+	coming_home(string?file,string[]?content) | okaeri ;
+

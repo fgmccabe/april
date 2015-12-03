@@ -1,0 +1,71 @@
+/*
+ * process the contents of a URL and extract the file contents referenced
+*/
+program
+  import (
+    interface "xml.af"
+  )
+in{
+  grabData(fn) => valof {
+    try{
+      _file_stat(_,_,_,_,_,_,_,count.=size,_,_,_,_,_) = fstat(fn);
+      f = fopen(fn,_open_read);
+
+      t = inchars(f,count);
+      fclose(f);
+
+      valis t;
+    } onerror
+      _ -> exception error("Cant find "++fn,'fail)
+  };  
+
+  mapURI(base,file) => valof{
+    if "file:///"++F.=file then		-- full file:// URI specifier
+      valis (file,F)
+    else if "/"++_.=file then		-- literal file name
+      valis (file,file)
+    else if "sys:"++F.=file then{
+      sys = getenv("GO_DIR");
+      
+      if "file://"++dir.=sys then
+        valis mapURI(sys,F)
+      else
+        valis mapURI(sys,F)
+    }
+    else if "http://"++URL .=file then	-- full http URI specifier
+      exception error("URL file access not yet implemented",'eprivileged)
+    else if _ ++"/".=base then
+      valis mapURI(base,base++file)
+    else valis mapURI(base,base++"/"++file);
+  };
+
+  chopTail(N) => valof{
+    valis chopAfterLast(N,''/,[],[])
+  };
+
+  chopAfterLast = {
+    ([],_,L,_) => L
+  | ([C,..S],!C,L,A) => chopAfterLast(S,C,A,A<>[C])
+  | ([X,..S],C,L,A) => chopAfterLast(S,C,L,A<>[X])
+  };
+
+  defaultSysIncludePath(inc) => valof{
+    try {
+      ap = expand(getenv("GO_DIR"),":");
+      valis ap<>[inc++"/include"]
+    } onerror
+      _ ->
+      valis [inc++"/include"]
+  };
+  
+  main(Url){
+    Text = grabData(Url);
+    
+    "Text of file is "<>Text<>"\n">>stdout;
+    
+    P = parseXML(Text);
+    "Parse is "<>P^0<>"\n">>stdout;
+    "Display is "<>showXML(P)<>"\n">>stdout;
+  };
+
+} execute main;

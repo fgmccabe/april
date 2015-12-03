@@ -1,0 +1,27 @@
+/* 
+ * Simple factorial test program
+ */
+
+program{
+  fact1(X)=>valof{
+    if X==1.0 then
+      valis 1
+    else
+      valis X*fact1(X-1)
+  };
+
+  fact2(X)=>1..X\\(*);
+
+  fact3 = {
+    (1) => 1
+  | (X) => fact3(X-1)*X
+  };
+
+  main(i)
+  {
+    "factorial of "++i^0++" is "++fact1(i)^0++", "++
+            fact2(i)^0++" or "++fact3(i)^0++"\n">>stdout;
+  };
+} execute main;
+
+

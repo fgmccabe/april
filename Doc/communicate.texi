@@ -1,0 +1,177 @@
+@node April communications
+@chapter How @code{April} programs communicate
+@cindex @code{April} communication
+
+@noindent
+In order for processes to communicate it is necessary to establish a number of conditions: the identity of the target process, its location and the means of delivering the message. @code{April} provides a simple mechanism to permit communication between @code{April} processes -- and also between @code{April} and @code{Go!} processes. However, the @emph{Simple Communications System} is deliberately designed to be small scale -- focusing on inter-process communication between distributed nodes that logically form a single application.
+
+Communication between applications is characterized by different scale levels and different assumptions: communication between nodes within a single distributed application, communication between applications  and communication across ownership boundaries are all very different in character and requirements. The Simple Communication System (SCS) is oriented to the first of these: communication within a single distributed application.
+
+The SCS supports a thread-to-thread communications model, where once registered, all that a process needs to do to send a message is to send it as though it were a local process it was sending it to. The SCS server maintains a database of all the registered processes and can route messages from one node to another in a seamless way. The main constraint that the SCS imposes is that all handles within its domain must be unique; and, since handles themselves contain no addressing information, it can only deliver messages between nodes that have properly registered with the server.
+
+The SCS is support within @code{April} by a library -- the @code{scomms.af} library -- that participating applications @code{import}. Typically, an @code{April} program that is intended to be used with the SCS will import this library and establish a connection with the server as part of the initialization process:
+@smallexample
+program
+  import <scomms.af> in @{
+  @dots{}
+  main()@{
+    scsConnect(start,"localhost", 4545);
+  @};
+  @dots{}
+  start()@{
+    @dots{}
+  @}
+@}
+@end smallexample
+The @code{scsConnect} procedure is the entry point to the @code{scomms} library: it has three arguments: the zero-argument procedure to execute, the host name that the SCS server is executing on and the port number that it is listening on.
+
+The @code{scsConnect} procedure establishes a connection to the SCS server, and executes its procedure argument. During the execution of that procedure (@code{start} in the sample above) any messages that are not local will be forwarded to the SCS server automatically, and any messages intended for this process from other nodes in the SCS network will be automatically routed to this program. 
+
+Once @code{start} terminates, then the connection to the SCS server will also be terminated.
+
+In the rest of this section we explain how the SCS server is initiated and the details of connecting to the server are covered.
+
+@menu
+* The communicative process::   
+* the communications server::   
+* the scomms library::
+@end menu
+
+@node The communicative process
+@section The communicative process
+
+@noindent
+The process of sending a message between processes within a single
+@code{April} invocation is very straightforward. If the message is
+destined for another process inside the same @code{April} invocation, the
+execution engine simply puts a pointer to the message in the new
+process's message queue. The situation is more complex when the message
+is sent to a process in a different host machine (or even on the same
+host machine but in a different invocation of @code{April}. In the
+latter case messages are routed using the SCS server.
+
+The process of sending such a message involves a number of steps:
+
+@enumerate
+@item
+When an @code{April} program sends a message, the underlying
+@code{April} machine attempts to deliver that message to a `local'
+process. If the recipient of the message is a local process, then the
+message is `handed over' to the recipient, and the message send
+terminates.
+
+@item
+Each @code{April} process that is executing in the @code{April} machine
+has associated with it a `mailer process'. Normally, the default mailer process discards messages that are not local; however, if a connection has been made to the SCS server -- as part of a @code{scsConnect} for example -- then this mailer is replaced by one that can communicate with the SCS server.
+
+@item
+When the mailer process is handed a message to deliver, it sends it to the
+communication server -- using the @code{fencode} procedure (@pxref{fencode}).
+
+@item
+The SCS server is typically shared by a number of different @code{April} invocations and potentially other processes using the same protocol. The SCS server reads messages from all its clients and distributes the messages appropriately to those that are registered with it.
+
+@item
+The @code{April} mailer process is actually composed of two processes --
+one for sending messages to the communications server, and one for
+reading messages from the server. When the SCS server sends
+the @code{April} engine a message, the reader half of the mailer process
+reads the message -- using @code{fdecode} (@pxref{fdecode}) -- and then
+`hands over' the message to the final recipient of the message using the
+same mechanism that is used for purely internal message passing.
+@end enumerate
+
+Although this process may seem complicated, it has a number of important
+features:
+
+@itemize @bullet
+@item
+Messages within a single @code{April} invocation are handled very
+efficiently.
+
+@item
+Message traffic between invocations is controlled by both an `output
+gate' and an `input gate' -- written in @code{April}. This allows
+certain security checks to be implemented on messages -- such as
+verifying that any embedded code is safe to execute.
+
+@item
+The fact that different @code{April} processes may have different mailer
+processes associated with them means that it is possible to create a
+`tailored environment' for the execution of certain processes. It is
+possible, for example, to restrict certain processes (including any
+processes forked from the restricted processes) to communicate only with
+certain other hosts (or none).
+@end itemize
+
+@node the communications server
+@section The Simple Communications System server
+@cindex SCS server
+
+@noindent
+The communications server is used to allow messages to be sent between
+different @code{April} processes -- either on the same computer but in
+different @code{April} invocations, or on different computers.
+
+The SCS server is an @code{April} program@footnote{In fact, it is a relatively small program -- some 200 lines of @code{April}} that is started like any other @code{April} program:
+@smallexample
+april scs.aam 4545
+@end smallexample
+The number supplied on the command line is the port number that this invocation of the SCS server will be listening on. It can be any number, so long as all participating nodes use the same number.
+
+As part of the @code{April} installation, the @code{scs} program automatically invokes the server:
+@smallexample
+scs 4545
+@end smallexample
+
+@node the scomms library
+@section The @code{scomms.af} communications library
+@cindex scomms library
+
+The @code{<scomms.af>} library gives access to the SCS to @code{April} programs. It is typically only required to import the library -- and to estabish a connection -- once: at the top-level of the application. Other modules which the application imports will automatically use the SCS if the main application has registered properly.
+
+@menu
+* scsConnect::
+* scsConnectAs::
+@end menu
+
+@node scsConnect
+@subsection The @code{scsConnect} procedure
+@cindex Connect to the SCS server anonymously
+@findex scsConnect
+
+The @code{scsConnect} procedure allows a process to connect to the SCS server @emph{using its already existing handle}. 
+
+Procedure template:
+@smallexample
+scsConnect(()@{@}?@var{proc},string?@var{host},number?@var{port})
+@end smallexample
+
+@noindent
+The @code{scsConnect} procedure estabishes a connection to the SCS server that is currently listening to @var{port} on the computer known as @var{host}. Once the connection is estabished, it executes the zero-argument procedure @var{proc}. 
+
+During the execution of @var{proc} messages can be sent to other processes that are also registered with the SCS server, and any messages sent to this process from those other nodes will be forwarded. Such forwarded messages are picked up using the normal message @code{receive} and @code{repeat} statements.
+
+The SCS server will not permit more than one process to be registered with it with the same handle. Thus, if there already is a process registered with the same handle then the @code{scsConnect} procedure will raise an error:
+@smallexample
+error(handleName(self())^0++" already registered",'failed)
+@end smallexample
+If the @code{scomms} library cannot find the SCS server, then the error:
+@smallexample
+error("can't establish proper address",'failed)
+@end smallexample
+will be raised.
+
+@node scsConnectAs
+@subsection The @code{scsConnectAs} procedure
+@cindex Connect to the SCS server
+@findex scsConnectAs
+
+The @code{scsConnect} conencts to the SCS server using the processes existing handle. It can be convenient to combine a registration with the server with a specific handle, the @code{scsConnectAs} procedure allows this:
+
+@smallexample
+scsConnectAs(()@{@}?@var{proc},handle?@var{H},string?@var{host},number?@var{port})
+@end smallexample
+
+@noindent
+The @code{scsConnectAs} procedure is similar to the @code{scsConnect} procedure except that it uses @var{H} as the handle that is registered with the SCS server.

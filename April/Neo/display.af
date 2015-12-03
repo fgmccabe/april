@@ -1,0 +1,3 @@
+/* automatically generated -- do not edit */
+/* Module interface file for display.aam */
+((asItm, number, number, handle, logical){}?displayExp,(asItm, number, number, handle, logical){}?displayPtn,(asItm, number, number, handle, logical){}?displayStmt) from "display.aam";

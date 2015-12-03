@@ -1,0 +1,226 @@
+@node Apg rule grammar
+@appendix @code{Apg} rule grammar
+
+@noindent
+
+@menu
+* Rule file format::            
+* Rule syntax::                 
+* Regular expression::          
+@end menu
+
+@node Rule file format
+@section Rule file format
+
+@noindent
+An @code{Alex} file is split into three sections: the preamble, the
+rules and the postamble. Both of the preamble and postamble are
+incorporated verbatim into the resulting generated output file.
+
+The three sections are separated by a line containing only the two
+characters @code{%%}.
+
+@smallexample
+@var{preamble}
+%%
+@var{rules}
+%%
+@var{postamble}
+@end smallexample
+
+Either or both of the preamble and postamble may be omitted in the case
+that there is no requirement for them. 
+
+@cindex preamble section of rule file
+Typically, the preamble section contains @code{April} macro definitions
+and @code{April} type definitions -- the latter being important for the
+postamble. 
+
+The preamble text is placed at the head of the generated file, before
+any text generated as a result of translating the rules, and before the
+@code{module} specification for the output program.
+
+Note: the preamble should contain @emph{no} code; i.e., no functions,
+procedures or other definitions.
+
+@cindex postamble section of rule file
+The postamble section is used to define the functions that are
+referenced by the rules. It may contain any legal @code{April} program
+fragments -- although some care may be needed to avoid conflict with the
+generated code.
+
+The postamble text is placed after the generated tokenizer function, but
+still within the @code{module} structure. They are @emph{not} mentioned
+in the @code{module}'s export list however. This implies that the
+postamble functions are `local' to the module and may not be referenced
+directly outside.
+
+@node Rule syntax
+@section Rule syntax
+
+@noindent
+The full form of an @code{Alex} rule is:
+
+@smallexample
+@var{rule} @expansion{} @var{state-label} @var{re} "=>" @var{action}
+  | @var{re} "=>" @var{action}
+  | @var{state-label} @var{re}
+  | @var{re}
+@end smallexample
+
+@noindent
+The @var{state-label} may be omitted, in which case the default state
+@code{<initial>} is assumed. The @var{action} may also be omitted, in
+which case the @code{skip} action is assumed.
+
+@menu
+* state label::                 
+* rule action::                 
+@end menu
+
+@node state label
+@subsection State label
+@cindex Rule state label
+
+@noindent
+A state label is used to group a particular rule into a related set:
+
+@smallexample
+@var{state-label} @expansion{} "<" @var{identifier} ">"
+@end smallexample
+
+@noindent
+One state label -- @code{<initial>} -- is reserved by @code{Alex} and is used
+for those rules which have no explicit state associated with them. It is
+also the default state that the tokenizer starts in; for that reason
+there must be at least one rule for the @code{<initial>} state.
+@cindex Default state label
+@cindex @code{<initial>} state label
+
+@node rule action
+@subsection Rule action
+@cindex Rule action
+
+@noindent
+The rule action part of a rule determines how to process the result of
+parsing input with the given regular expression.
+
+@smallexample
+@code{action} @expansion{} "skip"
+  | @var{state-label}
+  | "@{" @var{expression} "@}"
+@end smallexample
+
+@noindent
+@table @asis
+@item @code{skip}
+Where a rule has the @code{skip} action, the result is to ignore the
+part of the input processed so far, and to restart the tokenizer.
+
+This is the default action in the case that no action is specified in a rule.
+@cindex Default action
+
+@item @var{state-label}
+Where a rule has a @var{state-label} for an action, the result is to
+ignore the input parsed so far, and to restart the tokenizer in a
+different state. In the new state, only rules prefixed by
+@var{state-label} will be used to parse the input.
+@cindex Change state action
+
+Note that @code{skip} is equivalent to @code{<@var{current-state}>}
+where @code{<@var{current-state}>} is the state associated with the
+rule.
+
+@item @var{expression}
+Where a rule uses an expression its action, the result is to evaluate
+that expression when the rule `fires'. In the context of the expression
+there are a number of standard variables available:
+
+@table @code
+@item yyTok
+This is a @code{symbol[]} list of the characters that make up the
+recognized token.
+
+@item yyPos
+This is a number which is the character number of the start of the
+current token. Note that this is not necessarily the same as the initial
+value given to the tokenizer -- if a rule has a skip or other state
+change as an action then @code{yyPos} will reflect the last such state
+change.
+
+@item yyLPos
+This is the character offset of the next character @var{after} the
+current token.
+
+@item yyLine
+This is the line number associated with the current token.
+
+@item yyClnt
+This is `client' value supplied at the time that the tokenizer is
+called.
+@end table
+
+@noindent
+The value of the expression becomes the value returned by the tokenizer itself.
+@cindex Final acceptance action
+@end table
+
+@node Regular expression
+@section Regular expression
+@cindex Regular expression, syntax of
+@cindex Syntax of regular expressions
+
+@noindent
+@code{Alex}'s regular expression notation is modelled along the
+classical regular expression syntax used in many contexts -- albeit with
+a few minor variations.
+
+@smallexample
+@var{re} @expansion{} "."               -- any char
+  | "\"" @var{s-char}* "\""             -- literal character string
+  | "[^" @var{c-char}* "]"              -- negative character class
+  | "[" @var{c-char}* "]"               -- positive character class
+  | "(" @var{re} ")"                    -- grouping
+  | @var{re} "|" @var{re}               -- disjunction
+  | @var{re} @var{re}                   -- catenation
+  | @var{re} "*"                        -- 0 or more closure
+  | @var{re} "+"                        -- 1 or more closure
+  | @var{re} "?"                        -- 0 or 1 optional
+  | eof                                 -- Matches the end of the input stream
+@end smallexample
+
+@noindent
+Note that in the absence of explicit grouping, the various closure
+operators takes precedence over catenation. However, catenation and
+disjunction have the same precedence. In general, disjunctive regular
+expressions should be fully parenthesized.
+
+The @var{c-char}s or selection chars are used in defining the character
+class regular expressions:
+
+@smallexample
+@var{c-char} @expansion{} @var{s-char} "-" @var{s-char}
+ | @var{s-char}
+@end smallexample
+
+@noindent
+The @var{s-char}s or string chars are essentially those characters which
+are legal in an @code{April} program string:
+@smallexample
+@var{s-char} @expansion{} "\\" @var{escape}
+  | @var{char}
+
+@var{escape} @expansion{} "a"           -- alarm
+  | "b"                                 -- backspace
+  | "d"                                 -- delete
+  | "e"                                 -- escape
+  | "f"                                 -- formfeed
+  | "n"                                 -- new line
+  | "r"                                 -- carriage return
+  | "t"                                 -- tab
+  | "v"                                 -- vertical tab
+  | @var{oct}                           -- octal encoded character
+  | @var{char}                          -- other characters are quoted
+
+@var{oct} @expansion{} @var{octal}@var{octal}?@var{octal}?
+@end smallexample

@@ -1,0 +1,59 @@
+/*
+ * This program is an execution server for use in remote forking
+ *
+ * Processes can execute a remote fork by sending a function
+ * to this server, and the server will fork a process to execute the procedure
+ */
+
+program {
+  server()
+  {
+    repeat{
+      ('execute, ?Proc) ->> {
+        "We have a procedure to execute ... for "++string%%replyto++"\n">> stdout;
+        Proc();
+      }
+    | ('fork, ?Proc) ->> {
+        "We have a procedure to fork ... for "++string%%replyto++"\n">> stdout;
+
+        ('forked,__fork_(nullhandle,replyto,file_manager(),_mailer(),false,Proc)) >> replyto
+      }
+    | ('public, string?N, (){}?Proc) ->> {
+	owner = replyto;
+	"We have a public fork "++N++" ... for " ++ string%%owner++" \n" >> stdout;
+        H = __fork_(nullhandle,owner,file_manager(),_mailer(),false,{()->{
+	   ('icmRegister, self()) >> commserver();
+           receive{
+	     ('icmRegister, 'icmOk, handle?who) ->> {
+               ('pforked,who) >> owner;
+               Proc();
+               ('icmDeregister,self()) >> commserver();
+             }
+           | M ->> {
+               "cant seem to register "++N++" with "++replyto^0++" \n">>stdout;
+	       error("duplicate agent",'privileged) >> owner
+             }
+           | error(S,X) ->> {
+               outchar(stdout,"Error in initial registration\n");
+               error(S,X) >> owner
+             }
+           };
+	   "Public process " ++ N ++ " terminated\n" >> stdout;
+        }});
+      }
+    | any?M  ->> {
+	"Other message in "++self()^0++": "++string%%M++"\n" >> stdout
+      }
+    } until ">quit<";
+  };
+
+  main()
+  {
+    "Starting shell server " ++ string%%(handle%%"shell") ++" \n">>stdout;
+
+    S = spawn server() as handle%%"shell";
+
+    receive { ">quit<" ->> relax };
+  }
+}execute main;
+

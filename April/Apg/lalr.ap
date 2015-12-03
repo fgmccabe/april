@@ -1,0 +1,289 @@
+/*
+ * Construct the LALR(1) tables
+ */
+#include "apg.ah";
+
+/* A table entry used in the computation of lookaheads */
+tableEntry::=te(item,valT(symbol[]),valT((number,number)[]));
+
+module
+import{
+  interface "gensets.af" and
+  interface "closure.af" and
+  interface <stdio.af> and
+  interface "lr0.af"
+}
+in
+{
+  -- Mini-thunk structure
+  val(X) => {
+    v:X;
+    up={(Nx)->{
+      v := Nx;
+    }}
+  };
+
+  /* PowerApp -- concatenate a list of lists into a list */
+  powerApp = {
+    [] => []
+  | [A,..B] => A <> powerApp(B)
+  };
+
+  /* compute reachable non-terminals from a list of non-terms */
+  initial = {
+    ([],_,_,_) => []
+--  | ([A,..rhs],N,NT,R)::A in N => [(R,[A,..rhs])]\/initial(rhs,N,NT,R)
+  | ([A,..rhs],N,NT,R) => [(R,[A,..rhs])]
+  };
+
+  /* Compute the set of A.eta for each C, such that C=*>A.eta */
+  reachable(nonT,rules,N) => valof {
+    done : false;
+    R : collect {
+      for C in nonT do
+        elemis (C,val(powerApp(setof{
+          for rule(Rn,C,RHS,_,_,_) in rules do
+            elemis initial(RHS,N,nonT,Rn)})))
+    };
+
+    while !done do{
+      done := true;
+      for (C,X) in R do {
+        XX : X.v;
+	while [(Rx,[A,.._]),..XY].=XX do{
+          XX := XY;
+          if (A,Y) in R then {
+            if extends(X.v,Y.v) then{
+              done := false;
+              X.up(X.v\/Y.v);
+	      break;
+            }
+	  }
+        }
+      }
+    };
+
+    -- filter out the bits we need
+    valis collect {
+      for (C,X) in R do {
+        NT : [];
+        T : [];
+        for (Rx,[L,..E]) in X.v do
+          if L in nonT then
+            NT := [(Rx,[L,..E]),..NT]
+          else
+            T := [(Rx,[L,..E]),..T];
+
+        elemis (C,NT,T)
+      }
+    }
+  };
+
+  /* Extend the first sets to handle strings of symbols */
+  firstSeq = {
+    ([],_,_) => []
+  | ([X,..Y],F,N) => valof{
+      XF = { if (X,FF) in F then FF else []};
+      if ! X in N then
+        valis XF
+      else
+        valis XF\/firstSeq(Y,F,N)
+    }
+  };
+
+  showRule(item(Cnt,A,B,C,_)) => Cnt^0++": "++A^0++"->"++B^0++"."++C^0;
+
+  -- Compute full lookaheads to convert LR0 to LALR1 grammar
+  lookAheadK(K,G,rules,F,N) => valof{
+    -- build table with empty lookaheads
+    Ktable = collect{
+      for (Sno,I) in K do{
+	elemis (Sno,collect{
+	  for item(Cnt,A,B,C,_) in I do
+	    if Sno==0 && A=='? then
+	      elemis te(item(Cnt,A,B,C,[]),val(['$]),val([]))
+	    else
+	      elemis te(item(Cnt,A,B,C,[]),val([]),val([]))
+	})
+      }
+    };
+
+    -- Compute spontaneous lookaheads and targets for propogation
+
+    for (Sno,I) in Ktable do {
+      for te(item(Cnt,B,Gamma,Delta,_),_,Prop) in I do {
+	J = closure([item(Cnt,B,Gamma,Delta,['#])],rules,F,N);
+
+	for item(C2,A,alpha,[X,..beta],L) in J do{
+	  if (Sno,X,Nx) in G && (Nx,Items) in Ktable &&
+	    te(item(IC,A,alpha<>[X],beta,_),SP,_) in Items then {
+	    for LJ in L do
+	      if LJ=='# then
+		Prop.up(Prop.v\/[(Nx,IC)])
+	      else
+	        SP.up(SP.v\/[LJ])
+	    }
+	}
+      }
+    };
+
+    -- propogate lookaheads
+    
+    done : false;
+    while ! done do{
+      done := true;
+      for (Sno,I) in Ktable do{
+	for te(_,LA,Prop) in I do {
+	  for (Nx,Rule) in Prop.v do {
+	    if (Nx,NI) in Ktable && te(item(Rule,_,_,_,_),NLA,_) in NI then{
+	      if extends(NLA.v,LA.v) then{
+		NLA.up(NLA.v\/LA.v);
+		done := false;
+	      }
+	    }
+	  }
+	}
+      }
+    };
+
+    -- return canonical LALR(1) set of items	
+    valis collect{
+      for (Sno,I) in Ktable do
+        elemis (Sno,collect{
+	  for te(item(Cnt,A,B,C,_),LA,_) in I do
+	    elemis item(Cnt,A,B,C,LA.v)
+	})
+    }
+  };
+
+  -- compute the parsing actions
+  actions(States,G,nonT,T,P,rules,F,N) => resolveConflicts(collect{
+    Reached = reachable(nonT,rules,N);
+
+    for (Sno,I) in States do {
+      elemis (Sno, setof {
+	for item(R,B,_,[C,..delta],LA) in I do {
+	  if C=='error && (Sno,C,NX) in G then 
+ 	    elemis recoverError(delta,NX,R)
+	  else {
+	    if (C::C!='error) in T && (Sno,C,NX) in G then
+	      elemis shiftOn(C,NX,R)
+	    else if C in nonT && (C,Ry,Rx) in Reached then{
+	      for ((Rn,[a,..aRest]):: (Sno,a,NX) in G)  in Rx do
+	        if a=='error then
+	          elemis recoverError(aRest,NX,Rn)
+	        else
+		  elemis shiftOn(a,NX,Rn);
+	      for (_,[A,..eta]) in Ry do {
+		if rule(RR,A,[],[],_,_) in rules then{
+
+		  for b in LA do {
+		    for a in firstSeq(eta<>delta<>[b],F,N) do 
+		      elemis reduceBy(a,RR);
+		  }
+		}
+	      };
+	      if rule(RR,C,[],[],_,_) in rules then{
+		for b in LA do {
+		  for a in firstSeq(delta<>[b],F,N) do 
+		    elemis reduceBy(a,RR);
+		}
+	      }
+	    }
+	  }
+	};
+	for item(R,A,B,[],LA) in I do {
+	  if A=='? then{
+	    for b in LA do
+	      elemis accept(b)
+	  }
+	  else{
+	    for b in LA do
+	      elemis reduceBy(b,R)
+	  }
+	}
+      })
+    };
+  },States,G,rules,nonT,T,P);
+
+  resolveConflicts(A,States,G,rules,nonT,T,P) => compressActions(collect {
+    allT = nonT<>T;
+
+    for (Sno,Acts) in A do{
+      elemis (Sno,valof{
+	ok : true;			-- assume we dont have any conflicts
+	AA : Acts;
+
+	for a in allT do {
+	  while shiftOn(a,R,Rx) in AA && reduceBy(a,Ry) in AA do {
+	    if (a,Ax,Px) in P &&
+	       rule(Ry,_,_,_,_,(Ay,Py)) in rules then{
+		 if Px<Py || (Px==Py && Ax==leftA) then
+		   AA := AA^\shiftOn(a,R,_)
+		 else if Px>Py || (Px==Py && Ax==rightA) then
+		   AA := AA^\reduceBy(a,Ry)
+		 else {
+		   "Warning: shift/reduce conflict on "++string%%a++" in state "++Sno^0++"\n">>stdout;
+		   AA := (AA^\reduceBy(a,Ry))\/[disabled(reduceBy(a,Ry))];
+		 }
+	       }
+	    else
+	      "Problem in conflict with "++Rx^0++" and "++Ry^0++"\n">>stdout
+          };
+	  while reduceBy(a,Rx) in AA && reduceBy(a,Ry::Rx!=Ry) in AA do {
+	    "Warning: reduce/reduce "++Rx^0++"/"++Ry^0++"conflict in state "
+	        ++Sno^0++"\n">>stdout;
+	    
+	    if Ry<Rx then
+	      AA := (AA^\reduceBy(a,Rx))\/[disabled(reduceBy(a,Rx))]
+	    else
+	      AA := (AA^\reduceBy(a,Ry))\/[disabled(reduceBy(a,Ry))]
+          };
+	  while shiftOn(a,R,R1) in AA && shiftOn(a,R,R2::R1!=R2) in AA do {
+	    AA := AA^\shiftOn(a,R,R2)
+	  }
+	};
+	valis AA;
+      })
+    }
+  });
+
+  -- collate reductions
+  collReductions = {
+    ([],Reds) => Reds
+  | ([reduceBy(a,R),..Acts],Reds) :: (S,R) in Reds => 
+      collReductions(Acts,[([a]\/S,R),..Reds^\ (_,R)])
+  | ([reduceBy(a,R),..Acts],Reds) :: !(_,R) in Reds => 
+      collReductions(Acts,[([a],R),..Reds])
+  };
+
+  compressActions(A) => collect{
+    for (Sno,Acts) in A do{
+      elemis (Sno, valof{
+	Reds = collReductions(Acts^/reduceBy(_,_),[]);
+
+	case Reds in {
+	  [] -> valis Acts
+        | [(_,R)] -> valis (Acts^\ reduceBy(_,_))<>[reduceBy('__default__,R)]
+	| _ -> valis Acts
+        };
+      })
+    }
+  };
+
+  showActions(A,out)
+  {
+    for (Sno,Acts) in A do{
+      "State :"++Sno^0++"\n">>out;
+      for T in Acts do {
+	case T in {
+	  accept(a) -> a^0++" accept\n">>out
+	| reduceBy(a,R) -> a^0++" reduce using rule "++R^0++"\n">>out
+	| shiftOn(a,R,_) -> a^0++" shift, goto "++R^0++"\n">>out
+	| recoverError(a,Nx,R) -> a^0++" handle error, goto "++Nx^0++"\n">>out
+        }
+      }
+    }
+  };
+
+} export (lookAheadK,actions);

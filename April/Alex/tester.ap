@@ -1,0 +1,24 @@
+/*
+ * test the Alex system
+ */
+
+#include "token.ah";
+
+program
+  import
+    ({(%x)=>(%x,yyToken)}?nextToken)
+     from "test.aam"
+  in {
+
+  main(string?input)
+  {
+    data : (input,1,1,"");
+
+    while (Txt::Txt!=[],_,_,_).=data do{
+      (dta,tok) = nextToken(data);
+
+      tok^0++"\n">>stdout;
+      data := dta;
+    }
+  }
+} execute main;

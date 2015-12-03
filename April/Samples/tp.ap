@@ -1,0 +1,195 @@
+/* 
+ * Propositional theorem prover
+ */
+
+program {
+ 
+  form ::= f_false | f_true | parameter(symbol)
+         | conjunction(form, form)
+         | disjunction(form, form)
+         | negation(form);
+ 
+  model ::= symbol[];
+ 
+  voc(f) =>
+  {
+   case f in {
+     f_false => []
+   | f_true => []
+   | parameter(par) => [par]
+   | conjunction(f1,f2) => sorted_union(voc(f1),voc(f2))
+   | disjunction(f1,f2) => sorted_union(voc(f1),voc(f2))
+   | negation(f) => voc(f)
+   }
+  };
+ 
+  sorted_union = {
+     ([],set) => set
+   | ([sym,..tl],set) => sorted_union(tl,insert_sorted(sym,set))
+  };
+ 
+  insert_sorted = {
+     (sym,[]) => [sym]
+   | (sym,[sym,..tl]) => [sym,..tl]
+   | (sym,[x,..tl]) => {if sym < x 
+        then [sym,x,..tl]
+        else [x,..insert_sorted(sym,tl)]}
+  };
+ 
+  val(form?f,model?w) =>
+  {
+   case f in {
+     f_false => false
+   | f_true => true
+   | parameter(par) => par in w
+   | conjunction(f1,f2) => val(f1,w) && val(f2,w)
+   | disjunction(f1,f2) => val(f1,w) || val(f2,w)
+   | negation(f) => !val(f,w)
+   }
+  };
+ 
+  powset = {
+    ([]) => [[]]
+  | ([e,..r]) => valof { x = powset(r); valis x <> {x // {(l) => [e,..l]}} }
+  };
+ 
+  mod(f) => collect { for w in powset(voc(f)) do if val(f,w) then elemis w };
+ 
+  extend_mod = {
+     (set,[]) => set
+   | (set,[par,..tl]) => set <> {set // {(w) => [par,..w]}}
+  };
+ 
+  tokenize = {
+     ("") => []
+   | (";" ++ rest) => []
+   | (" " ++ rest) => tokenize(rest)
+   | ("=" ++ rest) => ['definition,..tokenize(rest)]
+   | ("|=" ++ rest) => ['entails,..tokenize(rest)]
+   | ("?" ++ rest) => ['consistent,..tokenize(rest)]
+   | ("!" ++ rest) => ['negation,..tokenize(rest)]
+   | ("&" ++ rest) => ['conjunction,..tokenize(rest)]
+   | ("|" ++ rest) => ['disjunction,..tokenize(rest)]
+   | ("->" ++ rest) => ['implication,..tokenize(rest)]
+   | ("<->" ++ rest) => ['equivalence,..tokenize(rest)]
+   | ("(" ++ rest) => ['open_par,..tokenize(rest)]
+   | (")" ++ rest) => ['close_par,..tokenize(rest)]
+   | sym++(X in [" ",";","(",")","!","&","|","-","?"])++rest => 
+	[symbol%%sym,..tokenize(X++rest)]
+   | sym => [symbol%%sym]
+   };
+ 
+  read_form = {
+    (['t,..rest],_) => (f_true,rest)
+  | (['f,..rest],_) => (f_false,rest)
+  | (['negation,..rest],defs) =>
+   valof {
+    (f,r) .= read_form(rest,defs);
+    valis (negation(f),r)
+   }
+  | (['open_par,..rest],defs) =>
+   valof {
+    (first_f,[conn,..sec_and_r]) .= read_form(rest,defs);
+    (second_f,['close_par,..r]) .= read_form(sec_and_r,defs);
+    case conn in {
+       'conjunction ->
+         valis (conjunction(first_f,second_f),r)
+     | 'disjunction ->
+         valis (disjunction(first_f,second_f),r)
+     | 'implication ->
+         valis (disjunction(negation(first_f),second_f),r)
+     | 'equivalence ->
+         valis (disjunction(conjunction(first_f,second_f),
+                            conjunction(negation(first_f),
+                                        negation(second_f))),r)
+     }
+   }
+  | ([sym,..rest],defs) =>
+     { if (sym,f) in defs then (f,rest) else (parameter(sym),rest)}
+  };
+ 
+  print_form(f) =>
+  {
+    case f in {
+      f_false => "f"
+    | f_true => "t"
+    | parameter(par) => string%%par
+    | conjunction(f1,f2) =>
+       "(" ++ print_form(f1) ++ " & " ++ print_form(f2) ++ ")"
+    | disjunction(f1,f2) =>
+       "(" ++ print_form(f1) ++ " | " ++ print_form(f2) ++ ")"
+    | negation(f) => "!" ++ print_form(f)
+    }
+  };
+ 
+  form_server()
+  {
+   defs : [];
+   repeat {
+    string?ln ->> {
+     tks = tokenize(ln);
+     case tks in {
+       [lb,'definition,..rest] -> {
+         (f,_) .= read_form(rest,defs);
+        "Definition of "++ln++" = "++print_form(f)++"\n">>stdout;
+         defs := [(lb,f),..defs ^\ (lb,_)];
+       }
+     | [lb_prem,'entails,lb_cons] -> {
+         if (lb_prem,f_prem) in defs && (lb_cons,f_cons) in defs then {
+           mod_diff = extend_mod(mod(f_prem),voc(f_cons) \ voc(f_prem)) \
+                      extend_mod(mod(f_cons),voc(f_prem) \ voc(f_cons));
+           if mod_diff == [] then
+             "Consequence "++print_form(f_prem)++" |= "
+	      ++print_form(f_cons)++" holds\n" >> replyto
+           else
+             "Consequence "++print_form(f_prem)++" |= "
+	      ++print_form(f_cons)++" does not hold, counterexamples = "++
+              mod_diff^3++"\n" >> replyto
+         }
+         else 
+           "Formulae "++lb_prem^3++" and "++lb_cons^3++
+             " are not both defined\n" >> replyto
+       }
+     | [lb,'consistent] -> {
+         if (lb,f) in defs then {
+           mod_f = mod(f);
+           if mod_f == [] then
+             "Formula "++string%%lb++":"++print_form(f)++
+               " is inconsistent\n">>replyto
+           else
+             "Formula "++string%%lb++":"++print_form(f)++
+               " is consistent, mod = "++mod_f^3++"\n">>replyto
+         }
+         else
+           "Formula "++lb^3++" is not defined\n" >> replyto
+       }
+     | _ -> 
+         "Syntax error in line "++ln++"\n" >> replyto 
+     }
+    }
+   | O ->> "Other message "++O^0++"\n">>stdout
+   } until 'exit;
+  };
+ 
+  main() {
+   serv = spawn form_server();
+
+   "f1 = ((p & q) -> !p)" ~~ [replyTo(stdout)] >> serv;
+   "f2 = (p -> !q)" ~~ [replyTo(stdout)] >> serv;
+   "f1 ?" ~~ [replyTo(stdout)] >> serv;
+   "f1 |= f2" ~~ [replyTo(stdout)] >> serv;
+   "f2 |= f1" ~~ [replyTo(stdout)] >> serv;
+   "f1 = (p & (p -> q))" ~~ [replyTo(stdout)] >> serv;
+   "f2 = q" ~~ [replyTo(stdout)] >> serv;
+   "f1 |= f2" ~~ [replyTo(stdout)] >> serv;
+   "f2 |= f1" ~~ [replyTo(stdout)] >> serv;
+
+   'exit >> serv;
+    _break("");
+   waitfor(serv);
+  };
+ 
+} execute main;
+
+
+

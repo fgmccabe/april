@@ -1,0 +1,31 @@
+/*
+ * Test harness for script library functions
+ */
+
+kqml_item ::= (string,any)[];
+kqml_msg ::= assert(kqml_item) | query(kqml_item);
+msg ::= bb_quit | reg_interest({()<-kqml_msg}?ptn,logical?old) | 
+	reset_interest | dump |
+	new_entry(string?key,kqml_msg?value) |
+	current_entry(string?key,kqml_msg?value);
+
+program
+  import (?bboard) from "bboard.aam" in 
+{
+
+  main(string?name)
+  {
+    name public bboard;
+
+    ?board = handle??name;
+
+    reg_interest({tau()<-{?}},false) >> board;
+
+    while true do{
+      new_entry(?key,?value) -> 
+        writef(stdout,"Er,.. new value: %S %3w\n",(key,value))
+    | current_entry(?key,?value) -> 
+        writef(stdout,"Er,.. old value: %S %3w\n",(key,value))
+    };
+  }
+} execute main;

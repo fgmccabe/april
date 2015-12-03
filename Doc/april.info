@@ -1,0 +1,594 @@
+This is april.info, produced by makeinfo version 4.8 from april.texi.
+
+INFO-DIR-SECTION Programming
+START-INFO-DIR-ENTRY
+* april: (april).		Agent programming language
+END-INFO-DIR-ENTRY
+
+
+Indirect:
+april.info-1: 187
+april.info-2: 299078
+april.info-3: 596310
+
+Tag Table:
+(Indirect)
+Node: Top187
+Node: Compiling April programs3537
+Ref: Compiling April programs-Footnote-17601
+Node: How to invoke April7649
+Ref: How to invoke April-Footnote-18716
+Node: Summary of command options8804
+Ref: Summary of command options-Footnote-112296
+Node: Environment variables12383
+Ref: Environment variables-Footnote-113594
+Node: April programs13632
+Node: Standard April programs14316
+Node: Comments in programs16017
+Node: Command line arguments to programs16697
+Node: April modules17972
+Node: Importing programs from modules18854
+Node: Importing multiple modules20734
+Node: Using interface specification files21499
+Node: Including other source files22903
+Node: Data values and types23615
+Node: Primitive types25033
+Node: number type25523
+Ref: number type-Footnote-126581
+Node: symbol type26765
+Node: char type27052
+Node: string type27189
+Node: Compound types27823
+Node: list type28813
+Node: tuple type31046
+Node: record type31694
+Ref: record type-Footnote-133175
+Node: function type33341
+Node: procedure type33936
+Node: any type34490
+Ref: any type-Footnote-136541
+Node: Quantified types36618
+Ref: Quantified types-Footnote-137544
+Node: Type definitions37609
+Node: Type renaming38590
+Node: User defined type definition39747
+Node: Scope of type definitions42229
+Node: Standard April Types43089
+Node: logical type43647
+Node: handle type44087
+Ref: handle type-Footnote-145117
+Node: error type45204
+Ref: error type-Footnote-146204
+Node: type_of type function46272
+Node: Types and type inferencing47297
+Node: Type variables48392
+Node: Type abstraction and reification50654
+Node: Type abstraction51755
+Node: Type reification53832
+Ref: Type reification-Footnote-155502
+Node: Equality of type expressions55745
+Node: Type derivation59113
+Node: Numeric literal type60429
+Node: String literal type60707
+Node: Symbolic literal type61006
+Node: Literal symbol type61300
+Node: Empty list literal type61755
+Node: Non empty list literal type62221
+Node: Tuple literal type62922
+Node: Record literal type63277
+Node: Function application expression type63663
+Node: Type of constructor function expressions64319
+Node: Dot expression type65308
+Node: valof expression type65933
+Node: collect/setof expression type66359
+Node: any expression type66761
+Node: Function type67250
+Node: Procedure type68349
+Node: Types and patterns68996
+Node: Numeric pattern type69621
+Node: Literal symbol pattern type69959
+Node: Types and statements70252
+Node: variable declaration statement type environment71236
+Node: assignment statement type environment71963
+Node: match statement type environment72598
+Node: statement sequence type environment73293
+Node: conditional statement type environment73988
+Node: Type parameters74744
+Node: Expressions75279
+Node: Value expression forms76064
+Node: Function application expression76419
+Node: Syntactic expression forms77163
+Node: valof expression77956
+Node: onerror expression79347
+Node: exception expression80606
+Node: collect expression81248
+Node: setof expression83303
+Node: case expression84141
+Node: conditional expression85869
+Node: type coercion86772
+Node: theta expression88535
+Ref: theta expression-Footnote-189956
+Node: Dot expression90120
+Ref: Dot expression-Footnote-192961
+Node: Patterns93024
+Node: Primitive patterns94149
+Node: number pattern94587
+Node: symbol pattern94942
+Node: string pattern95434
+Node: Variable declaration95804
+Node: Anonymous variable pattern97680
+Node: any pattern98159
+Ref: any pattern-Footnote-199043
+Node: List and other compound patterns99081
+Node: List pattern99580
+Node: Append pattern100327
+Node: Tuple pattern101490
+Node: record pattern102087
+Node: labelled type pattern103451
+Node: handle pattern104480
+Node: Guarded pattern105766
+Node: Types as patterns106555
+Node: String patterns107826
+Node: Character matching108360
+Ref: Character matching-Footnote-1109117
+Node: String partitioning109160
+Node: Fixed width string pattern110390
+Ref: Fixed width string pattern-Footnote-1111456
+Node: Membership test111552
+Node: Value extraction112160
+Node: Statements113042
+Node: Primitive statements113975
+Node: Variable declaration statement114500
+Node: Assignment statement116459
+Node: Null statement118757
+Node: Procedure Call statement119130
+Node: Compound statements119663
+Node: Statement sequence120177
+Node: while statement121256
+Node: for statement122047
+Ref: for statement-Footnote-1122893
+Node: Conditional statement123015
+Node: case statement123762
+Node: dot statement124558
+Node: onerror statement125859
+Ref: onerror statement-Footnote-1128249
+Node: exception statement128602
+Node: Labelled statement129492
+Node: leave statement130121
+Node: Sending messages132681
+Node: >>133504
+Node: Modifying message attributes135100
+Node: >>>135824
+Node: self post136740
+Node: _front_msg138140
+Node: >>*138854
+Node: Message attributes139168
+Node: Message attribute type139839
+Node: replyTo message attribute140336
+Node: leaseTime message attribute140941
+Node: receiptRequest message attribute142086
+Ref: receiptRequest message attribute-Footnote-1142976
+Node: auditTrail message attribute143091
+Node: Remote communication144017
+Ref: Remote communication-Footnote-1144366
+Node: Receiving messages144402
+Node: receive145197
+Ref: receive-Footnote-1148824
+Node: Underlying semantics of message receive148976
+Node: timeout152005
+Node: repeat until154161
+Node: repeat alarm155515
+Node: Tests and conditions156914
+Node: Term matching157864
+Node: .=158208
+Node: in158672
+Node: Comparisons159387
+Ref: Comparisons-Footnote-1161973
+Node: ==162004
+Node: !=162319
+Node: <162652
+Node: >162988
+Node: <=163323
+Node: >=163693
+Node: Logical connectives164050
+Node: &&164733
+Node: ||165246
+Node: !165787
+Node: Functions and procedures166138
+Node: Function167169
+Ref: Function-Footnote-1168084
+Node: Equations168336
+Ref: Equations-Footnote-1169993
+Ref: Equations-Footnote-2170151
+Node: Function union170242
+Ref: Function union-Footnote-1170925
+Node: Function application171179
+Node: Case expression as a function call173078
+Node: Function expressions174523
+Ref: Function expressions-Footnote-1175777
+Node: The voidfun function175862
+Node: Procedure176364
+Node: Procedure clause177258
+Node: Procedure union178957
+Node: Procedure application180222
+Node: Case statement as a procedure call181781
+Node: Procedure expressions183143
+Ref: Procedure expressions-Footnote-1184121
+Node: Procedures and free variables184367
+Node: The fail procedure187775
+Node: programs and theta expressions188217
+Node: Function declaration189633
+Node: Procedure declaration190575
+Node: theta variables192054
+Node: theta record expression type194397
+Node: Semantics of modules195127
+Ref: Semantics of modules-Footnote-1200153
+Node: Arithmetic functions200288
+Node: Standard arithmetic functions200853
+Node: Addition202086
+Node: Integer Addition202505
+Node: Subtraction202891
+Node: Integer Subtraction203176
+Node: Negation203577
+Node: Multiplication203833
+Node: Integer Multiplication204121
+Node: Division204533
+Node: Integer quotient205277
+Node: Remainder205722
+Node: Integer Division206213
+Node: Bitwise and206603
+Ref: Bitwise and-Footnote-1207097
+Node: Bitwsie or207156
+Node: Bitwise xor207584
+Node: Ones complement208047
+Node: Logical left shift208504
+Node: Logical right shift209101
+Node: Absolute value209720
+Node: Truncate to Integer209999
+Ref: Truncate to Integer-Footnote-1210720
+Node: Integer ceiling210793
+Node: Integer floor211132
+Node: Integral test211452
+Node: Mathematical functions211707
+Node: sqrt212878
+Node: cbrt213151
+Node: pow213368
+Node: exp213608
+Node: log213883
+Node: log10214274
+Node: sin214517
+Node: cos214908
+Node: tan215181
+Node: asin215459
+Node: acos215853
+Node: atan216254
+Node: sinh216659
+Node: cosh217006
+Node: tanh217359
+Node: asinh217716
+Node: acosh218091
+Node: atanh218457
+Node: Miscellaneous arithmetic functions218812
+Node: ldexp219410
+Node: frexp219741
+Node: modf220284
+Node: rand220712
+Node: irand221547
+Node: seed221899
+Node: Input and output222455
+Node: Files and file descriptors224897
+Node: File names225341
+Node: File open mode226012
+Node: File system access modes227058
+Node: File permission228316
+Node: file_manager230175
+Node: Standard files230802
+Node: Opening and closing files231787
+Node: fopen232360
+Node: fclose233289
+Node: eof233757
+Node: fready234548
+Node: fflush235510
+Node: popen236373
+Node: sub_manager238421
+Node: File positioning239199
+Node: ftell239493
+Node: fseek239945
+Node: Files and Directories240833
+Node: ffilename242039
+Node: ffile243118
+Node: fmode243652
+Node: fchmod244262
+Node: ffiletype244668
+Node: fstat245404
+Node: frm247020
+Node: fmv247443
+Node: fcd247840
+Node: fpwd249053
+Node: fhome249496
+Node: fmkdir249902
+Node: frmdir250442
+Node: fls250833
+Node: String oriented input/output251243
+Node: inchar252971
+Node: inchars254070
+Node: inbytes255259
+Node: inascii256455
+Node: inline257380
+Node: outchar258349
+Ref: outchar-Footnote-1259467
+Node: Encoded Input/Output259571
+Node: fencode260488
+Node: fdecode260944
+Node: Socket library261517
+Ref: Socket library-Footnote-1262010
+Node: tcp_connect262211
+Node: tcp_server263441
+Node: Stream input & output265943
+Ref: Stream input & output-Footnote-1269432
+Ref: Stream input & output-Footnote-2269514
+Node: sio_open269629
+Node: sio_connect271614
+Node: sio_server272309
+Node: String handling273166
+Node: Basic string functions273847
+Node: strlen274491
+Node: string character prepend274744
+Ref: string character prepend-Footnote-1275246
+Node: concatenate strings275289
+Node: expand275723
+Node: collapse276689
+Node: Character handling277154
+Node: charOf277483
+Node: charCode277878
+Node: String formatting278222
+Node: Formatting values278981
+Node: strof281608
+Node: int2str283839
+Node: strpad284793
+Node: sencode285870
+Node: sdecode286578
+Node: Accessing elements of strings287029
+Node: ascii287488
+Node: nthascii287841
+Node: Basic symbol processing288179
+Ref: Basic symbol processing-Footnote-1289175
+Node: explode289237
+Node: implode289599
+Node: Converting from a string to a list of symbols290044
+Ref: Converting from a string to a list of symbols-Footnote-1290923
+Node: Converting from a list of symbols to a string291106
+Node: Converting a single character symbol to a number291430
+Node: Converting a number to a single character symbol292010
+Node: Lists and sets292570
+Node: List operations293193
+Node: #294481
+Node: listlen295054
+Node: front295371
+Node: back295821
+Node: head296261
+Node: tail296660
+Node: <>297108
+Node: List cons297372
+Node: ..298215
+Ref: ..-Footnote-1298994
+Node: iota299078
+Node: List map300590
+Node: List reduction301415
+Node: sort302459
+Node: Pattern based operations on lists302782
+Node: select elements303369
+Node: reject elements304425
+Node: Lists and set abstractions304899
+Node: setof abstraction306168
+Node: bagof abstraction307099
+Node: counting abstraction308000
+Node: generator abstraction308739
+Node: element generating condition310393
+Node: && abstraction condition311296
+Ref: && abstraction condition-Footnote-1312149
+Node: || abstraction condition312363
+Node: ! abstraction condition313019
+Node: istrue abstraction condition313762
+Node: forall abstraction condition314700
+Node: Processes315608
+Ref: Processes-Footnote-1316566
+Node: Standard processes316645
+Node: Processes and process control318477
+Node: spawn319185
+Node: Spawning with a public name320426
+Node: Spawning with a different file manager321354
+Node: state322644
+Node: done323678
+Node: kill324239
+Node: waitfor324624
+Node: halt325034
+Node: exit325345
+Node: delay325851
+Node: sleep326169
+Node: Identification functions326594
+Node: host327075
+Node: location327442
+Node: self328486
+Node: creator328747
+Node: commserver329226
+Node: April communications329722
+Node: The communicative process332856
+Node: the communications server336111
+Ref: the communications server-Footnote-1336999
+Node: the scomms library337077
+Node: scsConnect337640
+Node: scsConnectAs338927
+Node: Environment339506
+Node: Date and time340088
+Ref: Date and time-Footnote-1341349
+Node: date type341408
+Node: today342671
+Node: now342960
+Node: timetodate343436
+Node: timetogmt343875
+Node: datetotime344631
+Node: ticks345306
+Node: secs345632
+Node: mins345973
+Node: hours346371
+Node: days346777
+Node: Hostnames and host addresses347194
+Node: iptohost347874
+Node: hosttoip348488
+Node: Program control348971
+Node: command_line349476
+Node: setenv350730
+Node: getenv351083
+Node: envir351479
+Node: shell351797
+Node: exec352455
+Node: Resource limited execution353230
+Node: CPU time355125
+Ref: CPU time-Footnote-1357323
+Node: Create a new Click Counter357531
+Node: Access current clicks358259
+Node: Access click counter value358642
+Node: Modify a click counter358999
+Node: Constrained execution of a statement359529
+Node: File manager360871
+Node: Communications manager363329
+Node: How the communications manager works363686
+Ref: How the communications manager works-Footnote-1365895
+Node: Code verification366024
+Ref: Code verification-Footnote-1367423
+Node: Privileged processes367504
+Node: verify code368724
+Node: Debugging April programs370813
+Node: Connecting to an external debugger372560
+Node: The standard April debugger373443
+Node: Debugging messages376243
+Node: Standard debugging message type377783
+Node: line_debug message378860
+Node: entry_debug message379820
+Node: exit_debug message380491
+Node: return_debug message380912
+Ref: return_debug message-Footnote-1381787
+Node: assign_debug message381861
+Node: scope_debug message382838
+Node: fork_debug message383953
+Node: die_debug message384373
+Node: send_debug message384642
+Node: front_debug message385388
+Node: accept_debug message386129
+Node: suspend_debug387098
+Node: error message387483
+Node: break_debug message388232
+Node: April syntax388522
+Node: Defining an operator grammar390844
+Node: April grammar rules393660
+Node: Primitive syntax expressions394082
+Node: comments395363
+Node: identifier syntax396140
+Node: number syntax397444
+Node: string syntax398418
+Node: list syntax400732
+Node: tuple syntax401307
+Node: functional expression syntax402069
+Node: parenthetical expression syntax402543
+Node: quoted symbol403813
+Node: Infix expressions404561
+Node: Prefix expressions405886
+Node: Postfix expressions406806
+Node: Defining a new operator407787
+Node: Operator priorities410216
+Node: How operator declarations are interpreted411268
+Node: Disambiguating infix and postfix412619
+Node: Extending the April system416719
+Node: Using a plug-in module419875
+Node: Defining a plug-in module421142
+Ref: Defining a plug-in module-Footnote-1424786
+Node: Protecting pointers424883
+Ref: Protecting pointers-Footnote-1426316
+Node: Returning values from a plug-in function426468
+Node: Reporting errors from a plug-in function429756
+Node: The signature structure430982
+Node: Type signature representation433907
+Node: Support functions and macros437380
+Node: IsInteger438255
+Node: IntVal438514
+Node: allocateInteger439350
+Node: IsFloat439772
+Node: FloatVal440044
+Node: allocateFloat440828
+Node: IsSymb441372
+Node: SymVal441636
+Node: newSymbol442262
+Node: IsString442657
+Node: StrVal442929
+Node: StringText443489
+Node: StringSize444171
+Node: allocateString444445
+Node: allocateSubString445096
+Node: allocateCString445696
+Node: IsList446083
+Node: ListHead446356
+Node: ListTail446602
+Node: allocatePair446854
+Node: updateListHead447290
+Node: updateListTail447799
+Node: IsTuple448303
+Node: tupleArity448578
+Node: tupleArg448836
+Node: allocateTpl449135
+Node: updateTuple449619
+Node: IsOpaque450147
+Node: OpaqueType450665
+Node: OpaqueValue451018
+Node: allocateOpaque451485
+Node: April grammar452365
+Node: Token syntax453858
+Node: Identifier syntax454657
+Node: Number syntax456369
+Node: Strings457667
+Node: Comments459309
+Node: Operator precedence grammar460308
+Node: Core April syntax462700
+Node: Core April types463611
+Node: Core April expressions465016
+Node: Core April patterns467127
+Node: Core April statements467927
+Node: Core April programs468951
+Node: Presentation syntax469599
+Node: Standard operators472459
+Node: Standard error codes480368
+Node: Encoded term format482299
+Node: representation of values483964
+Node: integer representation484839
+Node: floating point representation487465
+Node: variable representation488750
+Node: symbol encoding489906
+Node: character encoding490311
+Node: string representation490792
+Node: program code491480
+Node: list encoding492383
+Node: structure encoding493318
+Node: circular structures494116
+Node: shorthand references495936
+Node: representing types498509
+Node: type symbols499503
+Node: type constructors500134
+Node: variables in types501410
+Node: encoded terms in files501840
+Node: Notes for April v4 programmers502801
+Node: Unicode compliance504558
+Node: The handle data type505307
+Node: Characters and strings506812
+Node: Operators507582
+Node: Macro language508514
+Node: Communications infrastructure509167
+Node: URLs and file systems511106
+Node: Any values revisited512963
+Node: Deprecated functions513891
+Node: Changed functions518229
+Node: New functions518686
+Node: Copying522592
+Node: Concept index541726
+Node: Function index596310
+
+End Tag Table

@@ -1,0 +1,475 @@
+@node Processes
+@chapter @code{April} processes 
+@cindex @code{April} processes
+
+@noindent
+Processes in @code{April} are a key abstraction. It is a
+process-oriented language that can be used to construct agent systems as
+well as other distributed applications.
+
+A process is identified by its @code{handle}; a @code{handle} is a
+standard type in @code{April} which looks like:
+
+@smallexample
+handle ::= hdl(symbol,symbol);
+@end smallexample
+
+@noindent
+where the first element is the @emph{thread} identifier and the second is the 
+@emph{name} of a group of threads -- typically implementing an agent. The @code{handle} of a process contains sufficient information for the
+@code{April} engine to be able to deliver messages to the process, as
+well as other internal attributes.@footnote{The form of the handle labelled tuple changed in version~5 of @code{April}.}
+
+@menu
+* Standard processes::          
+* Processes and process control::  Forking new sub-processes
+* Identification functions::    Miscellaneous identification functions
+@end menu
+
+@node Standard processes
+@section Standard processes
+@cindex Standard processes
+
+@noindent
+When the @code{April} engine is initiated -- by invoking the
+@code{april} command -- a number of standard processes are also started
+automatically:
+
+@table @asis
+@item The standard system monitor
+This process is responsible for monitoring system error conditions and
+for managing process termination.
+@item The standard file manager
+This process provides initial access to the file system. By default, the
+standard file manager gives the same access rights to the @code{April}
+program as the operating system itself. However, subsiduary file
+managers may give restricted access to the file system.
+@item @code{stdin}, @code{stdout} and @code{stderr}
+The processes corresponding to the standard input, output and error
+channels of the Unix process.
+@item The standard mail input reader
+This process reads messages from the SCS server (if connected). Whenever a message arrives from there, the standard mail reader `forwards' the message to the appropriate internal process -- if it exists.
+@item The standard mail despatcher
+When processes send messages the @code{April} engine delivers the
+message if the recipient process is in the same invocation as the
+sender. Otherwise, the engine delivers the message to the standard mail
+dispatcher which will (normally) upload the message to the
+communications server.
+@item The standard resource manager
+This process allocates memory and CPU cycles to processes. The standard
+resource manager simply gives additional memory and/or cycles to each
+process that requests them. A non-standard resource manager may be more
+thrifty: only giving resources to processes representing owners who have
+paid for them.
+@end table
+
+@node Processes and process control
+@section Processes and process control
+@cindex Processes and process control
+
+@menu
+* spawn::                       Fork a new process
+* state::                       Return state of process
+* done::                        Test for process termination
+* kill::                        Terminate a process
+* waitfor::                     Wait for a process to terminate
+* halt::                        
+* exit::                        Exit from @code{April} system 
+* delay::                       Suspend a process for a length of time
+* sleep::                       Suspend a process until a point in time
+@end menu
+
+@node spawn
+@subsection Spawn a new process
+@cindex Spawn a sub-process
+@findex @code{spawn} @r{function}
+
+@noindent
+Function templates:
+@smallexample
+spawn @var{statement} => handle
+spawn @var{statement} as handle?@var{H}=> handle
+spawn @var{statement} using handle?@var{F}=> handle
+@end smallexample
+
+@noindent
+A new process is created to execute the @var{statement} concurrently
+with other processes. The @code{handle} of the new process is returned
+as the value of this expression.
+
+For most of these cases, the @code{handle} of the new process will be of
+the form
+@smallexample
+hdl(@var{T},@var{name})
+@end smallexample
+where @var{name} is the name
+of the process group that the new process belongs to (the same group as
+the process which executed the @code{spawn}) -- unless the @code{as}
+option is used, @var{NN} is a number which identifies that the new
+process is the @var{NN}th process in the group, and @code{host()} is
+the name of the local host that this invocation of @code{April} is
+running in.
+
+@emph{Hint:}
+@quotation
+Spawned processes cannot side affect variables in any other process --
+so while it is possible to transmit values of variables into a newly
+spawned process, it is not possible to side-affect variables belonging
+to the spawning process.
+@end quotation
+
+@menu
+* Spawning with a public name::  
+* Spawning with a different file manager::  
+@end menu
+
+@node Spawning with a public name
+@subsubsection Spawning with a public name
+@cindex Spawning with a public name
+@cindex Fork a publically named sub-process
+
+@noindent
+The form 
+
+@smallexample
+spawn @var{statement} as @var{agent}
+@end smallexample
+
+@noindent
+spawns the process with a particular named handle -- the value of the
+@var{agent} expression. @code{spawn}ing a process in this way also
+causes it to be registered with the local communications server. This
+allows other processes in other @code{April} invocations to send this
+`public' process messages.
+
+It also has the effect of starting a new process group -- it this
+process spawns further processes then they will -- by default -- be
+given names based on the public name of the new process.
+
+The name of the new process is @var{agent} which should be a
+@code{handle} expression.  @var{agent} becomes the name of the new process -- unless there already is a process with the same name, in which an error exception is raise,
+
+@node Spawning with a different file manager
+@subsubsection Spawning with a different file manager
+@cindex Spawning with a different file manager
+
+@noindent
+As explained in @ref{Input and output} and @ref{File manager}, each
+process has associated with it a file manager process that manages
+access to the file system. This allows a process to be constrained
+within a part of the file system. In order to fully use this facility it
+is necessary to specially spawn the process -- it is not possible for
+non-privileged processes to change the default file manager after they
+are running.
+
+The @code{spawn}@dots{}@code{using} variation of the @code{spawn} operator
+permits us to create a new process in a different part of the file
+system:
+
+@smallexample
+H = spawn @var{statement} using sub_manager(@var{directory},[_allow_read])
+@end smallexample
+@findex spawn@dots{}using
+
+@noindent
+The new process will be spawned with @var{directory} as its current
+directory, and it will not be able to access files outside the file
+hierarchy rooted in @var{directory}. In addition, the new process will
+only be able to read files in the @var{directory}, and will not be able
+to create pipes or establish TCP-style connections. Of course, the
+spawning process must have access to @var{directory} itself; and must
+also have at least read access to @var{directory}.
+
+@node state
+@subsection Report process status
+@cindex Report status of process
+@findex @code{state} @r{function}
+
+@noindent
+Function template:
+@smallexample
+state(handle?@var{P}) => _process_state
+@end smallexample
+
+@noindent
+This function returns the status of the identified process using one of
+the following symbols:
+
+@table @code
+@item dead
+if the process identified has completed execution -- or if it never
+existed.
+
+@item quiescent
+between the process being created and its first instruction.
+
+@item runnable
+if the process is potentially (or actually) running.
+
+@item wait_io
+if the process is waiting for an I/O operation to complete or become available.
+
+@item wait_msg
+if the process is waiting for a message.
+
+@item wait_timer
+if the process is waiting for a timer event.
+@end table
+
+These symbols are collected in a system type -- @code{process_state} --
+which has the definition:
+
+@smallexample
+_process_state ::= dead | quiescent | runnable | wait_io | 
+             wait_msg | wait_timer ;
+@end smallexample
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"non-local process handle"}
+@end itemize
+
+@node done
+@subsection Test for process termination
+@cindex Test for process termination
+@findex done @r{function}
+
+@noindent
+Function template:
+@smallexample
+done(handle?@var{P}) => logical
+@end smallexample
+
+@noindent
+This function returns @code{false} if identified process @var{P} is still
+alive. 
+
+@emph{Hint:}
+@quotation
+This function is not able to test a remote process on another host
+computer; however, use the @code{ping} message to the communication
+server to determine if a remote process is alive or not.
+@end quotation
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"non-local process handle"}
+@end itemize
+
+@node kill
+@subsection Kill local process
+@cindex Kill process
+@findex @code{kill} @r{procedure}
+
+@noindent
+Procedure template:
+@smallexample
+kill(handle?@var{P})@{@}
+@end smallexample
+
+@noindent
+Kill the process associated with the @code{handle} @var{P}. This
+primitive also allows a remote process to be killed. Only a process'es
+creator (@pxref{creator}) or manager process may kill a process.
+
+@node waitfor
+@subsection Wait for process termination
+@cindex Wait for process termination
+@findex @code{waitfor} @r{procedure}
+
+@noindent
+Procedure template:
+@smallexample
+waitfor(handle?@var{P})@{@}
+@end smallexample
+
+@noindent
+This procedure suspends and waits for the process @var{P} to
+terminate.
+
+This procedure -- which is implemented with a standard macro -- allows a
+process to wait for a remote process to terminate.
+
+@node halt
+@subsection Halt execution of @code{April}
+@cindex Halt execution of @code{April}
+@findex @code{halt} @r{procedure}
+
+@noindent
+Procedure template:
+@smallexample
+halt@{@}
+@end smallexample
+
+@noindent
+Exits the @code{April} system. 
+
+This is a priviliged procedure -- and may not be used by a
+non-priviliged process.
+
+@node exit
+@subsection Exit @code{April} system
+@cindex Exit @code{April} system
+@findex @code{exit} @r{procedure}
+
+@noindent
+Procedure template:
+@smallexample
+exit(number?@var{Code})@{@}
+@end smallexample
+
+@noindent
+@var{Code} is an integer.  Exits the @code{April} system with the
+given code. Normally, in Unix, 0 as a termination code is used to signal
+that the program terminated successfully, and a non-zero code to signal
+some kind of trouble.
+
+This is a privileged procedure -- and may not be used by a
+non-privileged process.
+
+@node delay
+@subsection Suspend process for a fixed time
+@cindex Suspend process for a fixed time
+@cindex Delay for some time
+@findex @code{delay} @r{procedure}
+
+@noindent
+Procedure template:
+@smallexample
+delay(number?@var{Time})@{@}
+@end smallexample
+
+@noindent
+The process suspends execution for @var{Time} seconds.  In
+that time other processes may execute.
+
+@node sleep
+@subsection Sleep until some time
+@cindex Sleep until some time
+@findex @code{sleep} @r{procedure}
+
+@noindent
+Procedure template:
+@smallexample
+sleep(number?@var{Time})@{@}
+@end smallexample
+
+@noindent
+The process suspends execution until at least @var{Time}; where
+@var{Time} is an absolute time -- which is typically some offset from
+the value returned by the @code{now()} built-in function (@pxref{now}).
+Until that time other processes may execute.
+
+@node Identification functions
+@section Identification Functions
+@cindex Identification Functions
+
+@menu
+* host::                        Identify host machine name
+* location::                    Identify current location information
+* self::                        Identify current process
+* creator::                     Identify creator process
+* commserver::                  Identify commserver process
+@end menu
+
+@node host
+@subsection Name of host computer
+@cindex Name of host machine
+@findex @code{host} @r{function}
+
+@noindent
+Function template:
+@smallexample
+host() => string
+@end smallexample
+
+@noindent
+This returns the name of the machine on which the @code{April} program
+is running. The form of this name is the full `canonical' domain host
+name of the computer -- where that is available.
+
+@node location
+@subsection Location of host computer
+@cindex location of host computer
+@findex @code{location} @r{function}
+
+@noindent
+Function template:
+@smallexample
+location() => string[]
+@end smallexample
+
+@noindent
+The @code{location} function returns a list which represents the
+location address of agents running on this machine. By default, the
+value of @code{location} is a single element list containing the same
+value as returned by @code{host}. However, this list can be manipulated
+either at the @code{april} command line -- using the @code{-l @var{loc}}
+option -- or via the local communications server.
+
+More precisely, the value of @code{location} is the union of the local
+host machine address, any addresses given at the @code{April} command
+line as @code{-l @var{loc}} options, the address of the communication
+server's machine and any addresses given at the @code{icm} command line
+-- also as @code{-l @var{loc}} options.
+
+This facility is intended to allow processes to express @code{handle}
+values with complex routing requirements (such as for mobile agents, or
+agents executing on mobile computers).
+
+@node self
+@subsection @code{handle} of current process
+@cindex @code{handle} of current process
+@cindex Current process @code{handle}
+@findex @code{self} @r{function}
+
+@noindent
+Function template:
+@smallexample
+self() => handle
+@end smallexample
+
+@noindent
+This returns the @code{handle} of the current process.
+
+@node creator
+@subsection Creator of current process
+@cindex Creator of current process
+@cindex parent of this process
+@findex @code{creator} @r{function}
+
+@noindent
+Function template:
+@smallexample
+creator() => handle
+@end smallexample
+
+@noindent
+This returns the @code{handle} of the process which created the current
+process. A process'es @code{creator} is considered the owner of the
+process. Only the system monitor or a process'es @code{creator} may kill
+a process. The value is the same as @code{self()} for the root process.
+
+@node commserver
+@subsection Identity of the communications server
+@cindex Identity of the commserver
+@findex @code{commserver} @r{function}
+
+@noindent
+Function template:
+@smallexample
+commserver() => handle
+@end smallexample
+
+@noindent
+This returns the @code{handle} of the communications server process that
+this invocation of @code{April} is connected to. This handle is computed
+by the @code{April} system during initilization. If there is no
+commserver, then a @code{"no communications server"} error exception is raised.
+
+
+
+
+

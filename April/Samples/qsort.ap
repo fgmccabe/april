@@ -1,0 +1,27 @@
+/*
+ * A quicksort in April
+ */
+
+module
+{
+  qsort = {
+    ([],_) => []
+  | ([A],_) => [A]
+  | ([A,..R],F) => valof{
+      (L1,L2) = split(R,A,F);
+      valis qsort(L1,F)<>[A,..qsort(L2,F)]
+    }
+  };
+
+  split(List,P,F) => valof{
+    L1 : [];
+    L2 : [];
+    for A in List do{
+      if F(P,A) then
+        L1 := [A,..L1]
+      else
+        L2 := [A,..L2]
+    };
+    valis (L1,L2)
+  };
+} export qsort;

@@ -1,0 +1,26 @@
+#include "files.ah";
+
+program
+{
+  foo(Fl){
+    fd = __open(Fl,_open_read);
+    try{
+       while ! __eof(fd) do{
+         "We got "++__inline(fd)++"\n">>stdout
+       }
+   } onerror
+     E -> "Error "++E^0++" raised\n">>stdout
+  };
+  
+  
+       
+  main(Fl)
+  {
+    K = spawn foo(Fl);
+    
+    delay(0.0015);
+    _interrupt(error("Hi there",'einval),K);
+    waitfor(K);
+  }
+  
+} execute main;

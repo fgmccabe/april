@@ -1,0 +1,8 @@
+/*
+ * Protocol type definitions for the base & ball example
+ */
+
+bbProtocol ::= doTask((handle){})
+  | hello
+  | migrate(handle)
+  | quit;

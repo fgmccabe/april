@@ -1,0 +1,30 @@
+program{
+  cmd_loop(ech,who){
+    while true do {
+      hdl2str(who,true)++" ping: ">>stdout;
+
+      { any%%msg .= binline(stdin);
+        "send: "++msg^4++" to "++who^0++"\n">>stdout;
+        msg~~[replyTo(ech)] >> who;
+      }
+      onerror{
+        error("end of file", _) -> break
+      | X -> "Error: "++X^4++" please try again\n">>stdout
+      }
+    }
+  };
+
+  echo_loop(){
+    while true do {
+      receive{
+	any?X ->> 
+          "Response: "++any2str(X,4)++" from "++hdl2str(replyto,true)++"\n">>stdout
+      }
+    }
+  };
+
+  main(who){
+    ech : spawn echo_loop();
+    cmd_loop(ech,who);
+    }
+} execute main;

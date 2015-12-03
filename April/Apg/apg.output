@@ -1,0 +1,328 @@
+
+State 49:
+	production -> rhs PREC ID action . (28)
+
+__default__ reduce using rule 28
+
+State 48:
+	ruleset -> ruleset BAR production . (25)
+
+__default__ reduce using rule 25
+
+State 47:
+	production -> rhs PREC ID .action  (28)
+
+BRACE shift, goto 43
+__default__ reduce using rule 33
+goto(action)=49
+
+State 46:
+	rhs -> rhs ID . (30)
+
+__default__ reduce using rule 30
+
+State 45:
+	production -> rhs PREC .ID action  (28)
+
+ID shift, goto 47
+
+State 44:
+	production -> rhs action . (27)
+
+__default__ reduce using rule 27
+
+State 43:
+	action -> BRACE . (32)
+
+__default__ reduce using rule 32
+
+State 42:
+	ruleset -> ruleset BAR .production  (25)
+
+ID shift, goto 38
+[ID reduce using rule 31]
+__default__ reduce using rule 31
+goto(production)=48
+goto(rhs)=37
+
+State 41:
+	rule -> ID COLON ruleset SEMI . (24)
+
+__default__ reduce using rule 24
+
+State 40:
+	rule -> ID COLON ruleset .SEMI  (24)
+	ruleset -> ruleset .BAR production  (25)
+
+BAR shift, goto 42
+SEMI shift, goto 41
+
+State 39:
+	ruleset -> production . (26)
+
+__default__ reduce using rule 26
+
+State 38:
+	rhs -> ID . (29)
+
+__default__ reduce using rule 29
+
+State 37:
+	production -> rhs .action  (27)
+	production -> rhs .PREC ID action  (28)
+	rhs -> rhs .ID  (30)
+
+BRACE shift, goto 43
+ID shift, goto 46
+PREC shift, goto 45
+__default__ reduce using rule 33
+goto(action)=44
+
+State 36:
+	rule -> ID COLON .ruleset SEMI  (24)
+
+ID shift, goto 38
+[ID reduce using rule 31]
+__default__ reduce using rule 31
+goto(ruleset)=40
+goto(production)=39
+goto(rhs)=37
+
+State 35:
+	rules -> rules rule . (23)
+
+__default__ reduce using rule 23
+
+State 34:
+	apg -> preamble MARK rules MARK . (1)
+
+__default__ reduce using rule 1
+
+State 33:
+	rules -> rule . (22)
+
+__default__ reduce using rule 22
+
+State 32:
+	apg -> preamble MARK rules .MARK  (1)
+	rules -> rules .rule  (23)
+
+ID shift, goto 31
+MARK shift, goto 34
+goto(rule)=35
+
+State 31:
+	rule -> ID .COLON ruleset SEMI  (24)
+
+COLON shift, goto 36
+
+State 30:
+	tokenspec -> ID CENTBRACE . (17)
+
+__default__ reduce using rule 17
+
+State 29:
+	tokenspec -> ID BRACE . (16)
+
+__default__ reduce using rule 16
+
+State 28:
+	tokenspecs -> tokenspecs tokenspec . (14)
+
+__default__ reduce using rule 14
+
+State 27:
+	tokendef -> NONASSOC tokenspecs . (12)
+	tokenspecs -> tokenspecs .tokenspec  (14)
+
+ID shift, goto 22
+__default__ reduce using rule 12
+goto(tokenspec)=28
+
+State 26:
+	tokendef -> RIGHT tokenspecs . (11)
+	tokenspecs -> tokenspecs .tokenspec  (14)
+
+ID shift, goto 22
+__default__ reduce using rule 11
+goto(tokenspec)=28
+
+State 25:
+	tokendef -> LEFT tokenspecs . (10)
+	tokenspecs -> tokenspecs .tokenspec  (14)
+
+ID shift, goto 22
+__default__ reduce using rule 10
+goto(tokenspec)=28
+
+State 24:
+	tokenspecs -> tokenspec . (13)
+
+__default__ reduce using rule 13
+
+State 23:
+	tokendef -> TOKEN tokenspecs . (9)
+	tokenspecs -> tokenspecs .tokenspec  (14)
+
+ID shift, goto 22
+__default__ reduce using rule 9
+goto(tokenspec)=28
+
+State 22:
+	tokenspec -> ID . (15)
+	tokenspec -> ID .BRACE  (16)
+	tokenspec -> ID .CENTBRACE  (17)
+
+BRACE shift, goto 29
+CENTBRACE shift, goto 30
+__default__ reduce using rule 15
+
+State 21:
+	startdef -> START ID . (20)
+
+__default__ reduce using rule 20
+
+State 20:
+	expectdef -> EXPECT NUM . (21)
+
+__default__ reduce using rule 21
+
+State 19:
+	typedef -> TYPE CENTBRACE . (19)
+
+__default__ reduce using rule 19
+
+State 18:
+	preamble -> preamble definition . (3)
+
+__default__ reduce using rule 3
+
+State 17:
+	apg -> preamble MARK .rules MARK  (1)
+
+ID shift, goto 31
+goto(rule)=33
+goto(rules)=32
+
+State 16:
+	? -> apg . (0)
+
+$ accept
+
+State 15:
+	preamble -> definition . (2)
+
+__default__ reduce using rule 2
+
+State 14:
+	apg -> preamble .MARK rules MARK  (1)
+	preamble -> preamble .definition  (3)
+
+CENTBRACE shift, goto 5
+EXPECT shift, goto 7
+LEFT shift, goto 3
+MARK shift, goto 17
+NONASSOC shift, goto 1
+RIGHT shift, goto 2
+START shift, goto 6
+TOKEN shift, goto 4
+TYPE shift, goto 8
+goto(definition)=18
+goto(tokendef)=13
+goto(includedef)=12
+goto(startdef)=11
+goto(expectdef)=10
+goto(typedef)=9
+
+State 13:
+	definition -> tokendef . (4)
+
+__default__ reduce using rule 4
+
+State 12:
+	definition -> includedef . (5)
+
+__default__ reduce using rule 5
+
+State 11:
+	definition -> startdef . (6)
+
+__default__ reduce using rule 6
+
+State 10:
+	definition -> expectdef . (7)
+
+__default__ reduce using rule 7
+
+State 9:
+	definition -> typedef . (8)
+
+__default__ reduce using rule 8
+
+State 8:
+	typedef -> TYPE .CENTBRACE  (19)
+
+CENTBRACE shift, goto 19
+
+State 7:
+	expectdef -> EXPECT .NUM  (21)
+
+NUM shift, goto 20
+
+State 6:
+	startdef -> START .ID  (20)
+
+ID shift, goto 21
+
+State 5:
+	includedef -> CENTBRACE . (18)
+
+__default__ reduce using rule 18
+
+State 4:
+	tokendef -> TOKEN .tokenspecs  (9)
+
+ID shift, goto 22
+goto(tokenspec)=24
+goto(tokenspecs)=23
+
+State 3:
+	tokendef -> LEFT .tokenspecs  (10)
+
+ID shift, goto 22
+goto(tokenspec)=24
+goto(tokenspecs)=25
+
+State 2:
+	tokendef -> RIGHT .tokenspecs  (11)
+
+ID shift, goto 22
+goto(tokenspec)=24
+goto(tokenspecs)=26
+
+State 1:
+	tokendef -> NONASSOC .tokenspecs  (12)
+
+ID shift, goto 22
+goto(tokenspec)=24
+goto(tokenspecs)=27
+
+State 0:
+	? -> .apg  (0)
+
+CENTBRACE shift, goto 5
+EXPECT shift, goto 7
+LEFT shift, goto 3
+NONASSOC shift, goto 1
+RIGHT shift, goto 2
+START shift, goto 6
+TOKEN shift, goto 4
+TYPE shift, goto 8
+goto(apg)=16
+goto(definition)=15
+goto(preamble)=14
+goto(tokendef)=13
+goto(includedef)=12
+goto(startdef)=11
+goto(expectdef)=10
+goto(typedef)=9

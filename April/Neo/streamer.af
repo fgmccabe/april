@@ -1,0 +1,5 @@
+/* automatically generated -- do not edit */
+/* Module interface file for streamer.aam */
+({
+    (char[])=>(yyTokType?yyTok,number?yyLine,char[]?yyFile)[]
+   }?streamer) from "streamer.aam";

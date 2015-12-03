@@ -1,0 +1,31 @@
+/*
+ * Display the current database in the commserver
+ */
+
+program{
+  main(){
+    ns : commserver();
+    args : tail(command_line(),1);
+
+    if listlen(args) > 0 then
+      ns:=hdl('sccs,'sccs);
+
+    "Ask "++ns^2++" for database\n" >> stdout;
+    'listAgents >> ns;
+    receive{
+      ('agentList,handle[]?db) ->> show(db)
+    | any?O ->> "Other message "++any2str(O,4)++"\n">>stdout
+    }
+  };
+
+  /*
+   *  Display nameserver database contents
+   */
+  show(db)
+  {
+    "current database :\n">>stdout;
+    for hdl(_,agent) in sort(db) do {
+      "    "++agent^0++"\n" >> stdout
+    };
+  }
+}execute main;

@@ -1,0 +1,3 @@
+@node Implementation of GoScript
+@chapter Implementation of @code{GoScript}
+@cindex Implementation of @code{GoScript}

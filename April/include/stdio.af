@@ -1,0 +1,48 @@
+/*
+ * Standard interface for the standard I/O system
+ */
+
+(
+  {(string,_file_open_mode)=>handle}?fopen,
+  {(handle){}}?fclose,
+  {(string,string[],string[])=>(handle,handle,handle)}?popen,
+  {(string,number)=>(handle,handle)}?tcp_connect,
+  {(number,(string,number,handle,handle){})=>handle}?tcp_server,
+  {(string,_access_right[])=>handle}?sub_manager,
+  {(string)=>string}?ffilename,
+  {(string)=>logical}?ffile,  
+  {(string)=>_file_permission[]}?fmode,
+  {(string,_file_permission[]){}}?fchmod,
+  {(string)=>_file_status}?fstat,
+  {(string){}}?frm,
+  {(string){}}?frmdir,
+  {(string,string){}}?fmv,
+  {(string){}}?fcd,
+  {()=>string}?fpwd,
+  {()=>string}?fhome,
+  {(string,_file_permission[]){}}?fmkdir,
+  {(string)=>string[]}?fls,
+  {(string)=>_file_type}?ffiletype,
+  {(handle)=>logical}?eof,
+  {(handle)=>logical}?fready,
+  {(handle){}}?fflush,
+  {(handle)=>number}?ftell,
+  {(handle,number,number){}}?fseek,
+  {(handle)=>string}?inchar,
+  {(handle,number)=>string}?inchars,
+  {(handle,number)=>number[]}?inbytes,
+  {(handle)=>number}?inascii,
+  {(handle)=>string}?inline,
+  {(handle)=>string}?binline,
+  {(handle)=>string}?intext,
+  {(handle,number)=>string[]}?inlines,
+  {(handle)=>any}?fdecode,
+  {(handle,string){}}?outchar,
+  {(handle,number[]){}}?outbytes,
+  {(handle,any){}}?fencode,
+  handle?stdin,
+  handle?stdout,
+  handle?stderr) from <stdio.aam>;
+
+
+

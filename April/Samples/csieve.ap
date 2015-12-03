@@ -1,0 +1,68 @@
+program
+{
+  -- Seive of Erastosthenes, find all primes in a given time period
+
+  filter(K,F,G)
+  {
+    while true do{
+      receive {
+        N :: N rem K == 0 ->> 'next >> G
+      | N ->> N >> F
+      }
+    }
+  };
+
+
+  seive(G)
+  {
+    receive{
+      K ->> {
+        "Next prime is "++K^0++"\n">>stdout;
+
+        'next >> G;
+
+        filter(K, {spawn seive(G)}, G);
+      }
+    }
+  };
+
+  generate(low)
+  {
+    receive{
+      ('kickoff, F) ->> {
+        I : low;
+        while true do {
+          receive
+            'next ->> { I >> F; I:=I+2; }
+        }
+      }
+    }
+  };
+
+
+  main(tmax)
+  {
+
+    start = ticks();
+
+    G = spawn generate(3);
+
+    H = spawn 
+       { try 
+           seive(G) within tmax
+         onerror
+           clickedout ->
+             "All done\n">>stdout
+         | E -> E^0++"\n">>stdout
+       } ;
+
+    ('kickoff,H) >> G;
+
+    'next >> G;
+
+    waitfor(H);
+
+    "Seive using "++tmax^0++" took "++ticks()-start^0++
+	" millisecs\n">>stdout;
+  }
+} execute main;

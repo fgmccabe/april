@@ -1,0 +1,25 @@
+program{
+
+  sieve = {
+    [] => []
+  | [I,..L] => [I,..sieve(filter(L,2*I,I))]
+  };
+
+  show(X) => valof{
+    X^0++"\n">>stdout;
+    valis X
+  };
+
+  filter = {
+    ([],_,_) => []
+  | ([N,..L],Ix,P)::Ix==N => filter(L,Ix+P,P)
+  | ([B,..L],Ix,P)::B>Ix => filter([B,..L],Ix+P,P)
+  | ([B,..L],Ix,P) => [B,..filter(L,Ix,P)]
+  };
+
+  main(N){
+--    "Primes up to "++N^0++"\t "++sieve(2..N)^0++"\n">>stdout;
+    "Primes up to "++N^0++"\t "++listlen(sieve(2..N))^0++"\n">>stdout
+  }
+
+} execute main;

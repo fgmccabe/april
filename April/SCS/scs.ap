@@ -1,0 +1,226 @@
+/*
+  Simplified communications server.
+  (c) 2001 F.G. McCabe
+
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation; either version 2 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program; if not, write to the Free Software
+  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+  Contact: Francis McCabe <fgm@fla.fujitsu.com>
+*/
+
+program
+  import{
+    interface <stdio.af>
+}
+in
+{
+    -- The new handle has a globally unique ID and a thread ID
+    
+    -- Quality of Service type. Fundamentally a stub at this time
+    QoS ::= killOnDisconnect | keepOnDisconnect | HoldUntil(number);
+    
+    /* Internal CS protocol structure */
+    svrProtocol ::= msg(handle,handle,string)
+                | smsg(any)
+                | newConnection(symbol,handle,handle)
+                | reConnect(symbol,handle,handle)
+                | destroyConnection(symbol)
+                | quitCS
+                ;
+
+  clientstate ::= registered | disconnected;
+  
+  hDlr ::= h(symbol,(svrProtocol){});
+  
+  clientEntry(symbol?client,handle?rdr,handle?wtr,QoS[]?qos) => {
+    writer : wtr;
+    reader : rdr;
+    state : disconnected;
+    msgs : [];
+    
+    timeOut : 0;
+    
+    core = self();
+        
+    manage(K)
+    {       
+      case K in {
+        reConnect(_,rdr,wtr) -> {
+          reader := rdr;
+          writer := wtr;
+          state := registered;
+          smsg(any(('reconnected,client))) >> writer;
+          for M in reverse(msgs) do
+            M >> writer;
+          msgs := [];
+        }
+                 
+      | destroyConnection(X) -> {
+          if !keepOnDisconnect in qos then{
+            destroyConnection(X) >>* [self(),writer]
+          }
+          else{
+            state := disconnected;
+            reader := nullhandle;
+            writer := nullhandle;
+          }
+        }
+      | M::msg(_,_,_).=M -> {
+          if writer!=nullhandle then
+            M >> writer
+          else if keepOnDisconnect in qos || HoldUntil(_) in qos then
+            msgs := [M,..msgs]
+        }
+      | M -> {
+          "unknown mgt command "++M^0++"\n">>stderr
+        }
+      }
+    };
+  }.h(client,manage);
+    
+  
+  showDB(DB) => valof{
+    S : "Database: ";
+    for h(N,_) in DB do
+      S := S++N^0++"\n";
+    valis S;
+  };
+  
+  serverProcess()
+  {
+    hDlr[]?DB : []; -- The database of connected clients
+    stdQoS = [killOnDisconnect];  -- server policy for managing connections
+
+    repeat{
+      newConnection(client,rdr,wtr) ->> {
+        "Core asked to create new entry "++client^0++"\n">>stderr;
+        if h(client,_) in DB then{
+          smsg(any('Duplicate))>>wtr;
+          kill(rdr);
+          destroyConnection(client)>>wtr
+        }
+        else{
+          DB := [clientEntry(client,rdr,wtr,stdQoS),..DB];
+          smsg(any('Ok))>>wtr
+        }
+      }
+    | destroyConnection(client) ->> {
+        DB := collect{
+          for (H::h(N,M).=H) in DB do{
+            if N!=client then
+              elemis H
+            else
+              M(destroyConnection(client))
+          }
+        };
+        "Core asked to destroy connection to "++client^0++"\n">>stderr;
+      }
+    | msg(hdl(tT,tA),fA,txt) ->> {
+        if h(tA,M) in DB then{
+--          "Routing message to "<>tA^0<>" from "<>fA^0<>"\n">>stderr;
+          M(msg(hdl(tT,tA),fA,txt))   -- invoke the handler for the message
+        }
+        else{
+          "Cannot locate "<>tA^0<>"\n">>stderr;
+          showDB(DB)++"\n">>stderr;
+          "Message "++txt^0++" with nowhere to go\n">>stderr;
+        }
+      }
+    | MM ->> 
+        "Server cannot handle message "++MM^2++"\n">>stderr
+    } until quitCS;
+  };
+  
+  reverse(L) => valof{
+    R : [];
+    for X in L do
+      R := [X,..R];
+    valis R
+  };
+  
+  
+  /* Manage individual connections */
+  
+  rdMsg(str) => fdecode(str);
+  
+  wrMsg(str,M){
+    fencode(str,M);
+  };
+    
+  /* Reader -- consumes the stream of messages coming from the client
+     and forwards them to the main server to deal with.
+   */
+   
+  reader(inStream,writer,Core)
+  {
+    client : 'void;       
+    try{
+      while not eof(inStream) do{
+        case rdMsg(inStream) in {
+          any(('register,H)) -> {
+            newConnection(H,self(),writer) >> Core;
+            client := H;
+          }
+        | any('disconnect) -> destroyConnection(client) >> Core
+        | any((ToAddr,FromAddr,Msg)) -> 
+            msg(ToAddr,FromAddr,Msg) >> Core
+        | M -> {
+            "Invalid client message: "++M^0++"\n">>stderr
+          }
+        }
+      };
+    }
+    onerror
+      E -> __log_msg("CS: problem "++E^0);
+    
+    destroyConnection(client) >> Core;
+  };
+        
+  writer(outStream,Core)
+  {      
+    WLoop::{
+      repeat{
+        msg(ToAddr,FromAddr,Msg) ->> 
+          wrMsg(outStream,any((ToAddr,FromAddr,Msg)))
+      |smsg(T) ->>
+          wrMsg(outStream,T)
+        
+      | X ->> {
+          "Unexpected msg from server core "++X^0++"\n">>stderr
+        }
+      } until destroyConnection(_);
+       
+    };
+    "writer "++self()^0++"dying\n">>stdout;
+  };
+    
+  incoming(host,port,inp,out,core)
+  {
+    "Incoming connection from "++host++"/"++port^0++"\n">>stderr;
+      
+    wtr = spawn writer(out,core);
+    reader(inp,wtr,core);
+    "incoming "++self()^0++"closing\n">>stdout;
+  };
+        
+  main(port)
+  {
+    Core = spawn { serverProcess() };
+    
+    TCPserver = tcp_server(port,((h1,p,i,o)->{incoming(h1,p,i,o,Core)}));
+      
+    waitfor(Core);
+  }
+        
+} execute main;

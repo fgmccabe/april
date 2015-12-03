@@ -1,0 +1,11 @@
+/* automatically generated -- do not edit */
+/* Module interface file for operators.aam */
+({
+    (char[])=>logical
+   }?isOperator,{
+    (char[])=>(number,number)
+   }?prefixPr,{
+    (char[])=>(number,number,number)
+   }?infixPr,{
+    (char[])=>(number,number)
+   }?postfixPr,(opmode, char[], number){}?addop) from "operators.aam";

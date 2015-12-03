@@ -1,0 +1,17 @@
+/* This example communication with Go! */
+
+program import interface <scomms.af> in
+{
+  pong(){
+    repeat{
+      Msg ->> {
+        "We have message:" ++Msg^0++" from "++replyto^0++"\n">>stdout;
+        Msg >> replyto;
+      }
+    } until 'quit;
+  };
+
+  main(Who){
+    scsConnectAs(pong,hdl('pong,Who),"localhost",4545);
+  }
+} execute main;

@@ -1,0 +1,513 @@
+@node Debugging April programs
+@chapter Debugging @code{April} programs
+@cindex Debugging @code{April} programs
+
+@noindent
+@code{April} supports the `remote debugging' of processes; i.e., it is
+possible to debug an @code{April} application using tools which do not
+execute on the same machine as the @code{April} application
+itself. Furthermore, a single debugging session can monitor several
+@code{April} applications simultaneously.
+
+When an @code{April} application is being debugged, it can be executed
+in `debug mode' -- using the @code{-g} switch on the @code{april} command
+line (@pxref{How to invoke April}). Providing that the program has been
+appropriately compiled (i.e., also with the @code{-g} flag --
+@pxref{Compiling April programs}); then, as the program runs, messages
+are sent from the @code{April} application being monitored to the
+debugger process.
+
+An @code{April} debugger is a separate program that operates as a kind of `debugging server'; receiving messages from the debugged program whenever a notable event (such as assigning a variable or entering a program) occurs. @code{April} encodes its messages as @code{XML} structures that are defined in this chapter. Note that an @code{April} application that is being monitered executes much more slowly that normal. This may impact the behaviour of the @code{April} application where real-time events are concerned.
+
+The @code{April} engine also has a very simple debugger built-in; which can be useful for certain situations where setting up an external debugger process is inconvenient.
+
+
+@menu
+* Connecting to an external debugger::
+* The standard April debugger::  Simple text-based debugger.
+* Debugging messages::          Standard messages generated for debugging purposes.
+@end menu
+
+@node Connecting to an external debugger
+@section Connecting to an external debugger
+@cindex Connecting to an external debugger
+
+@noindent
+To debug an @code{April} application using an external debugger it is necessary to specify the target server on the @code{April} command line:
+@smallexample
+% april -g @emph{host:port} @var{aprilprogram} @dots{}
+@end smallexample
+If the @emph{port} is not specified then 9999 is assumed. For example, to connect to a debugger running on the same computer that is listening on port 9999, use:
+@smallexample
+% april -g localhost @var{aprilprogram} @dots{}
+@end smallexample
+
+If the @code{-g} command-line option is given, then the @code{April} engine attempts to connect to the indicated server on startup. If that is successful, then whenever a monitored program wishes to report a debugging event it sends a message -- in the XML format described below -- to the server.
+
+
+@node The standard April debugger
+@section The standard @code{April} debugger
+@cindex The standard @code{April} debugger
+
+@noindent
+@code{April} includes, as a standard program, a simple line-based
+debugger program. This program is invoked using the Unix command:
+
+@smallexample
+% apdebugger @var{name}
+@end smallexample
+
+@var{name} will become the public name, registered with the local name
+server, for this invocation of the debugger process. Different users can
+have there own invocations of the debugger running providing each has a
+different public @var{name}.  The debugger will run in a separate
+@code{April} invocation and it is usual to run this either in a
+different window or on a different machine from the program you want to
+debug. To initiate a monitored execution, the program to be debugged
+must have been compiled with the @code{-g} option, and the @code{April}
+invocation to run it must also have the @code{-g} @var{name} option:
+
+@smallexample
+% apdebugger 9999
+% april -g localhost world3
+@end smallexample
+
+In the debugger's window, @emph{not in the @code{April} application's
+window}, output similar to the following will be displayed:
+
+@smallexample
+April debugging server - 0:fgmdebug@@laotzu.doc.ic.ac.uk
+Switch to 0:laotzu#24226@@laotzudoc.ic.ac.uk
+fork 0:laotzu#24226@@laotzudoc.ic.ac.uk
+fork 0:laotzu#24226@@laotzudoc.ic.ac.uk
+@@ /home/fgm/@dots{}/world3.ap:5
+@end smallexample
+
+@noindent
+The last line of this in an indicator that the program has paused at
+line 5 in the source file @file{world3.ap}. The debugger is waiting for
+a response, which is normally simply a carriage return -- to continue
+stepping execution:
+
+@smallexample
+
+@@ /home/fgm/@dots{}/hello.ap:2
+
+Entering procedure/function hello
+hello = "Hello world"
+@@ /home/fgm/@dots{}/hello.ap:2
+
+Return from procedure/function hello
+@@ /home/fgm/@dots{}/world3.ap:6
+
+Return from procedure/function main
+@end smallexample
+
+@noindent
+Typing a @code{q} in response to a `line' prompt will cause the process
+being monitored to terminate.
+
+Even though the application has terminated, the debugger itself will not
+stop. In fact it does not know that the application has finished at this
+point -- although we could have a good guess since it is the @code{main}
+procedure which has just exited.
+
+The debugger will continue executing indefinitely as it will handle
+debugging messages from all @code{April} applications in the same
+logical network that are invoked using the @code{-g fgmdebug} option.
+
+In order to debug `remotely', all that is necessary is to use the full
+name of the debugger when invoking @code{April}. For example, in order
+to debug the @file{world3} program, when it is executing in the
+@code{April} domain @code{ee.qmw.ac.uk}, using the @code{fgmdebug}
+debugger which is executing in the domain @code{doc.ic.ac.uk}, then use:
+
+@smallexample
+% april -g fgmdebug@@doc.ic.ac.uk world3
+@end smallexample
+
+@noindent
+when invoking @code{April}.
+
+@node Debugging messages
+@section Debugging messages
+@cindex Debugging messages
+
+@noindent
+Each of the major `events' that can occur in an @code{April} program are
+logged by sending a particular message to the debugger process. For
+example, each time the program moves to a different line of the source
+file, or assigns a variable, a message is sent to the debugger.
+
+In most cases, no response is expected from the debugger, however, in
+the case of the @code{line} message, the monitored application will
+pause waiting for a response from the debugger. This allows a programmer
+to `single step' through the execution of a program or to set break
+points as needed.
+
+@menu
+* Standard debugging message type::  
+* line_debug message::          On arrival at a line of source
+* entry_debug message::         On entry to a procedure or function
+* exit_debug message::          On exit from     a procedure or function
+* return_debug message::        Return value from a function
+* assign_debug message::        Assign a variable
+* scope_debug message::         Change variable scope
+* fork_debug message::          Fork a sub-process
+* die_debug message::           Process terminates
+* send_debug message::          Send a message
+* front_debug message::         Post a message in the message queue
+* accept_debug message::        Accept a message
+* suspend_debug::               Process suspended message
+* error message::               Error message
+* break_debug message::         
+@end menu
+
+@node Standard debugging message type
+@subsection Standard debugging message type
+@cindex Standard debugging message type
+@findex debugMsgType @r{standard type}
+
+@noindent
+The @code{debug_msg} is a standard type that encapsulates the debugging
+messages that may occur in the system. Its definition is:
+
+@smallexample
+debugMsgType ::= line_debug(handle,string,number) |
+        entry_debug(handle,string) |
+        scope_debug(handle,number) |
+        exit_debug(handle,string) |
+        return_debug(handle,string,string) |
+        fork_debug(handle,handle) |
+        suspend_debug(handle) | 
+        die_debug(handle) |
+        send_debug(handle,handle,string) |
+        front_debug(handle,handle,string) |
+        accept_debug(handle,handle,string) |
+        assign_debug(handle,string,string) |
+        error_debug(handle,error) |
+        break_debug(handle,string);
+@end smallexample
+
+@noindent
+In order to access this type it is necessary to @code{#include} the file
+@file{debug.ah} in the source of the program:
+
+@smallexample
+#include <debug.ah>;
+@end smallexample
+
+@node line_debug message
+@subsection The @code{line_debug} message
+@cindex The @code{line_debug} message
+
+@noindent
+Message template:
+@smallexample
+line_debug(handle?@var{pr},string?@var{file},number?@var{line})
+@end smallexample
+
+@noindent
+This message is sent each time the program moves to a new source line in
+the text of the program. @var{pr} is the @code{handle} of the process
+which is now at the new line of the source @var{file}, and
+@var{line} is a number indicating which line the program is at.
+
+When a @code{line_debug} message is sent by an @code{April} program, the
+process involved suspends waiting for a reply from the debugger. Other
+processes -- including those in the same @code{April} invokation --
+continue executing as normal.
+
+The response from the debugger should be one of:
+
+@table @code
+@item 'ok
+the monitored process will continue executing.
+@item 'q
+the monitored process is terminated.
+@item 'cont
+suppresses further debugging messages 
+@end table
+
+@node entry_debug message
+@subsection The @code{entry_debug} message
+@cindex The @code{entry_debug} message
+
+@noindent
+Message template:
+@smallexample
+entry_debug(handle?@var{pr},string?@var{prog})
+@end smallexample
+
+@noindent
+This message is sent whenever a procedure or function is
+entered. @var{pr} is the handle of the process entering the procedure,
+and @var{prog} is the name of the procedure or function.
+
+@code{April} makes no distinction between procedures and functions in
+this message -- since when a procedure and function are entered a
+@code{line} message is also sent, the programmer should be able to
+distinguish this by looking at the source file.
+
+@node exit_debug message
+@subsection The @code{exit_debug} message
+@cindex The @code{exit_debug} message
+
+@noindent
+Message template:
+@smallexample
+exit_debug(handle?@var{pr},string?@var{prog})
+@end smallexample
+
+@noindent
+is sent whenever a procedure or function is about to return. @var{pr} is
+the handle of the process entering the procedure, and @var{prog} is
+the name of the procedure or function.
+
+@node return_debug message
+@subsection The @code{return_debug} message
+@cindex The @code{return_debug} message
+
+@noindent
+Message template:
+@smallexample
+return_debug(handle?@var{pr},string?@var{prog},string?@var{value})
+@end smallexample
+
+@noindent
+The @code{return_debug} message is sent when a function is returning,
+and it gives the value that is being returned by the function.  Note
+that a function written with an unnamed equation generates a
+@code{return} message with @code{prog=lambda}.
+
+The value returned by the function is displayed in the @var{value}
+string as though it were computed by an expression of the form:
+@code{@var{exp}^0}. However, if there is a function defined in the
+current scope called @code{__debug_display__} of type:
+@smallexample
+any=>string
+@end smallexample
+then this function will be called to `display' the returned value
+instead.@footnote{This is an experimental feature, introduced in version
+4.4.0-pre3}. 
+
+@node assign_debug message
+@subsection The @code{assign_debug} message
+@cindex The @code{assign_debug} message
+
+@noindent
+Message template:
+@smallexample
+assign_debug(handle?@var{pr},string?@var{var},string?@var{value})
+@end smallexample
+
+@noindent
+This message is sent whenever a variable is assigned a value. This
+includes the case of entering a procedure or function -- for each of the
+parameters of the procedure an @code{assign_debug} message is sent. This
+way, it is possible to find out the values of parameters to procedures
+as well as the results of assignment.
+
+The value assigned to the variable is displayed in the @var{value}
+string as though it were computed by an expression of the form:
+@code{@var{exp}^0}. However, if there is a function defined in the
+current scope called @code{__debug_display__} of type:
+@smallexample
+any=>string
+@end smallexample
+then this function will be called to `display' the assigned value
+instead. This is a convenient method for customizing the debugger.
+
+@node scope_debug message
+@subsection The @code{scope_debug} message
+@cindex The @code{scope_debug} message
+
+@noindent
+Message template:
+@smallexample
+scope_debug(handle?@var{pr},number?@var{level})
+@end smallexample
+
+@noindent
+A typical @code{April} program has many variables in it, often in
+different scopes.  The @code{scope_debug} message allows a debugger to
+determine the current scope that the program is in. 
+
+The scope @var{level} is typically a small positive integer. The
+@var{level} value is always relative to a given function or
+procedure. Higher numbers refer to `deeper' scope levels, and the
+initial scope level on entry to a procedure or function is always zero.
+
+The debugger can interpret a @code{scope_debug} message as either that
+the program has entered a new scope level, or that it is returning to a
+previous scope level -- depending on whether the previous scope level
+was higher or lower.
+
+A debugger can use this information to determine which of the process'es
+variables -- as determined by @code{assign_debug} messages
+@ifinfo
+@pxref{assign_debug message}
+@end ifinfo
+-- are currently in active scope.
+@refill
+
+@node fork_debug message
+@subsection The @code{fork_debug} message
+@cindex The @code{fork_debug} message
+
+@noindent
+Message template:
+@smallexample
+fork_debug(handle?@var{parent},handle?@var{child})
+@end smallexample
+
+@noindent
+This message is sent when a process forks.  The @var{child}
+@code{handle} is the handle of the new process, and @var{parent} is the
+handle of the process which created this process.
+
+@node die_debug message
+@subsection The @code{die_debug} message
+@cindex The @code{die_debug} message
+
+@noindent
+Message template:
+@smallexample
+die_debug(handle?@var{pr})
+@end smallexample
+
+@noindent
+is sent when a process terminates. 
+
+@node send_debug message
+@subsection The @code{send_debug} message
+@cindex The @code{send_debug} message
+
+@noindent
+Message template:
+@smallexample
+send_debug(handle?@var{sndr},handle?@var{to},string?@var{msg})
+@end smallexample
+
+@noindent
+This message is sent when one process sends a message to another. 
+This message records the act of sending a message; it does not imply that the
+message was received properly.
+
+The message sent is displayed in the @var{value}
+string as though it were computed by an expression of the form:
+@code{@var{msg}^0}. However, if there is a function defined in the
+current scope called @code{__debug_display__} of type:
+@smallexample
+any=>string
+@end smallexample
+then this function will be called to `display' the message.
+instead.
+
+@node front_debug message
+@subsection The @code{front_debug} message
+@cindex The @code{front_debug} message
+
+@noindent
+Message template:
+@smallexample
+front_debug(handle?@var{sndr},handle?@var{to},string?@var{msg})
+@end smallexample
+
+@noindent
+This message is sent when a process sends a message to itself using the
+`self posting mechanism. Such a message is always put at the front of
+the process'es message queue. 
+
+The message is displayed in the @var{value}
+string as though it were computed by an expression of the form:
+@code{@var{msg}^0}. However, if there is a function defined in the
+current scope called @code{__debug_display__} of type:
+@smallexample
+any=>string
+@end smallexample
+then this function will be called to `display' the message
+instead.
+
+@node accept_debug message
+@subsection The @code{accept_debug} message
+@cindex The @code{accept_debug} message
+
+@noindent
+Message template:
+@smallexample
+accept_debug(handle?@var{sndr},handle?@var{to},string?@var{msg})
+@end smallexample
+
+@noindent
+This message is sent when a receiving process `accepts' a message from
+its message queue. It is only when both the @code{send_debug} message
+and the @code{accept_debug} message are recorded that the message can be
+said to have been communicated between the processes.
+
+Note that this message does not record the value of the @code{replyto}
+keyword separately from the identity of the sender of the message.
+
+The accepted message is displayed in the @var{msg}
+string as though it were computed by an expression of the form:
+@code{@var{msg}^0}. However, if there is a function defined in the
+current scope called @code{__debug_display__} of type:
+@smallexample
+any=>string
+@end smallexample
+then this function will be called to `display' the message instead.
+
+@node suspend_debug
+@subsection The @code{suspend_debug} message
+@cindex The @code{suspend_debug} message
+
+@noindent
+Message template:
+@smallexample
+suspend_debug(handle?@var{pr})
+@end smallexample
+
+@noindent
+The @code{suspend_debug} message is sent to the debugger whenever the
+debugged process has to suspend because it is waiting for a message to arrive.
+
+@node error message
+@subsection The @code{error_debug} message
+@cindex The @code{error_debug} message
+
+@noindent
+Message template:
+@smallexample
+error_debug(handle?@var{pr},error?@var{err})
+@end smallexample
+
+@noindent
+is sent when a run-time error is reported in a process, and the process
+does @emph{not} have an error recovery code section in force at the
+time. Generally, @var{err} will be of the form 
+
+@smallexample
+error(string?@var{message},symbol?@var{code})
+@end smallexample
+
+@noindent
+I.e., it is an @code{error} value (@pxref{error type}).
+The @var{message} is a string which describes the error, and @var{data}
+is some value which is involved in the error condition.
+
+If an @code{error} message has been sent, the erroneous process has
+also been terminated by the @code{April} run-time system.
+
+@node break_debug message
+@subsection The @code{break_debug} message
+@cindex The @code{break_debug} message
+
+@noindent
+Message template:
+@smallexample
+break_debug(handle?@var{pr},string?@var{msg})
+@end smallexample
+
+@noindent
+is sent whenever the built-in statement @code{_break(@var{msg})} is executed.
+

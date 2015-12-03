@@ -1,0 +1,499 @@
+@node Resource limited execution
+@chapter Resource limited execution
+@cindex Resource limited execution of programs
+
+@noindent
+@code{April} permits a process -- or a group of processes -- to be
+executed in a resource limited environment. This means that the amount
+of CPU processor time, access to the file system and access to
+messages to and from other @code{April} processes can all be controlled.
+
+Together with an implementation of message encryption, a resource
+limited execution environment permits a @emph{secure} environment for
+@code{April} programs to be executed. Particularly in the context of
+mobile programs, the ability to restrict the system resources available
+to a process is very important.
+
+The two key concepts required for implementing resource limited
+execution are the so-called privileged processes (@pxref{Privileged
+processes}) and the @emph{manager processes}.
+
+When a process is to be executed in a `non-trusted' mode, then it is
+@code{spawn}ed as a non-privileged process; any processes that @emph{it}
+spawns are similarly non-privileged.
+
+For each executing process, there are several manager processes
+which are responsible for implementing policy towards their controlled
+processes. For example, there is a manager process to control access to the
+file system and a manager process to control access to the
+communications channel. Typically, each manager process is written in
+@code{April} and controls a number of subsidiary processes: by default,
+when a process is @code{spawn}ed, it inherits its manager processes from
+its parent process.
+
+@menu
+* CPU time::                    How access to the CPU is controlled
+* File manager::                How access to the file system is controlled
+* Communications manager::      How access to the communications is controlled
+* Code verification::           Verifying proper semantics for code
+@end menu
+
+@node CPU time
+@section CPU time
+@cindex Controlling CPU time
+
+@noindent
+The amount of CPU time that a process may consume is controlled using
+two features of @code{April}: a `click counter' which `contains' a
+number of CPU `clicks'@footnote{A single click is approximately equal to
+0.1 milliseconds of CPU time. However, due to the vagarities of typical
+CPU clocks, any resolution less than 100milliseconds is often not
+especially accurate.} and a @code{within} statement that controls the
+execution of a statement relative to a given click counter.
+
+Click counters can only created and manipulated by privileged processes;
+however, any process may use any click counter that it has access to.
+
+The @code{April} engine implements a mechanism whereby the CPU
+time spent executing statements and other executable elements is
+accurately allocated to a given click counter. At any given time,
+each process is using a given click counter (CC) -- different processes
+may be using different CCs, and a given process may use different CCs
+at different times.
+
+However, if the current CC `times out'; i.e., if the available number
+of clicks on a CC goes to less than zero, then the current execution is
+aborted with a `@code{clickedout}' error. Therefore, the correct way of
+invoking a computation which may run out of clicks is by surrounding it
+with an @code{onerror} structure:
+
+@smallexample
+try
+  @var{Stmt} within @var{C}
+onerror
+  clickedout -> @var{recover from clicked out}
+| E -> exception E           -- report all other errors
+@end smallexample
+
+@noindent
+The @code{April} system has a few built-in primitives for creating CCs,
+and modifying them. Explicitly destroying a CC is not necessary since
+the garbage collector will remove unreferenced CCs; however, any `time'
+on the CC will also be lost.
+
+@emph{Hint:}
+@quotation
+One use for CCs and the @code{within} operator is constrained
+execution. There is an important class of algorithms which are
+inherently open-ended -- for example, game tree searching algorithms in
+chess have no obvious termination. Using a CC allows an application to
+use such an open ended algorithm and to use the best result arrived at
+so far within a time constraint.
+@end quotation
+
+
+@menu
+* Create a new Click Counter::  
+* Access current clicks::       
+* Access click counter value::  
+* Modify a click counter::      
+* Constrained execution of a statement::  
+@end menu
+
+@node Create a new Click Counter
+@subsection Create a new Click Counter
+@cindex Creating a new click counter
+@findex __new_clicks
+
+@noindent
+Function template:
+@smallexample
+__new_clicks(number?@var{amount}) => __opaque__
+@end smallexample
+
+@noindent
+The @code{__new_clicks} function constructs a new CC with a specified
+number of clicks credited to it. This function is privileged; i.e., may
+not be executed by a non-privileged process.
+
+@code{__opaque__} is `hidden' @code{April} type, in the sense that there
+are no literal values of type @code{__opaque__}, and values of the
+@code{__opaque__} type may not be sent in messages outside the
+@code{April} invocation that created them.
+
+The @var{amount} of clicks in the initial value of the CC must be a
+positive integer.
+
+@node Access current clicks
+@subsection Access current clicks
+@cindex Access current clicks
+@findex __get_clicks
+
+@noindent
+Function template:
+@smallexample
+__get_clicks(handle?@var{P}) => __opaque__
+@end smallexample
+
+@noindent
+This function returns the CC currently associated with the local
+process identified by @var{P}. This is also a privileged function.
+
+@node Access click counter value
+@subsection Access click counter value
+@cindex Access click counter value
+@findex __clicks
+
+@noindent
+Function template:
+@smallexample
+__clicks(__opaque__?@var{P}) => number
+@end smallexample
+
+@noindent
+This function returns the number of clicks remaining in a CC.
+This is not a privileged function.
+
+@node Modify a click counter
+@subsection Modify a click counter
+@cindex Modify a click counter
+@findex __credit_clicks
+
+@noindent
+Procedure template:
+@smallexample
+__credit_clicks(__opaque__?@var{from},__opaque__?@var{to},number?@var{amt})@{@}
+@end smallexample
+
+@noindent
+This procedure subtracts @var{amt} clicks from the @var{from} CC and
+adds them to the CC @var{to}. This privileged procedure can be used to
+`empty' a CC that is no longer needed -- and presumably to give the
+owner of the @var{from} CC some compensatory reward.
+
+@node Constrained execution of a statement
+@subsection Constrained execution of a statement
+@cindex Constrained execution of a statement
+@cindex Statement, Constrained execution of
+@findex within_
+@findex within
+
+@noindent
+The @code{within_} statement executes a statement using an explicitly
+referenced CC. The form of the @code{within_} statement is:
+
+@smallexample
+@var{Stmt} within_ @var{CC}
+@end smallexample
+
+@noindent
+If the statement @var{Stmt} terminates normally, then no further actions
+are taken by the @code{April} engine. However, if the @var{Stmt} cannot
+complete in the time remaining in @var{CC} then a @code{clickedout}
+exception is raised.
+
+A higher level version of this statement accepts a simple numerical
+value rather than a click counter:
+
+@smallexample
+@var{Stmt} within @var{Time}
+@end smallexample
+
+@noindent
+This statement `borrows' @var{Time} clicks from the process's `current'
+click counter and uses that to execute statement. If the process
+terminates within the allotted time the balance of the clicks are
+returned to the original click counter.
+
+Note that, unlike @code{__new_clicks}, the @code{within} does not
+require privileged access to the system -- allowing non-privileged
+processes to use @code{within} to constrain sub-activities.
+
+@emph{Hint:}
+@quotation
+Using @code{within}, it is possible to also constrain the execution of
+an expression. One re-expresses the expression using a
+@code{valof}/@code{valis} combination:
+@cindex constrained execution of expressions
+
+@smallexample
+valof@{
+  valis @var{Exp} within @var{time}
+@}
+@end smallexample
+@end quotation
+
+
+@node File manager
+@section File manager
+@cindex File manager process
+@cindex Managing access to the file system
+
+@noindent
+The file manager is a privileged system process that controls access to
+the file system. Its function is to provide high-level access to the
+operating system's file system and at the same time limit access to a
+portion of the file system.
+
+When an application program needs to open a file, it sends a message to
+the process's file manager -- each process has a unique file manager,
+though there may be several file managers active at any one time. The
+file manager verifies that access to the file is permitted, and forks a
+sub-process with responsibility for managing the file -- the handle of
+which is returned to the application process.
+
+Only the sub-process created by the file manager for handling a file is
+permitted to directly access that file. @code{April} verifies that when
+a process attempts to use a low-level file access primitive the process
+`owns' the file. The ownership of a file by a process is a property set
+by the file manager.
+
+When a file manager is created, for example by using the
+@code{sub_manager} function (@pxref{sub_manager}), it is given a `home'
+directory and a `current directory'. The home directory represents the
+top of the file system hierarchy that the new file manager is allowed to
+access. Any files outside its home directory are not visible to the file
+manager or to any processes using this file manager.
+
+In addition to a home directory, a file manager has a set of access
+privileges, such as read, write, pipe and so on. These privileges are
+used in combination with the operating system's file privileges to
+further restrict access to files. Irrespective of the operating system's
+file privileges, a file manager will not allow a client process to
+access a file in a way that violates its access privileges.
+
+The combination of home directory and access privileges allows a
+process to executed in a `portion' of the file system. For example, it
+is possible to restrict a process to files in the @code{/tmp} directory,
+and further more to only permit read access to those files.
+
+This `replication' of the operating system's file privileges is
+necessary because an @code{April} program may be running guest programs
+at the same time as running `owner' programs. These need different
+access rights reflecting the degree to which the programs are trusted.
+
+@node Communications manager
+@section Communications manager
+@cindex Communications manager
+@cindex Managing access to the communications system
+
+@noindent
+The communications manager is a system process that handles the
+communications to the `outside world' within a tank.
+
+@menu
+* How the communications manager works::  
+@end menu
+
+@node How the communications manager works
+@subsection How the communications manager works
+@cindex How the communications manager works
+
+@noindent
+The `builtin' function in @code{April} for sending a message is only
+able to send messages to other processes within the same tank that the
+sender of the process resides in. This of course accounts for the vast
+majority of message sends.
+
+When a process attempts to send a message to another process, the
+builtin message send function checks to see if the message is for a
+local process. If it is, then it attaches the message to the process's
+message queue, assigning it a sequence number as it does so, and waking
+up the receiver process if it is not currently active.
+
+If a message is sent to a non-local process, then the message is
+diverted to the sender process's communications manager. This process
+is local, and resides in the same tank as the sender. If the message
+to the non-local process was sent using a statement such as:
+
+@smallexample
+@var{Msg} >> @var{To}
+@end smallexample
+@noindent
+then the message that arrives at the communications manager is:
+@smallexample
+(@var{to-handle},@var{reply-handle},@var{sender-handle},@var{Msg})
+@end smallexample
+
+@noindent
+This is enough for the communications manager to be able to determine
+the true destination of the message.
+
+The communications manager maintains a TCP connection to the local
+communications server -- @pxref{the communications server}. When it
+receives a message intended for the outside world (which it can
+determine via analyzing the @var{to-handle}) it sends the message to the
+communications server using @code{April}'s encoded term format -- this
+guarantees that programs as well as regular @code{April} values can be
+sent safely across the Internet.
+
+Before it passes the message on, it is able to verify that the process
+that sent the message is allowed to send it to the identified
+host.@footnote{At the time of writing, the standard communications
+manager does not enforce any policy restrictions on sending messages}
+
+Similarly, the communications manager is able to read messages -- in
+encoded term format -- from the communications server and `pass on' the
+message to the relevant local process if it exists. Again, the manager
+is able to verify that the intended recipient is permitted to receive
+messages from the process that sent the message.
+
+
+@node Code verification
+@section Code verification
+@cindex Code verification
+
+@noindent
+Particularly in the context of mobile programming, it is necessary to
+verify that the executable code that an @code{April} engine attempts to
+execute is `safe'. I.e., that a particular code fragment cannot access
+system resources that it is not permitted to have, and that it does not
+attempt to `corrupt' the @code{April} engine by overwriting internal
+memory buffers.
+
+Note that a safe program is not necessarily the same as a useful
+program. @code{April} can determine if a program is potentially
+dangerous to it; but it cannot determine if the program computes
+anything useful.
+
+The  @code{April}  engine supports  code  verification  at the  internal
+@code{April}  machine  level. Builtin  to  the  @code{April} engine  are
+facilities   for  verifying   the   `byte  code'   of  an   @code{April}
+program.@footnote{April's virtual machine uses  a 32bit word code rather
+than a  byte code.}  Program verification  is performed at  the level of
+byte code because that is  how programs are transmitted: as sequences of
+byte codes. In  addition, since a program could  potentially arrive from
+anywhere in the  world, it is not sufficient  to verify the @code{April}
+compiler (a malicious  user may have modified the  standard compiler, or
+even constructed a new one).
+
+@menu
+* Privileged processes::        
+* verify code::                 
+@end menu
+
+@node Privileged processes
+@subsection Privileged processes
+@cindex Privileged processes
+
+@noindent
+@code{April} distinguishes two kinds of processes, normal and
+privileged. These processes are, for the most part, identical except
+that certain low-level operations are not permitted to normal processes.
+
+A privileged process is one that has full access to the
+@code{April} machine (and hence to the underlying operating system);
+whereas a non-privileged process may not have direct access to the
+operating system. A certain number of @code{April} machine instructions
+and built-in functions and procedures may only be executed by privileged
+processes -- attempts to execute a privileged instruction by a
+non-privileged process results in a run-time error exception.
+
+When @code{April} initializes, @emph{all} processes are automatically
+privileged (it is assumed that the user of a computer will only execute
+programs that he or she is confident of). When a process is forked, it
+can be forked in such a way as to restrict its privileged status to
+normal process. 
+
+Normal processes can fork other processes -- including public processes
+-- but it cannot fork another privileged process.
+
+@node verify code
+@subsection Verify code
+@cindex The code verifier
+@findex _verify @r{procedure}
+
+@noindent
+Procedure template:
+@smallexample
+_verify(any?@var{val},logical?@var{priv})@{@}
+@end smallexample
+
+@noindent
+The @code{_verify} procedure accepts @emph{any} @code{April} value and
+examines it for embedded programs. If any embedded programs violate one
+of the constraints then an error is raised; otherwise @code{_verify}
+completes silently.
+
+The @var{priv} flag is @code{true} if privileged instructions are
+allowed within @var{val}, @code{false} if privileged instructions are
+prohibited.
+
+@emph{Hint:}
+@quotation
+It is not normally necessary to invoke @code{_verify} directly: it is
+automatically invoked by the standard mailer process to verify incoming
+messages.
+@end quotation
+
+The code verifier returns many potential errors, most of these
+are useful for debugging purposes only:
+@itemize @bullet
+@item
+@code{"invalid access to environment"}
+@item
+@code{"illegal access to parameter"}
+@item
+@code{"illegal access to local variable"}
+@item
+@code{"accessing non-initialized variable"}
+@item
+@code{"assigning to illegal location"}
+@item
+@code{"depth lower than specified limit "}
+@item
+@code{"invalid literal reference"}
+@item
+@code{"literal should be a symbol"}
+@item
+@code{"literal should be a string"}
+@item
+@code{"literal should be a floating point"}
+@item
+@code{"skipped instruction too long"}
+@item
+@code{"illegal destination of branch"}
+@item
+@code{"invalid code signature"}
+@item
+@code{"invalid number of parameters"}
+@item
+@code{"function code expected"}
+@item
+@code{"procedure code expected"}
+@item
+@code{"pattern code expected"}
+@item
+@code{"privileged escape function"}
+@item
+@code{"undefined escape function"}
+@item
+@code{"multiple allocv instruction"}
+@item
+@code{"invalid allocv instruction"}
+@item
+@code{"incorrect return from function"}
+@item
+@code{"incorrect return from procedure"}
+@item
+@code{"incorrect return from pattern"}
+@item
+@code{"invalid return value offset from function"}
+@item
+@code{"invalid number of parameters in mproc"}
+@item
+@code{"invalid number of parameters in mfun"}
+@item
+@code{"invalid number of parameters in mpttrn"}
+@item
+@code{"invalid loc2tpl arity"}
+@item
+@code{"invalid access to tuple"}
+@item
+@code{"tuple update is a privileged instruction"}
+@item
+@code{"unimplemented instruction"}
+@end itemize
+
+
+

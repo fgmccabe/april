@@ -1,0 +1,67 @@
+/* test program for april-mysql interface */
+
+program
+import {
+interface "mysql.af"
+} in {
+  main()
+  {
+    host = "localhost";
+    user = "root";
+    pass = "";
+    db = "actest";
+    
+    -- check the Database in the server
+    -- NULL will print all DB
+    gg1 = mylistdbs(host,user,pass,"NULL");
+    "DB: " ++ string%%gg1 ++ " \n" >>stdout;
+    
+    -- or use wildcard characters `%' or `_'
+    gg2 = mylistdbs(host,user,pass,"m%");
+    "DB: " ++ string%%gg2 ++ " \n" >>stdout;
+
+    -- check the tables in the database
+    gg = mytables(host,user,pass,db);
+    "Tables: " ++ string%%gg ++ " \n" >>stdout;
+
+    -- send a sql query
+
+    a = myquery(1,host,user,pass,db,"select  * from nettest");
+
+    "A is " ++string%%a ++"\n" >>stdout;
+    -- check the result row number 
+
+    "rownumber = " ++ string%%(myrownumber(a)) ++ "\n" >>stdout;
+
+
+    -- check the result field number
+    "myfieldnumber = "++string%%(myfieldnumber(a)) ++ "\n" >>stdout;
+
+
+    -- fetch next row of data, 
+
+    b = myfetchrow(a);
+    "One row result is: " ++ string%%b ++ " \n" >>stdout;
+
+
+    -- set the row point
+    mydataseek(a,0);
+    d = myfetchrow(a);
+    "row 0 = " ++ string%%d ++ " \n" >>stdout;
+
+    -- fetch the field name
+    e = myfieldname(a);
+    "fieldname: " ++ string%%e ++ " \n" >>stdout;
+
+    -- relase the memory used by result
+    myfreeresult(a);
+
+    -- execute a sql command
+    myexec(host,user,pass,db,"insert into rest values ('chin', 'french',NULL)");
+
+    c = myquery(3306, host, user , pass, db,"select  * from nettest");
+
+    myexec(host,user,pass,db,"delete from rest where name=\"chin\"");
+
+  }
+} execute main;

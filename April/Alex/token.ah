@@ -1,0 +1,12 @@
+/*
+ * Type definition of a token type
+ */
+
+yyTokType ::=  ID(string)
+ | INT(number)
+ | REAL(number) 
+ | IF | THEN | ELSE | WHILE | DO
+ | LPAREN | RPAREN | COMMA | SEMI | EOF;
+
+yyToken ::= (yyTokType?yyTok,string?yyFile);
+

@@ -1,0 +1,3 @@
+module{
+  world() => "world";
+} export world;

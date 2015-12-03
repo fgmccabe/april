@@ -1,0 +1,599 @@
+/* Parser automatically generated from "apgrule"*/
+#include "lextok.ah";
+yyStream ::= (char[],number,number,string);
+module
+import {
+({(yyStream)=>(yyStream,yyToken)}?lexer) from "apglex.aam"
+} in {
+__item ::= __t(yyToken) | __n(yyType);
+parser(stream) => valof {
+  Stack : []; Sno : 0;
+  __item[]?Vstack : [];
+  (w,Tok) : lexer(stream);		-- pick up the first token
+  yyErrCount : 0;
+  while true do{
+    try{
+      case Sno in {
+      49 -> {
+	      [__n(__V4),__t((ID(__V3).=yyTok,yyFile3.=yyFile,yyLine3.=yyLine)),_,__n(__V1),..nVstack].=Vstack;__Vx=RULE(__V1,__V4,I(__V3));
+	      Vstack:=[__n(__Vx),..nVstack];
+	      [_,_,_,..NS] .= Stack; Stack := NS; Sno := gotoproduction(head(Stack));
+}
+    | 48 -> {
+	      [__n(__V3),_,__n(__V1),..nVstack].=Vstack;__Vx=CHOICE(__V1,__V3);
+	      Vstack:=[__n(__Vx),..nVstack];
+	      [_,_,..NS] .= Stack; Stack := NS; Sno := gotoruleset(head(Stack));
+}
+    | 47 -> {{
+	case Tok.yyTok in {
+	  BRACE(_) -> {
+	      Vstack := [__t(Tok),..Vstack];
+	      Stack := [Sno,..Stack]; Sno := 43;  (w,Tok) := lexer(w);
+	    }
+	| _ -> {
+	      nVstack = Vstack;__Vx=EMPTY;
+	      Vstack:=[__n(__Vx),..nVstack];
+	      Stack := [Sno,..Stack]; Sno := gotoaction(Sno);
+	    }
+	}}
+}
+    | 46 -> {
+	      [__t((ID(__V2).=yyTok,yyFile2.=yyFile,yyLine2.=yyLine)),__n(__V1),..nVstack].=Vstack;__Vx=SEQ(__V1,I(__V2));
+	      Vstack:=[__n(__Vx),..nVstack];
+	      [_,..NS] .= Stack; Stack := NS; Sno := gotorhs(head(Stack));
+}
+    | 45 -> {{
+	Stack := [Sno,..Stack];
+	case Tok.yyTok in {
+	  ID(_) -> {
+	      Sno := 47;
+	    }
+	};
+	Vstack := [__t(Tok),..Vstack];
+	(w,Tok) := lexer(w);
+	}
+}
+    | 44 -> {
+	      [__n(__V2),__n(__V1),..nVstack].=Vstack;__Vx=RULE(__V1,__V2,EMPTY);
+	      Vstack:=[__n(__Vx),..nVstack];
+	      [_,..NS] .= Stack; Stack := NS; Sno := gotoproduction(head(Stack));
+}
+    | 43 -> {
+	      [__t((BRACE(__V1).=yyTok,yyFile1.=yyFile,yyLine1.=yyLine)),..nVstack].=Vstack;__Vx=I(__V1);
+	      Vstack:=[__n(__Vx),..nVstack];
+	      Sno := gotoaction(head(Stack));
+}
+    | 42 -> {{
+	case Tok.yyTok in {
+	  ID(_) -> {
+	      Vstack := [__t(Tok),..Vstack];
+	      Stack := [Sno,..Stack]; Sno := 38;  (w,Tok) := lexer(w);
+	    }
+	| _ -> {
+	      nVstack = Vstack;__Vx=EMPTY;
+	      Vstack:=[__n(__Vx),..nVstack];
+	      Stack := [Sno,..Stack]; Sno := gotorhs(Sno);
+	    }
+	}}
+}
+    | 41 -> {
+	      [_,__n(__V3),_,__t((ID(__V1).=yyTok,yyFile1.=yyFile,yyLine1.=yyLine)),..nVstack].=Vstack;__Vx=RULESET(__V1,__V3);
+	      Vstack:=[__n(__Vx),..nVstack];
+	      [_,_,_,..NS] .= Stack; Stack := NS; Sno := gotorule(head(Stack));
+}
+    | 40 -> {{
+	Stack := [Sno,..Stack];
+	case Tok.yyTok in {
+	  BAR -> {
+	      Sno := 42;
+	    }
+	| SEMI -> {
+	      Sno := 41;
+	    }
+	};
+	Vstack := [__t(Tok),..Vstack];
+	(w,Tok) := lexer(w);
+	}
+}
+    | 39 -> {
+	      [__n(__V1),..nVstack].=Vstack;__Vx=__V1;
+	      Vstack:=[__n(__Vx),..nVstack];
+	      Sno := gotoruleset(head(Stack));
+}
+    | 38 -> {
+	      [__t((ID(__V1).=yyTok,yyFile1.=yyFile,yyLine1.=yyLine)),..nVstack].=Vstack;__Vx=I(__V1);
+	      Vstack:=[__n(__Vx),..nVstack];
+	      Sno := gotorhs(head(Stack));
+}
+    | 37 -> {{
+	case Tok.yyTok in {
+	  BRACE(_) -> {
+	      Vstack := [__t(Tok),..Vstack];
+	      Stack := [Sno,..Stack]; Sno := 43;  (w,Tok) := lexer(w);
+	    }
+	| ID(_) -> {
+	      Vstack := [__t(Tok),..Vstack];
+	      Stack := [Sno,..Stack]; Sno := 46;  (w,Tok) := lexer(w);
+	    }
+	| PREC -> {
+	      Vstack := [__t(Tok),..Vstack];
+	      Stack := [Sno,..Stack]; Sno := 45;  (w,Tok) := lexer(w);
+	    }
+	| _ -> {
+	      nVstack = Vstack;__Vx=EMPTY;
+	      Vstack:=[__n(__Vx),..nVstack];
+	      Stack := [Sno,..Stack]; Sno := gotoaction(Sno);
+	    }
+	}}
+}
+    | 36 -> {{
+	case Tok.yyTok in {
+	  ID(_) -> {
+	      Vstack := [__t(Tok),..Vstack];
+	      Stack := [Sno,..Stack]; Sno := 38;  (w,Tok) := lexer(w);
+	    }
+	| _ -> {
+	      nVstack = Vstack;__Vx=EMPTY;
+	      Vstack:=[__n(__Vx),..nVstack];
+	      Stack := [Sno,..Stack]; Sno := gotorhs(Sno);
+	    }
+	}}
+}
+    | 35 -> {
+	      [__n(__V2),__n(__V1),..nVstack].=Vstack;__Vx=SEQ(__V1,__V2);
+	      Vstack:=[__n(__Vx),..nVstack];
+	      [_,..NS] .= Stack; Stack := NS; Sno := gotorules(head(Stack));
+}
+    | 34 -> {
+	      [_,__n(__V3),_,__n(__V1),..nVstack].=Vstack;__Vx = APGRULESET(__V1,__V3) ;
+	      Vstack:=[__n(__Vx),..nVstack];
+	      [_,_,_,..NS] .= Stack; Stack := NS; Sno := gotoapg(head(Stack));
+}
+    | 33 -> {
+	      [__n(__V1),..nVstack].=Vstack;__Vx=__V1;
+	      Vstack:=[__n(__Vx),..nVstack];
+	      Sno := gotorules(head(Stack));
+}
+    | 32 -> {{
+	Stack := [Sno,..Stack];
+	case Tok.yyTok in {
+	  ID(_) -> {
+	      Sno := 31;
+	    }
+	| MARK -> {
+	      Sno := 34;
+	    }
+	};
+	Vstack := [__t(Tok),..Vstack];
+	(w,Tok) := lexer(w);
+	}
+}
+    | 31 -> {{
+	Stack := [Sno,..Stack];
+	case Tok.yyTok in {
+	  COLON -> {
+	      Sno := 36;
+	    }
+	};
+	Vstack := [__t(Tok),..Vstack];
+	(w,Tok) := lexer(w);
+	}
+}
+    | 30 -> {
+	      [__t((CENTBRACE(__V2).=yyTok,yyFile2.=yyFile,yyLine2.=yyLine)),__t((ID(__V1).=yyTok,yyFile1.=yyFile,yyLine1.=yyLine)),..nVstack].=Vstack;__Vx=APPLY(__V1,__V2);
+	      Vstack:=[__n(__Vx),..nVstack];
+	      [_,..NS] .= Stack; Stack := NS; Sno := gototokenspec(head(Stack));
+}
+    | 29 -> {
+	      [__t((BRACE(__V2).=yyTok,yyFile2.=yyFile,yyLine2.=yyLine)),__t((ID(__V1).=yyTok,yyFile1.=yyFile,yyLine1.=yyLine)),..nVstack].=Vstack;__Vx=APPLY(__V1,__V2);
+	      Vstack:=[__n(__Vx),..nVstack];
+	      [_,..NS] .= Stack; Stack := NS; Sno := gototokenspec(head(Stack));
+}
+    | 28 -> {
+	      [__n(__V2),__n(__V1),..nVstack].=Vstack;__Vx=SEQ(__V1,__V2);
+	      Vstack:=[__n(__Vx),..nVstack];
+	      [_,..NS] .= Stack; Stack := NS; Sno := gototokenspecs(head(Stack));
+}
+    | 27 -> {{
+	case Tok.yyTok in {
+	  ID(_) -> {
+	      Vstack := [__t(Tok),..Vstack];
+	      Stack := [Sno,..Stack]; Sno := 22;  (w,Tok) := lexer(w);
+	    }
+	| _ -> {
+	      [__n(__V2),_,..nVstack].=Vstack;__Vx=OPERATORSPEC(__V2,nonA);
+	      Vstack:=[__n(__Vx),..nVstack];
+	      [_,..NS] .= Stack; Stack := NS; Sno := gototokendef(head(Stack));
+	    }
+	}}
+}
+    | 26 -> {{
+	case Tok.yyTok in {
+	  ID(_) -> {
+	      Vstack := [__t(Tok),..Vstack];
+	      Stack := [Sno,..Stack]; Sno := 22;  (w,Tok) := lexer(w);
+	    }
+	| _ -> {
+	      [__n(__V2),_,..nVstack].=Vstack;__Vx=OPERATORSPEC(__V2,rightA);
+	      Vstack:=[__n(__Vx),..nVstack];
+	      [_,..NS] .= Stack; Stack := NS; Sno := gototokendef(head(Stack));
+	    }
+	}}
+}
+    | 25 -> {{
+	case Tok.yyTok in {
+	  ID(_) -> {
+	      Vstack := [__t(Tok),..Vstack];
+	      Stack := [Sno,..Stack]; Sno := 22;  (w,Tok) := lexer(w);
+	    }
+	| _ -> {
+	      [__n(__V2),_,..nVstack].=Vstack;__Vx=OPERATORSPEC(__V2,leftA);
+	      Vstack:=[__n(__Vx),..nVstack];
+	      [_,..NS] .= Stack; Stack := NS; Sno := gototokendef(head(Stack));
+	    }
+	}}
+}
+    | 24 -> {
+	      [__n(__V1),..nVstack].=Vstack;__Vx=__V1;
+	      Vstack:=[__n(__Vx),..nVstack];
+	      Sno := gototokenspecs(head(Stack));
+}
+    | 23 -> {{
+	case Tok.yyTok in {
+	  ID(_) -> {
+	      Vstack := [__t(Tok),..Vstack];
+	      Stack := [Sno,..Stack]; Sno := 22;  (w,Tok) := lexer(w);
+	    }
+	| _ -> {
+	      [__n(__V2),_,..nVstack].=Vstack;__Vx=TOKENSPEC(__V2);
+	      Vstack:=[__n(__Vx),..nVstack];
+	      [_,..NS] .= Stack; Stack := NS; Sno := gototokendef(head(Stack));
+	    }
+	}}
+}
+    | 22 -> {{
+	case Tok.yyTok in {
+	  BRACE(_) -> {
+	      Vstack := [__t(Tok),..Vstack];
+	      Stack := [Sno,..Stack]; Sno := 29;  (w,Tok) := lexer(w);
+	    }
+	| CENTBRACE(_) -> {
+	      Vstack := [__t(Tok),..Vstack];
+	      Stack := [Sno,..Stack]; Sno := 30;  (w,Tok) := lexer(w);
+	    }
+	| _ -> {
+	      [__t((ID(__V1).=yyTok,yyFile1.=yyFile,yyLine1.=yyLine)),..nVstack].=Vstack;__Vx=I(__V1);
+	      Vstack:=[__n(__Vx),..nVstack];
+	      Sno := gototokenspec(head(Stack));
+	    }
+	}}
+}
+    | 21 -> {
+	      [__t((ID(__V2).=yyTok,yyFile2.=yyFile,yyLine2.=yyLine)),_,..nVstack].=Vstack;__Vx=STARTSPEC(__V2);
+	      Vstack:=[__n(__Vx),..nVstack];
+	      [_,..NS] .= Stack; Stack := NS; Sno := gotostartdef(head(Stack));
+}
+    | 20 -> {
+	      [__t((NUM(__V2).=yyTok,yyFile2.=yyFile,yyLine2.=yyLine)),_,..nVstack].=Vstack;__Vx=EXPECTSPEC(__V2);
+	      Vstack:=[__n(__Vx),..nVstack];
+	      [_,..NS] .= Stack; Stack := NS; Sno := gotoexpectdef(head(Stack));
+}
+    | 19 -> {
+	      [__t((CENTBRACE(__V2).=yyTok,yyFile2.=yyFile,yyLine2.=yyLine)),_,..nVstack].=Vstack;__Vx=TYPESPEC(__V2);
+	      Vstack:=[__n(__Vx),..nVstack];
+	      [_,..NS] .= Stack; Stack := NS; Sno := gototypedef(head(Stack));
+}
+    | 18 -> {
+	      [__n(__V2),__n(__V1),..nVstack].=Vstack;__Vx = SEQ(__V1,__V2);
+	      Vstack:=[__n(__Vx),..nVstack];
+	      [_,..NS] .= Stack; Stack := NS; Sno := gotopreamble(head(Stack));
+}
+    | 17 -> {{
+	Stack := [Sno,..Stack];
+	case Tok.yyTok in {
+	  ID(_) -> {
+	      Sno := 31;
+	    }
+	};
+	Vstack := [__t(Tok),..Vstack];
+	(w,Tok) := lexer(w);
+	}
+}
+    | 16 -> {{
+	case Tok.yyTok in {
+	  EOF -> {
+	    if yyErrCount>0 then
+	      exception error("parse errors detected",'fail)
+	    else {
+	      [__n(__Vx),.._].=Vstack;
+	      valis __Vx;
+	    }
+	}
+	}}
+}
+    | 15 -> {
+	      [__n(__V1),..nVstack].=Vstack;__Vx = __V1;
+	      Vstack:=[__n(__Vx),..nVstack];
+	      Sno := gotopreamble(head(Stack));
+}
+    | 14 -> {{
+	Stack := [Sno,..Stack];
+	case Tok.yyTok in {
+	  CENTBRACE(_) -> {
+	      Sno := 5;
+	    }
+	| EXPECT -> {
+	      Sno := 7;
+	    }
+	| LEFT -> {
+	      Sno := 3;
+	    }
+	| MARK -> {
+	      Sno := 17;
+	    }
+	| NONASSOC -> {
+	      Sno := 1;
+	    }
+	| RIGHT -> {
+	      Sno := 2;
+	    }
+	| START -> {
+	      Sno := 6;
+	    }
+	| TOKEN -> {
+	      Sno := 4;
+	    }
+	| TYPE -> {
+	      Sno := 8;
+	    }
+	};
+	Vstack := [__t(Tok),..Vstack];
+	(w,Tok) := lexer(w);
+	}
+}
+    | 13 -> {
+	      [__n(__V1),..nVstack].=Vstack;__Vx=__V1;
+	      Vstack:=[__n(__Vx),..nVstack];
+	      Sno := gotodefinition(head(Stack));
+}
+    | 12 -> {
+	      [__n(__V1),..nVstack].=Vstack;__Vx=__V1;
+	      Vstack:=[__n(__Vx),..nVstack];
+	      Sno := gotodefinition(head(Stack));
+}
+    | 11 -> {
+	      [__n(__V1),..nVstack].=Vstack;__Vx=__V1;
+	      Vstack:=[__n(__Vx),..nVstack];
+	      Sno := gotodefinition(head(Stack));
+}
+    | 10 -> {
+	      [__n(__V1),..nVstack].=Vstack;__Vx=__V1;
+	      Vstack:=[__n(__Vx),..nVstack];
+	      Sno := gotodefinition(head(Stack));
+}
+    | 9 -> {
+	      [__n(__V1),..nVstack].=Vstack;__Vx=__V1;
+	      Vstack:=[__n(__Vx),..nVstack];
+	      Sno := gotodefinition(head(Stack));
+}
+    | 8 -> {{
+	Stack := [Sno,..Stack];
+	case Tok.yyTok in {
+	  CENTBRACE(_) -> {
+	      Sno := 19;
+	    }
+	};
+	Vstack := [__t(Tok),..Vstack];
+	(w,Tok) := lexer(w);
+	}
+}
+    | 7 -> {{
+	Stack := [Sno,..Stack];
+	case Tok.yyTok in {
+	  NUM(_) -> {
+	      Sno := 20;
+	    }
+	};
+	Vstack := [__t(Tok),..Vstack];
+	(w,Tok) := lexer(w);
+	}
+}
+    | 6 -> {{
+	Stack := [Sno,..Stack];
+	case Tok.yyTok in {
+	  ID(_) -> {
+	      Sno := 21;
+	    }
+	};
+	Vstack := [__t(Tok),..Vstack];
+	(w,Tok) := lexer(w);
+	}
+}
+    | 5 -> {
+	      [__t((CENTBRACE(__V1).=yyTok,yyFile1.=yyFile,yyLine1.=yyLine)),..nVstack].=Vstack;__Vx=I(__V1);
+	      Vstack:=[__n(__Vx),..nVstack];
+	      Sno := gotoincludedef(head(Stack));
+}
+    | 4 -> {{
+	Stack := [Sno,..Stack];
+	case Tok.yyTok in {
+	  ID(_) -> {
+	      Sno := 22;
+	    }
+	};
+	Vstack := [__t(Tok),..Vstack];
+	(w,Tok) := lexer(w);
+	}
+}
+    | 3 -> {{
+	Stack := [Sno,..Stack];
+	case Tok.yyTok in {
+	  ID(_) -> {
+	      Sno := 22;
+	    }
+	};
+	Vstack := [__t(Tok),..Vstack];
+	(w,Tok) := lexer(w);
+	}
+}
+    | 2 -> {{
+	Stack := [Sno,..Stack];
+	case Tok.yyTok in {
+	  ID(_) -> {
+	      Sno := 22;
+	    }
+	};
+	Vstack := [__t(Tok),..Vstack];
+	(w,Tok) := lexer(w);
+	}
+}
+    | 1 -> {{
+	Stack := [Sno,..Stack];
+	case Tok.yyTok in {
+	  ID(_) -> {
+	      Sno := 22;
+	    }
+	};
+	Vstack := [__t(Tok),..Vstack];
+	(w,Tok) := lexer(w);
+	}
+}
+    | 0 -> {{
+	Stack := [Sno,..Stack];
+	case Tok.yyTok in {
+	  CENTBRACE(_) -> {
+	      Sno := 5;
+	    }
+	| EXPECT -> {
+	      Sno := 7;
+	    }
+	| LEFT -> {
+	      Sno := 3;
+	    }
+	| NONASSOC -> {
+	      Sno := 1;
+	    }
+	| RIGHT -> {
+	      Sno := 2;
+	    }
+	| START -> {
+	      Sno := 6;
+	    }
+	| TOKEN -> {
+	      Sno := 4;
+	    }
+	| TYPE -> {
+	      Sno := 8;
+	    }
+	};
+	Vstack := [__t(Tok),..Vstack];
+	(w,Tok) := lexer(w);
+	}
+}
+    }
+  } onerror {
+    failed -> {
+      try {
+        yyErrCount := yyErrCount+1;
+        while ! (!Sno) in []do{
+          Sno:=head(Stack); Stack:=tail(Stack,1); Vstack:=tail(Vstack,1);
+        }
+      }
+      onerror
+        _ -> exception error("unrecoverable parser error at "++Tok^0,'parser)
+    }}
+  }
+};
+
+gotoapg(S) => {case S in {
+    0 => 16
+  }
+};
+gotopreamble(S) => {case S in {
+    0 => 14
+  }
+};
+gotodefinition(S) => {case S in {
+    14 => 18
+  | 0 => 15
+  }
+};
+gototokendef(S) => {case S in {
+    14 => 13
+  | 0 => 13
+  }
+};
+gototokenspecs(S) => {case S in {
+    1 => 27
+  | 2 => 26
+  | 3 => 25
+  | 4 => 23
+  }
+};
+gototokenspec(S) => {case S in {
+    23 => 28
+  | 25 => 28
+  | 26 => 28
+  | 27 => 28
+  | 1 => 24
+  | 2 => 24
+  | 3 => 24
+  | 4 => 24
+  }
+};
+gotoincludedef(S) => {case S in {
+    14 => 12
+  | 0 => 12
+  }
+};
+gotostartdef(S) => {case S in {
+    14 => 11
+  | 0 => 11
+  }
+};
+gotoexpectdef(S) => {case S in {
+    14 => 10
+  | 0 => 10
+  }
+};
+gototypedef(S) => {case S in {
+    14 => 9
+  | 0 => 9
+  }
+};
+gotorules(S) => {case S in {
+    17 => 32
+  }
+};
+gotorule(S) => {case S in {
+    32 => 35
+  | 17 => 33
+  }
+};
+gotoruleset(S) => {case S in {
+    36 => 40
+  }
+};
+gotoproduction(S) => {case S in {
+    42 => 48
+  | 36 => 39
+  }
+};
+gotorhs(S) => {case S in {
+    42 => 37
+  | 36 => 37
+  }
+};
+gotoaction(S) => {case S in {
+    47 => 49
+  | 37 => 44
+  }
+};
+
+max = {
+  ([],M) => M
+| ([NN,..L],M) :: NN>M => max(L,NN)
+| ([_,..L],M) => max(L,M)
+};
+} export parser;
+

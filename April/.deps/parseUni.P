@@ -1,0 +1,13 @@
+parseUni.o : ../config.h /usr/include/assert.h /usr/include/unistd.h \
+  /usr/include/string.h /usr/include/stdlib.h /usr/include/dirent.h \
+  /usr/include/sys/dirent.h /usr/include/stdio.h /usr/include/pwd.h 
+parseUni.o :
+../config.h :
+/usr/include/assert.h :
+/usr/include/unistd.h :
+/usr/include/string.h :
+/usr/include/stdlib.h :
+/usr/include/dirent.h :
+/usr/include/sys/dirent.h :
+/usr/include/stdio.h :
+/usr/include/pwd.h :

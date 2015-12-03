@@ -1,0 +1,75 @@
+program
+ import ((number){}?sem, (handle){}?p, (handle){}?v) from "sem.aam"
+ in {
+  phil(id,duration,L,R,F)
+  {
+   receive{ 'start ->> {}};	/* wait for the start gun */
+    end : now()+duration secs;
+    count : 0;	 	/* number of times this phil has eaten */
+    length : 0 secs;
+
+    while now()<end do{
+      t : (5+rand(15)) secs;
+      id^0++" pausing for "++t^2++" secs\n">>stdout;
+      delay(t);
+      PickUp(id,L);
+      PickUp(id,R);
+      t := (1+rand(5)) secs;
+      id^0++" eating for "++t^2++" secs\n">>stdout;
+      count +:=1;
+      length +:= t;
+      delay(t);
+      PutDown(id,L);
+      PutDown(id,R);
+      GetUp(F);
+    };
+    "Eater "++id^0++" eat "++count^0++" times for "++length^2++" secs\n">>stdout;
+  };
+
+  PickUp(id,F)
+  {
+    p(F);
+  };
+
+  PutDown(id,F)
+  {
+    v(F);
+  };
+
+  SitDown(F)
+  {
+    p(F);
+  };
+
+  GetUp(F)
+  {
+    v(F);
+  };
+
+  fourchette() => spawn sem(1);
+
+  footman(N) => spawn sem(N-1);
+
+  mod(x,y) => x - (x quot y)*y;
+
+  main(N,tm)
+  {
+    Foot : footman(N);
+    Forks : collect {
+      for i in 1..N do 
+	elemis fourchette()
+    };
+    listlen(Forks)^0++" forks\n">>stdout;
+    Phils : collect {
+      for i in 1..N do 
+	elemis spawn phil(i-1,tm,Forks#i,Forks#(mod(i,N)+1),Foot);
+    };
+
+    'start>>*Phils;		/* kick off all the philosophers */
+    for X in Phils do {
+--      "Waiting for "++X^0++"\n">>stdout;
+      waitfor(X); 
+    };
+    "Log written\n">>stdout
+  }
+} execute main;

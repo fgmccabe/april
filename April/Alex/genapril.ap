@@ -1,0 +1,329 @@
+/*
+ * Generate an april program from a dfa description
+ */
+
+#include "regexp.ah";
+
+CharSetExp ::= Range(char, char) | Char(char) | Or(CharSetExp[]);
+
+/*
+ * Template for the generated function.
+ *
+  yyNextToken(input,ipos) => valof {
+    yyState : 0;
+    yyString : input;
+    yyFinal : voidfun;
+    yyNext : -1;
+    yySwitch : false;
+    yyPos : ipos;
+    yyRest : input;
+    yyLast : -1;
+    yyTk : [];
+    
+    while true do {
+      case yyState in {
+        -1 -> if yyNext!=-1 then {
+            yyState := yyNext;
+	    yyString := yyRest;
+            yyTk := [];
+          } else 
+            valis (yyFinal(yyReverse(yyLast)),yyLPos,yyRest)
+      | S -> {
+          yyLast := yyTk;		-- if this is a final state
+          yyRest := yyString;
+          yyFinal := F;                 -- function to call
+	  yyNext := initial;
+
+          try {
+            [yyChar,..yyStr] .= yyString;-- chop off next character
+            yyString := yyStr;
+            yyPos +:= 1;
+
+            yyState := case yyChar in {
+	      'x => K
+            }
+          }
+          onerror
+            _ -> yyState := -1		-- default to error state
+      }
+      | T -> {
+          yyLast := yyTk;		-- if this is a switching state
+          yyRest := yyString;
+	  yyNext := nextState;
+
+          try {
+            [yyChar,..yyStr] .= yyString;-- chop off next character
+            yyString := yyStr;
+            yyPos +:= 1;
+
+            yyState := case yyChar in {
+	      'x => K
+            }
+          }
+          onerror
+            _ -> yyState := -1		-- default to error state
+      }
+    }
+  }
+*/
+
+module
+{
+  /* Generate a tokenizer from the dfa tables */
+  genTokenizer(name,tble,sigma,preamble,postamble,extra,trace,verbose) => (
+    "/* Automatically generated lexer from \""++name++"\" by Alex*/\n"++
+    preamble++
+    "module"++(if trace then " import interface <stdio.af> in \n" else "\n")++
+    "{\n"
+    "failedMatch(yyTok,yyPos,yyLPos,yyLine)=>\n"
+    "    exception error(\"lexing failed at line \"++yyLine^0++\"/\"++yyPos^0,\n"
+    "                    'failed);\n"
+    "yyNextToken(input,ipos,iline,yyFile) => valof {\n"
+    "  yyState : 0; yyString : input; \n"
+    "  yyPos:ipos; yyIPos:ipos; yyLPos:ipos; yyLine:iline; yyLLine:iline;\n"
+    "  yyNext : -1; yyFinal : failedMatch; \n"
+    "  yyRest : input; yyLast : []; yyTk : [];\n"++
+    (if trace then "\"Start tokenizer at line=\"++yyLine^0++\"\\n\">>stdout;\n" else "")++
+    "  while true do {\n"++
+    (if trace then "\"Current state=\"++yyState^0++\"\\n\">>stdout;\n" else "")++
+
+    "    case yyState in {\n"
+    "      -1 -> {\n"
+    "              if yyNext!= -1 then {\n"
+    "                yyState := yyNext; yyTk := [];\n"
+    "                yyIPos := yyLPos; yyLine := yyLLine;\n"
+    "                yyNext := -1; yyString := yyRest;\n"
+    "              }\n"
+    "              else {\n"
+    "                env = {\n"
+    "                  S : yyRest;\n"
+    "                  getBuf() => S;\n"
+    "                  setBuf(newS) { S := newS; };\n"
+    "                  getCh() => valof {\n"
+    "                    if S == [] then\n"
+    "                       valis ''\\+ffff\n"
+    "                    else {\n"
+    "                       [C,..R] = S;\n"
+    "                       S := R;\n"
+    "                       valis C;\n"
+    "                    }\n"
+    "                  };\n"
+    "                  putCh(C) {\n"
+    "                    S : [C,..S];\n"
+    "                  };\n"
+    "                };\n"
+    "                tok = yyFinal(yyRev(yyLast),yyIPos,yyLPos,yyLine);"
+    "                valis ((yyRest,yyLPos,yyLLine,yyFile),tok)\n"
+    "		   }\n"
+    "            }\n"++
+    genStates(tble,sigma,"    | ",extra,trace,verbose) ++
+    "    }\n"
+    "  }\n"
+    "};\n"
+    "yyChInRange(X, From, To) => X != ''\\+ffff && From <= X && X <= To;\n"++
+    genTrFuncs()++"\n"
+    "yyRev(L) => valof {  -- non-recursive reverse\n"
+    "  R : []; LL : L;\n"
+    "  while [E,..EE].=LL do {\n"
+    "    R := [E,..R];\n"
+    "    LL := EE;\n"
+    "  };\n"
+    "  valis R\n"
+    "};\n"
+    ++postamble++
+    "} export yyNextToken;\n"
+  );
+
+  /* Handle normal states */
+  genStates = {
+    ([],_,_,_,_,_) => ""
+  | ([(S,[],[switch(In,initial),.._]),..R],sigma,prefix,Extra,trace,verbose) => 
+      prefix ++ string%%S ++ " -> {\n"++
+      "\tyyState := "++string%%initial++";\t\t-- restart in "++In++" state\n"
+      "\tyyTk := []; yyIPos := yyPos;\n"
+      "      }\n"++
+      genStates(R,sigma,"    | ",Extra,trace,verbose)
+
+  | ([(S,[],F),..R],sigma,prefix,Extra,trace,verbose) => prefix ++ string%%S ++ " -> {\n"++
+      finalText(F,Extra,trace,verbose)++
+      "        yyState := -1\n"
+      "      }\n"++
+      genStates(R,sigma,"    | ",Extra,trace,verbose)
+
+  | ([(S,L,F),..R],sigma,prefix,Extra,trace,verbose) => prefix ++ string%%S ++ " -> {\n"
+      "\ttry {\n"++
+      finalText(F,Extra,trace,verbose)++
+      "\t  [yyChar,..yyStr] .= { if yyString==[] then "++
+      (if trace then "valof { \"At eof\\n\">>stdout; valis[''\\+ffff]}" else "[''\\+ffff]")++
+           " else yyString"++"};\n"
+      "\t  yyString := yyStr;\n"
+      "\t  yyLLine := yyLine;   -- keep in case we have to reset\n"
+      "\t  if yyChar == ''\\n then { yyLine := yyLine+1; /*yyPos :=0*/};\n"++
+      (if trace then "\t  \"Next char=\"++yyChar^0++\"@\"++yyLine^0++\"\\n\">>stdout;\n" else "")++
+      "\t  yyState := "++genCharCase(L,sigma)++
+      "\t  yyPos +:= 1; yyTk := [yyChar,..yyTk]\n"
+      "\t}\n\tonerror\n"
+      "\t _ -> yyState := -1\n"
+      "      }\n"++
+      genStates(R,sigma,"    | ",Extra,trace,verbose)
+  };
+
+  finalText(Final,Extra,trace,verbose) => {case Final in {
+      [] => ""
+    | [switch(In,initial),.._] =>	-- generate a move to switch states
+	"\t  yyNext := "++string%%initial++";\t\t-- go to "++In++" state\n"
+      "\t  yyRest := yyString; yyLPos := yyPos; yyLLine := yyLine;\n"
+
+    | [final(F),.._] => "\t  yyLast := yyTk; yyLPos := yyPos;"
+      "  yyFinal := {(yyTok,yyPos,yyLPos,_)=>"++
+                     (if trace then "valof{ \"Token=\"++"++F++"^0++\" @ \"++yyLine^0++\"\\n\">>stdout;\n  valis " else "{")++
+                     "(yyTok="++F++Extra++")}};\n"
+      "  yyRest := yyString; yyLPos := yyPos; yyLLine := yyLine; yyNext := -1;"
+    }
+  }; 
+
+  /* Test to see if this state transition is redundant */
+  covers(L,sigma) => valof {
+    [dfa(_,S),.._].=L;			-- this will fail if L is empty
+    for C in sigma do{
+      if not dfa(C,S) in L then
+        exception failed		-- A character not covered
+    };
+    valis S
+  };
+  
+  trNumber : 0;
+  trFuncs : [];
+  
+  -- Aggregate subsequent transitions
+  genCharCase(L,sigma) => valof {
+    try {
+      S = covers(L,sigma);
+      valis "yyState := "++string%%S++";\n"
+    }
+    onerror {
+      failed -> {
+	if (!L, transNo) in trFuncs then 
+	  valis "yyTrans("++transNo^0++",yyChar);\n"
+	else {
+	  transNo = trNumber;
+	  trNumber := trNumber + 1;
+	  trFuncs := [(L,transNo),..trFuncs];
+	  valis "yyTrans("++transNo^0++",yyChar);\n"
+	}
+      }
+    }
+  };
+  
+  -- Generate transition functions
+  genTrFuncs() => (
+    "yyTrans = {\n"
+    "  "++
+    collapse(
+      trFuncs // {
+	(.(L, transNo).) => (
+	  "("++transNo^0++",yyChar) => (case yyChar in {\n"++
+	  genOptChCase(L,"\t    ")++
+	  "\t})\n"
+	)
+      },
+      "| ")++
+    "};\n"
+  );
+  
+  /* Handle the individual characters from a given state */
+  genChCase = {
+    ([dfa(C,-1)],prefix) => ""
+  | ([dfa(C,-1),..R],prefix) => genChCase(R,prefix)
+  | ([dfa(C,N)],prefix) => prefix ++ C^0 ++" => "++string%%N++"\n"
+  | ([dfa(C,N),..R],prefix) =>prefix ++ C^0 ++" => "++string%%N++"\n"++
+       genChCase(R,"\t|   ")
+  };
+  
+  genOptChCase(L, prefix) => (
+    prefix ++ collapse(
+      optChCase(L) // {
+	(.(Exp, -1).) => ""
+      | (.(Exp, N).) => genCharSet(Exp, string%%N)
+      },
+      "\t|   "
+    )
+  );
+  
+  genCharSet(set, action) => (
+    case set in {
+      Range(From, To) => valof {
+	valis ("X::yyChInRange(X,"++From^0++","++To^0 ++ ") => "++action++"\n");
+      }
+    | Char(X) => X^0 ++ " => " ++ action ++ "\n"
+    | Or([]) => ""
+    | Or(XS) => collapse(XS // { X => genCharSet(X, action) }, "\t|   ")
+    }
+  );
+  
+  optChCase(L) => valof {
+    M = optChCase1(L);
+    valis collect {
+      for Dest in M do {
+	if Dest != [] then {
+	  charset = Dest // { dfa(C,N) => C };
+	  dfa(_, N) = head(Dest);
+	  exp = optCharSet(charset);
+	  elemis (Or(exp), N)
+	}
+      } 
+    };
+  };
+      
+  -- Group common destinations together
+  optChCase1 = {
+    [dfa(C, N),..R] => [[dfa(C, N),..R ^/ dfa(_, N)],..optChCase1(R ^\ dfa(_, N))]
+  | [] => []
+  };
+  
+  -- Optimize characters into ranges of 4 more or
+  optCharSet = {
+    [] => []
+  | L  => valof {
+      (R, RevRange) = genRange(L, []);
+      CRange = reverse(RevRange);
+      if listlen(CRange) < 4 then {
+	Exp = CRange // { X => Char(X) };
+	valis Exp <> optCharSet(R)
+      }
+      else {
+	First = head(CRange);
+	Last = head(RevRange);
+	valis [Range(First,Last),..optCharSet(R)]
+      }
+    }
+  };
+  
+  -- Pick out consecutive adjacent characters
+  genRange = {
+    ([X,..R], [])::not(isAscii(X)) => (R, [X])
+  | ([X,Y,..R], Acc)::adjacent(X,Y) => genRange([Y,..R], [X,..Acc])
+  | ([X,..R], Acc)::isAscii(X) => (R, [X,..Acc])
+  | ([X,..R], Acc)::not(isAscii(X)) => ([X,..R], Acc)
+  | ([], Acc) => ([], Acc)
+  };
+  
+  adjacent = {
+    (X, Y)::(X==''\+ffff || Y==''\+ffff) => false
+  | (X, Y) => charCode(X)+1 == charCode(Y) 
+  };
+  
+  isAscii(X) => (try charCode(X) >= 0 && charCode(X) < 256 onerror _ => false);
+  
+  reverse(L) => valof {
+    R : [];
+    LL : L;
+    while [X,..Y].=LL do {
+      R := [X,..R];
+      LL := Y;
+    };
+    valis R;
+  };
+
+} export (genTokenizer);
+

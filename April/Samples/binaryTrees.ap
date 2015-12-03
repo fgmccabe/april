@@ -1,0 +1,47 @@
+program{
+
+  tree(%t) ::= tree(tree(%t),%t,tree(%t)) | nil;
+
+  check = {
+    tree(nil,I,_) => I
+  | tree(_,I,nil) => I
+  | tree(L,I,R) => check(L)+I-check(R)
+  };
+
+  build = {
+    (0,I) => tree(nil,I,nil)
+  | (D,I) => tree(build(D-1,I*2-1),I,build(D-1,I*2))
+  };
+
+  minDepth = 4;
+
+  main(N)
+  {
+    start : ticks();
+
+    maxDepth = valof{if minDepth+2>N then valis minDepth+2 else valis N};
+
+    stretchDepth = maxDepth+1;
+
+    "stretch tree of depth "++stretchDepth^0++"\t check: "++check(build(stretchDepth,0))^0++"\n">>stdout;
+
+    longLived = build(maxDepth,0);
+
+    Depth : minDepth;
+    while Depth<maxDepth do{
+      Iter = bleft(1,maxDepth-Depth+minDepth);
+
+      Check : 0;
+      for i in 1..Iter do{
+	Check := Check+check(build(Depth,i));
+	Check := Check+check(build(Depth,-i));
+      };
+      (2*Iter)^0<>" trees of depth "++Depth^0++"\t check: "++Check^0++"\n">>stdout;
+
+      Depth := Depth+2;
+    };
+
+    "long lived tree of depth "++maxDepth^0++"\t check: "++check(longLived)^0++"\n">>stdout;
+    "test took "++(ticks()-start)^0++" msecs\n" >> stdout;
+  }
+} execute main;

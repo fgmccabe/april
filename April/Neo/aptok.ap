@@ -1,0 +1,740 @@
+/* Automatically generated lexer from "aptok.alx" by Alex*/
+/*
+ * Lexical rules for April 
+ */
+
+#include "ap_tok.ah";
+
+module
+{
+failedMatch(yyTok,yyPos,yyLPos,yyLine, _, _, _, _)=>
+    exception error("lexing failed at line "++yyLine^0++"/"++yyPos^0,
+                    'failed);
+yyNextToken(input,ipos,iline,yyFile) => valof {
+  yyState : 0; yyString : input; 
+  yyPos:ipos; yyIPos:ipos; yyLPos:ipos; yyLine:iline; yyLLine:iline;
+  yyNext : -1; yyFinal : failedMatch; 
+  yyRest : input; yyLast : []; yyTk : [];
+  while true do {
+    case yyState in {
+      -1 -> {
+              if yyNext!= -1 then {
+                yyState := yyNext; yyTk := [];
+                yyIPos := yyLPos; yyLine := yyLLine;
+                yyNext := -1; yyString := yyRest;
+              }
+              else {
+                env = {
+                  S : yyRest;
+                  getBuf() => S;
+                  setBuf(newS) { S := newS; };
+                  getCh() => valof {
+                    if S == [] then
+                       valis ''ÿ
+                    else {
+                       [C,..R] = S;
+                       S := R;
+                       valis C;
+                    }
+                  };
+                  putCh(C) {
+                    S : [C,..S];
+                  };
+                };
+                tok = yyFinal(yyRev(yyLast),yyIPos,yyLPos,yyLLine,env.getCh,env.putCh,env.getBuf,env.setBuf);                valis ((env.getBuf(),yyLPos,yyLLine,yyFile),tok)
+		   }
+            }
+    | 44 -> {
+	yyState := 0;		-- restart in initial state
+	yyTk := []; yyIPos := yyPos;
+      }
+    | 43 -> {
+	yyState := 40;		-- restart in comment state
+	yyTk := []; yyIPos := yyPos;
+      }
+    | 42 -> {
+	try {
+	  yyNext := 40;		-- go to comment state
+	  yyRest := yyString; yyLPos := yyPos; yyLLine := yyLine;
+	  [yyChar,..yyStr] .= { if yyString==[] then [''ÿ] else yyString};
+	  yyString := yyStr;
+	  if yyChar == ''\n then yyLine := yyLine+1;
+	  yyState := yyTrans(0,yyChar);
+	  yyPos +:= 1; yyTk := [yyChar,..yyTk]
+	}
+	onerror
+	 _ -> yyState := -1
+      }
+    | 41 -> {
+	yyState := 40;		-- restart in comment state
+	yyTk := []; yyIPos := yyPos;
+      }
+    | 40 -> {
+	try {
+	  [yyChar,..yyStr] .= { if yyString==[] then [''ÿ] else yyString};
+	  yyString := yyStr;
+	  if yyChar == ''\n then yyLine := yyLine+1;
+	  yyState := yyTrans(1,yyChar);
+	  yyPos +:= 1; yyTk := [yyChar,..yyTk]
+	}
+	onerror
+	 _ -> yyState := -1
+      }
+    | 39 -> {
+	try {
+	  [yyChar,..yyStr] .= { if yyString==[] then [''ÿ] else yyString};
+	  yyString := yyStr;
+	  if yyChar == ''\n then yyLine := yyLine+1;
+	  yyState := yyTrans(2,yyChar);
+	  yyPos +:= 1; yyTk := [yyChar,..yyTk]
+	}
+	onerror
+	 _ -> yyState := -1
+      }
+    | 38 -> {
+	try {
+	  yyLast := yyTk; yyLPos := yyPos;  yyRest := yyString; yyLLine := yyLine; yyNext := -1;  yyFinal := {(yyTok,yyPos,yyLPos,yyLine,yyInput,yyUnput,yyGetRest,yySetRest)=>{(yyTok={ NUM(tok2Num(yyTok)) },yyLine=yyLine,yyFile=yyFile)}};
+	  [yyChar,..yyStr] .= { if yyString==[] then [''ÿ] else yyString};
+	  yyString := yyStr;
+	  if yyChar == ''\n then yyLine := yyLine+1;
+	  yyState := yyTrans(2,yyChar);
+	  yyPos +:= 1; yyTk := [yyChar,..yyTk]
+	}
+	onerror
+	 _ -> yyState := -1
+      }
+    | 37 -> {
+	try {
+	  yyLast := yyTk; yyLPos := yyPos;  yyRest := yyString; yyLLine := yyLine; yyNext := -1;  yyFinal := {(yyTok,yyPos,yyLPos,yyLine,yyInput,yyUnput,yyGetRest,yySetRest)=>{(yyTok={ DQUOTE(dequoteStr(tail(yyTok,2))) },yyLine=yyLine,yyFile=yyFile)}};
+	  [yyChar,..yyStr] .= { if yyString==[] then [''ÿ] else yyString};
+	  yyString := yyStr;
+	  if yyChar == ''\n then yyLine := yyLine+1;
+	  yyState := yyTrans(3,yyChar);
+	  yyPos +:= 1; yyTk := [yyChar,..yyTk]
+	}
+	onerror
+	 _ -> yyState := -1
+      }
+    | 36 -> {
+	try {
+	  [yyChar,..yyStr] .= { if yyString==[] then [''ÿ] else yyString};
+	  yyString := yyStr;
+	  if yyChar == ''\n then yyLine := yyLine+1;
+	  yyState := yyTrans(4,yyChar);
+	  yyPos +:= 1; yyTk := [yyChar,..yyTk]
+	}
+	onerror
+	 _ -> yyState := -1
+      }
+    | 35 -> {
+	try {
+	  [yyChar,..yyStr] .= { if yyString==[] then [''ÿ] else yyString};
+	  yyString := yyStr;
+	  if yyChar == ''\n then yyLine := yyLine+1;
+	  yyState := yyTrans(5,yyChar);
+	  yyPos +:= 1; yyTk := [yyChar,..yyTk]
+	}
+	onerror
+	 _ -> yyState := -1
+      }
+    | 34 -> {
+	  yyLast := yyTk; yyLPos := yyPos;  yyRest := yyString; yyLLine := yyLine; yyNext := -1;  yyFinal := {(yyTok,yyPos,yyLPos,yyLine,yyInput,yyUnput,yyGetRest,yySetRest)=>{(yyTok={ CONS },yyLine=yyLine,yyFile=yyFile)}};
+        yyState := -1
+      }
+    | 33 -> {
+	yyState := 0;		-- restart in initial state
+	yyTk := []; yyIPos := yyPos;
+      }
+    | 32 -> {
+	try {
+	  [yyChar,..yyStr] .= { if yyString==[] then [''ÿ] else yyString};
+	  yyString := yyStr;
+	  if yyChar == ''\n then yyLine := yyLine+1;
+	  yyState := yyTrans(6,yyChar);
+	  yyPos +:= 1; yyTk := [yyChar,..yyTk]
+	}
+	onerror
+	 _ -> yyState := -1
+      }
+    | 31 -> {
+	try {
+	  [yyChar,..yyStr] .= { if yyString==[] then [''ÿ] else yyString};
+	  yyString := yyStr;
+	  if yyChar == ''\n then yyLine := yyLine+1;
+	  yyState := yyTrans(7,yyChar);
+	  yyPos +:= 1; yyTk := [yyChar,..yyTk]
+	}
+	onerror
+	 _ -> yyState := -1
+      }
+    | 30 -> {
+	  yyLast := yyTk; yyLPos := yyPos;  yyRest := yyString; yyLLine := yyLine; yyNext := -1;  yyFinal := {(yyTok,yyPos,yyLPos,yyLine,yyInput,yyUnput,yyGetRest,yySetRest)=>{(yyTok={ DQUOTE(dequoteStr(tail(yyTok,2))) },yyLine=yyLine,yyFile=yyFile)}};
+        yyState := -1
+      }
+    | 29 -> {
+	try {
+	  yyLast := yyTk; yyLPos := yyPos;  yyRest := yyString; yyLLine := yyLine; yyNext := -1;  yyFinal := {(yyTok,yyPos,yyLPos,yyLine,yyInput,yyUnput,yyGetRest,yySetRest)=>{(yyTok={ NUM(tok2Num(yyTok)) },yyLine=yyLine,yyFile=yyFile)}};
+	  [yyChar,..yyStr] .= { if yyString==[] then [''ÿ] else yyString};
+	  yyString := yyStr;
+	  if yyChar == ''\n then yyLine := yyLine+1;
+	  yyState := yyTrans(8,yyChar);
+	  yyPos +:= 1; yyTk := [yyChar,..yyTk]
+	}
+	onerror
+	 _ -> yyState := -1
+      }
+    | 28 -> {
+	try {
+	  yyLast := yyTk; yyLPos := yyPos;  yyRest := yyString; yyLLine := yyLine; yyNext := -1;  yyFinal := {(yyTok,yyPos,yyLPos,yyLine,yyInput,yyUnput,yyGetRest,yySetRest)=>{(yyTok={ NUM(tok2Num(yyTok)) },yyLine=yyLine,yyFile=yyFile)}};
+	  [yyChar,..yyStr] .= { if yyString==[] then [''ÿ] else yyString};
+	  yyString := yyStr;
+	  if yyChar == ''\n then yyLine := yyLine+1;
+	  yyState := yyTrans(9,yyChar);
+	  yyPos +:= 1; yyTk := [yyChar,..yyTk]
+	}
+	onerror
+	 _ -> yyState := -1
+      }
+    | 27 -> {
+	  yyLast := yyTk; yyLPos := yyPos;  yyRest := yyString; yyLLine := yyLine; yyNext := -1;  yyFinal := {(yyTok,yyPos,yyLPos,yyLine,yyInput,yyUnput,yyGetRest,yySetRest)=>{(yyTok={ STR(tok2Str(yyTok)) },yyLine=yyLine,yyFile=yyFile)}};
+        yyState := -1
+      }
+    | 26 -> {
+	try {
+	  [yyChar,..yyStr] .= { if yyString==[] then [''ÿ] else yyString};
+	  yyString := yyStr;
+	  if yyChar == ''\n then yyLine := yyLine+1;
+	  yyState := yyTrans(10,yyChar);
+	  yyPos +:= 1; yyTk := [yyChar,..yyTk]
+	}
+	onerror
+	 _ -> yyState := -1
+      }
+    | 25 -> {
+	try {
+	  yyNext := 40;		-- go to comment state
+	  yyRest := yyString; yyLPos := yyPos; yyLLine := yyLine;
+	  [yyChar,..yyStr] .= { if yyString==[] then [''ÿ] else yyString};
+	  yyString := yyStr;
+	  if yyChar == ''\n then yyLine := yyLine+1;
+	  yyState := yyTrans(11,yyChar);
+	  yyPos +:= 1; yyTk := [yyChar,..yyTk]
+	}
+	onerror
+	 _ -> yyState := -1
+      }
+    | 24 -> {
+	try {
+	  [yyChar,..yyStr] .= { if yyString==[] then [''ÿ] else yyString};
+	  yyString := yyStr;
+	  if yyChar == ''\n then yyLine := yyLine+1;
+	  yyState := yyTrans(12,yyChar);
+	  yyPos +:= 1; yyTk := [yyChar,..yyTk]
+	}
+	onerror
+	 _ -> yyState := -1
+      }
+    | 23 -> {
+	  yyLast := yyTk; yyLPos := yyPos;  yyRest := yyString; yyLLine := yyLine; yyNext := -1;  yyFinal := {(yyTok,yyPos,yyLPos,yyLine,yyInput,yyUnput,yyGetRest,yySetRest)=>{(yyTok={ ID(yyTok) },yyLine=yyLine,yyFile=yyFile)}};
+        yyState := -1
+      }
+    | 22 -> {
+	try {
+	  yyLast := yyTk; yyLPos := yyPos;  yyRest := yyString; yyLLine := yyLine; yyNext := -1;  yyFinal := {(yyTok,yyPos,yyLPos,yyLine,yyInput,yyUnput,yyGetRest,yySetRest)=>{(yyTok={ ID(yyTok) },yyLine=yyLine,yyFile=yyFile)}};
+	  [yyChar,..yyStr] .= { if yyString==[] then [''ÿ] else yyString};
+	  yyString := yyStr;
+	  if yyChar == ''\n then yyLine := yyLine+1;
+	  yyState := yyTrans(13,yyChar);
+	  yyPos +:= 1; yyTk := [yyChar,..yyTk]
+	}
+	onerror
+	 _ -> yyState := -1
+      }
+    | 21 -> {
+	try {
+	  [yyChar,..yyStr] .= { if yyString==[] then [''ÿ] else yyString};
+	  yyString := yyStr;
+	  if yyChar == ''\n then yyLine := yyLine+1;
+	  yyState := yyTrans(14,yyChar);
+	  yyPos +:= 1; yyTk := [yyChar,..yyTk]
+	}
+	onerror
+	 _ -> yyState := -1
+      }
+    | 20 -> {
+	try {
+	  [yyChar,..yyStr] .= { if yyString==[] then [''ÿ] else yyString};
+	  yyString := yyStr;
+	  if yyChar == ''\n then yyLine := yyLine+1;
+	  yyState := yyTrans(15,yyChar);
+	  yyPos +:= 1; yyTk := [yyChar,..yyTk]
+	}
+	onerror
+	 _ -> yyState := -1
+      }
+    | 19 -> {
+	try {
+	  [yyChar,..yyStr] .= { if yyString==[] then [''ÿ] else yyString};
+	  yyString := yyStr;
+	  if yyChar == ''\n then yyLine := yyLine+1;
+	  yyState := yyTrans(9,yyChar);
+	  yyPos +:= 1; yyTk := [yyChar,..yyTk]
+	}
+	onerror
+	 _ -> yyState := -1
+      }
+    | 18 -> {
+	try {
+	  yyNext := 0;		-- go to initial state
+	  yyRest := yyString; yyLPos := yyPos; yyLLine := yyLine;
+	  [yyChar,..yyStr] .= { if yyString==[] then [''ÿ] else yyString};
+	  yyString := yyStr;
+	  if yyChar == ''\n then yyLine := yyLine+1;
+	  yyState := yyTrans(16,yyChar);
+	  yyPos +:= 1; yyTk := [yyChar,..yyTk]
+	}
+	onerror
+	 _ -> yyState := -1
+      }
+    | 17 -> {
+	try {
+	  [yyChar,..yyStr] .= { if yyString==[] then [''ÿ] else yyString};
+	  yyString := yyStr;
+	  if yyChar == ''\n then yyLine := yyLine+1;
+	  yyState := yyTrans(17,yyChar);
+	  yyPos +:= 1; yyTk := [yyChar,..yyTk]
+	}
+	onerror
+	 _ -> yyState := -1
+      }
+    | 16 -> {
+	try {
+	  yyLast := yyTk; yyLPos := yyPos;  yyRest := yyString; yyLLine := yyLine; yyNext := -1;  yyFinal := {(yyTok,yyPos,yyLPos,yyLine,yyInput,yyUnput,yyGetRest,yySetRest)=>{(yyTok={ ID(yyTok) },yyLine=yyLine,yyFile=yyFile)}};
+	  [yyChar,..yyStr] .= { if yyString==[] then [''ÿ] else yyString};
+	  yyString := yyStr;
+	  if yyChar == ''\n then yyLine := yyLine+1;
+	  yyState := yyTrans(18,yyChar);
+	  yyPos +:= 1; yyTk := [yyChar,..yyTk]
+	}
+	onerror
+	 _ -> yyState := -1
+      }
+    | 15 -> {
+	try {
+	  yyLast := yyTk; yyLPos := yyPos;  yyRest := yyString; yyLLine := yyLine; yyNext := -1;  yyFinal := {(yyTok,yyPos,yyLPos,yyLine,yyInput,yyUnput,yyGetRest,yySetRest)=>{(yyTok={ COMMA },yyLine=yyLine,yyFile=yyFile)}};
+	  [yyChar,..yyStr] .= { if yyString==[] then [''ÿ] else yyString};
+	  yyString := yyStr;
+	  if yyChar == ''\n then yyLine := yyLine+1;
+	  yyState := yyTrans(19,yyChar);
+	  yyPos +:= 1; yyTk := [yyChar,..yyTk]
+	}
+	onerror
+	 _ -> yyState := -1
+      }
+    | 14 -> {
+	  yyLast := yyTk; yyLPos := yyPos;  yyRest := yyString; yyLLine := yyLine; yyNext := -1;  yyFinal := {(yyTok,yyPos,yyLPos,yyLine,yyInput,yyUnput,yyGetRest,yySetRest)=>{(yyTok={ SEMI },yyLine=yyLine,yyFile=yyFile)}};
+        yyState := -1
+      }
+    | 13 -> {
+	  yyLast := yyTk; yyLPos := yyPos;  yyRest := yyString; yyLLine := yyLine; yyNext := -1;  yyFinal := {(yyTok,yyPos,yyLPos,yyLine,yyInput,yyUnput,yyGetRest,yySetRest)=>{(yyTok={ RBRC },yyLine=yyLine,yyFile=yyFile)}};
+        yyState := -1
+      }
+    | 12 -> {
+	  yyLast := yyTk; yyLPos := yyPos;  yyRest := yyString; yyLLine := yyLine; yyNext := -1;  yyFinal := {(yyTok,yyPos,yyLPos,yyLine,yyInput,yyUnput,yyGetRest,yySetRest)=>{(yyTok={ LBRC },yyLine=yyLine,yyFile=yyFile)}};
+        yyState := -1
+      }
+    | 11 -> {
+	  yyLast := yyTk; yyLPos := yyPos;  yyRest := yyString; yyLLine := yyLine; yyNext := -1;  yyFinal := {(yyTok,yyPos,yyLPos,yyLine,yyInput,yyUnput,yyGetRest,yySetRest)=>{(yyTok={ RBRA },yyLine=yyLine,yyFile=yyFile)}};
+        yyState := -1
+      }
+    | 10 -> {
+	  yyLast := yyTk; yyLPos := yyPos;  yyRest := yyString; yyLLine := yyLine; yyNext := -1;  yyFinal := {(yyTok,yyPos,yyLPos,yyLine,yyInput,yyUnput,yyGetRest,yySetRest)=>{(yyTok={ LBRA },yyLine=yyLine,yyFile=yyFile)}};
+        yyState := -1
+      }
+    | 9 -> {
+	try {
+	  yyLast := yyTk; yyLPos := yyPos;  yyRest := yyString; yyLLine := yyLine; yyNext := -1;  yyFinal := {(yyTok,yyPos,yyLPos,yyLine,yyInput,yyUnput,yyGetRest,yySetRest)=>{(yyTok={ ID(yyTok) },yyLine=yyLine,yyFile=yyFile)}};
+	  [yyChar,..yyStr] .= { if yyString==[] then [''ÿ] else yyString};
+	  yyString := yyStr;
+	  if yyChar == ''\n then yyLine := yyLine+1;
+	  yyState := yyTrans(20,yyChar);
+	  yyPos +:= 1; yyTk := [yyChar,..yyTk]
+	}
+	onerror
+	 _ -> yyState := -1
+      }
+    | 8 -> {
+	  yyLast := yyTk; yyLPos := yyPos;  yyRest := yyString; yyLLine := yyLine; yyNext := -1;  yyFinal := {(yyTok,yyPos,yyLPos,yyLine,yyInput,yyUnput,yyGetRest,yySetRest)=>{(yyTok={ RPAR },yyLine=yyLine,yyFile=yyFile)}};
+        yyState := -1
+      }
+    | 7 -> {
+	  yyLast := yyTk; yyLPos := yyPos;  yyRest := yyString; yyLLine := yyLine; yyNext := -1;  yyFinal := {(yyTok,yyPos,yyLPos,yyLine,yyInput,yyUnput,yyGetRest,yySetRest)=>{(yyTok={ LPAR },yyLine=yyLine,yyFile=yyFile)}};
+        yyState := -1
+      }
+    | 6 -> {
+	try {
+	  yyLast := yyTk; yyLPos := yyPos;  yyRest := yyString; yyLLine := yyLine; yyNext := -1;  yyFinal := {(yyTok,yyPos,yyLPos,yyLine,yyInput,yyUnput,yyGetRest,yySetRest)=>{(yyTok={ ID(yyTok) },yyLine=yyLine,yyFile=yyFile)}};
+	  [yyChar,..yyStr] .= { if yyString==[] then [''ÿ] else yyString};
+	  yyString := yyStr;
+	  if yyChar == ''\n then yyLine := yyLine+1;
+	  yyState := yyTrans(11,yyChar);
+	  yyPos +:= 1; yyTk := [yyChar,..yyTk]
+	}
+	onerror
+	 _ -> yyState := -1
+      }
+    | 5 -> {
+	try {
+	  yyLast := yyTk; yyLPos := yyPos;  yyRest := yyString; yyLLine := yyLine; yyNext := -1;  yyFinal := {(yyTok,yyPos,yyLPos,yyLine,yyInput,yyUnput,yyGetRest,yySetRest)=>{(yyTok={ QUOTE },yyLine=yyLine,yyFile=yyFile)}};
+	  [yyChar,..yyStr] .= { if yyString==[] then [''ÿ] else yyString};
+	  yyString := yyStr;
+	  if yyChar == ''\n then yyLine := yyLine+1;
+	  yyState := yyTrans(21,yyChar);
+	  yyPos +:= 1; yyTk := [yyChar,..yyTk]
+	}
+	onerror
+	 _ -> yyState := -1
+      }
+    | 4 -> {
+	try {
+	  yyLast := yyTk; yyLPos := yyPos;  yyRest := yyString; yyLLine := yyLine; yyNext := -1;  yyFinal := {(yyTok,yyPos,yyLPos,yyLine,yyInput,yyUnput,yyGetRest,yySetRest)=>{(yyTok={ NUM(tok2Num(yyTok)) },yyLine=yyLine,yyFile=yyFile)}};
+	  [yyChar,..yyStr] .= { if yyString==[] then [''ÿ] else yyString};
+	  yyString := yyStr;
+	  if yyChar == ''\n then yyLine := yyLine+1;
+	  yyState := yyTrans(22,yyChar);
+	  yyPos +:= 1; yyTk := [yyChar,..yyTk]
+	}
+	onerror
+	 _ -> yyState := -1
+      }
+    | 3 -> {
+	try {
+	  yyLast := yyTk; yyLPos := yyPos;  yyRest := yyString; yyLLine := yyLine; yyNext := -1;  yyFinal := {(yyTok,yyPos,yyLPos,yyLine,yyInput,yyUnput,yyGetRest,yySetRest)=>{(yyTok={ NUM(tok2Num(yyTok)) },yyLine=yyLine,yyFile=yyFile)}};
+	  [yyChar,..yyStr] .= { if yyString==[] then [''ÿ] else yyString};
+	  yyString := yyStr;
+	  if yyChar == ''\n then yyLine := yyLine+1;
+	  yyState := yyTrans(23,yyChar);
+	  yyPos +:= 1; yyTk := [yyChar,..yyTk]
+	}
+	onerror
+	 _ -> yyState := -1
+      }
+    | 2 -> {
+	try {
+	  yyLast := yyTk; yyLPos := yyPos;  yyRest := yyString; yyLLine := yyLine; yyNext := -1;  yyFinal := {(yyTok,yyPos,yyLPos,yyLine,yyInput,yyUnput,yyGetRest,yySetRest)=>{(yyTok={ ID(yyTok) },yyLine=yyLine,yyFile=yyFile)}};
+	  [yyChar,..yyStr] .= { if yyString==[] then [''ÿ] else yyString};
+	  yyString := yyStr;
+	  if yyChar == ''\n then yyLine := yyLine+1;
+	  yyState := yyTrans(24,yyChar);
+	  yyPos +:= 1; yyTk := [yyChar,..yyTk]
+	}
+	onerror
+	 _ -> yyState := -1
+      }
+    | 1 -> {
+	  yyLast := yyTk; yyLPos := yyPos;  yyRest := yyString; yyLLine := yyLine; yyNext := -1;  yyFinal := {(yyTok,yyPos,yyLPos,yyLine,yyInput,yyUnput,yyGetRest,yySetRest)=>{(yyTok=EOF,yyLine=yyLine,yyFile=yyFile)}};
+        yyState := -1
+      }
+    | 0 -> {
+	try {
+	  [yyChar,..yyStr] .= { if yyString==[] then [''ÿ] else yyString};
+	  yyString := yyStr;
+	  if yyChar == ''\n then yyLine := yyLine+1;
+	  yyState := yyTrans(25,yyChar);
+	  yyPos +:= 1; yyTk := [yyChar,..yyTk]
+	}
+	onerror
+	 _ -> yyState := -1
+      }
+    }
+  }
+};
+yyChInRange(X, From, To) => X != ''\+ffff && From <= X && X <= To;
+yyTrans = {
+  (25,yyChar) => (case yyChar in {
+	    ''\b => 18
+	|   ''\t => 18
+	|   ''\n => 18
+	|   ''\r => 18
+	|   ''  => 18
+	|   ''! => 6
+	|   X::yyChInRange(X,''#,''&) => 6
+	|   ''* => 6
+	|   ''+ => 6
+	|   ''. => 6
+	|   '': => 6
+	|   X::yyChInRange(X,''<,''@) => 6
+	|   ''\\ => 6
+	|   ''^ => 6
+	|   ''` => 6
+	|   ''| => 6
+	|   ''~ => 6
+	|   ''\" => 17
+	|   ''' => 5
+	|   ''( => 7
+	|   '') => 8
+	|   '', => 15
+	|   ''- => 9
+	|   ''/ => 16
+	|   ''0 => 3
+	|   X::yyChInRange(X,''1,''9) => 4
+	|   ''; => 14
+	|   X::yyChInRange(X,''A,''Z) => 2
+	|   ''_ => 2
+	|   X::yyChInRange(X,''a,''z) => 2
+	|   ''[ => 10
+	|   ''] => 11
+	|   ''{ => 12
+	|   ''} => 13
+	|   ''ÿ => 1
+	})
+| (24,yyChar) => (case yyChar in {
+	    X::yyChInRange(X,''0,''9) => 2
+	|   X::yyChInRange(X,''A,''Z) => 2
+	|   ''_ => 2
+	|   X::yyChInRange(X,''a,''z) => 2
+	})
+| (23,yyChar) => (case yyChar in {
+	    ''. => 20
+	|   X::yyChInRange(X,''0,''9) => 4
+	|   ''x => 19
+	})
+| (22,yyChar) => (case yyChar in {
+	    ''. => 20
+	|   X::yyChInRange(X,''0,''9) => 4
+	})
+| (21,yyChar) => (case yyChar in {
+	    ''' => 21
+	})
+| (20,yyChar) => (case yyChar in {
+	    ''! => 6
+	|   X::yyChInRange(X,''#,''&) => 6
+	|   ''* => 6
+	|   ''+ => 6
+	|   ''. => 6
+	|   ''/ => 6
+	|   '': => 6
+	|   X::yyChInRange(X,''<,''@) => 6
+	|   ''\\ => 6
+	|   ''^ => 6
+	|   ''` => 6
+	|   ''| => 6
+	|   ''~ => 6
+	|   ''- => 22
+	})
+| (19,yyChar) => (case yyChar in {
+	    ''+ => 23
+	|   ''. => 24
+	})
+| (18,yyChar) => (case yyChar in {
+	    ''! => 6
+	|   X::yyChInRange(X,''#,''&) => 6
+	|   ''+ => 6
+	|   ''- => 6
+	|   ''. => 6
+	|   ''/ => 6
+	|   '': => 6
+	|   X::yyChInRange(X,''<,''@) => 6
+	|   ''\\ => 6
+	|   ''^ => 6
+	|   ''` => 6
+	|   ''| => 6
+	|   ''~ => 6
+	|   ''* => 25
+	})
+| (17,yyChar) => (case yyChar in {
+	    X::yyChInRange(X,''\a,''\r) => 17
+	|   ''\e => 17
+	|   ''  => 17
+	|   ''! => 17
+	|   X::yyChInRange(X,''#,''[) => 17
+	|   X::yyChInRange(X,''],''\d) => 17
+	|   ''\" => 27
+	|   ''\\ => 26
+	})
+| (16,yyChar) => (case yyChar in {
+	    ''\b => 18
+	|   ''\t => 18
+	|   ''\n => 18
+	|   ''\r => 18
+	|   ''  => 18
+	})
+| (15,yyChar) => (case yyChar in {
+	    X::yyChInRange(X,''0,''9) => 29
+	})
+| (14,yyChar) => (case yyChar in {
+	    X::yyChInRange(X,''\a,''\r) => 30
+	|   ''\e => 30
+	|   X::yyChInRange(X,'' ,''[) => 30
+	|   X::yyChInRange(X,''],''\d) => 30
+	|   ''\\ => 31
+	})
+| (13,yyChar) => (case yyChar in {
+	    ''\a => 32
+	|   ''\b => 32
+	|   ''\t => 32
+	|   ''\v => 32
+	|   ''\f => 32
+	|   ''\r => 32
+	|   ''\e => 32
+	|   ''  => 32
+	|   ''\" => 32
+	|   ''' => 32
+	|   ''( => 32
+	|   '') => 32
+	|   '', => 32
+	|   X::yyChInRange(X,''0,''9) => 32
+	|   ''; => 32
+	|   X::yyChInRange(X,''A,''[) => 32
+	|   ''] => 32
+	|   ''_ => 32
+	|   X::yyChInRange(X,''a,''{) => 32
+	|   ''} => 32
+	|   ''\d => 32
+	|   ''\n => 33
+	|   ''! => 22
+	|   X::yyChInRange(X,''#,''&) => 22
+	|   ''* => 22
+	|   ''+ => 22
+	|   ''- => 22
+	|   ''. => 22
+	|   ''/ => 22
+	|   '': => 22
+	|   X::yyChInRange(X,''<,''@) => 22
+	|   ''\\ => 22
+	|   ''^ => 22
+	|   ''` => 22
+	|   ''| => 22
+	|   ''~ => 22
+	})
+| (12,yyChar) => (case yyChar in {
+	    ''. => 34
+	})
+| (11,yyChar) => (case yyChar in {
+	    ''! => 6
+	|   X::yyChInRange(X,''#,''&) => 6
+	|   ''* => 6
+	|   ''+ => 6
+	|   ''- => 6
+	|   ''. => 6
+	|   ''/ => 6
+	|   '': => 6
+	|   X::yyChInRange(X,''<,''@) => 6
+	|   ''\\ => 6
+	|   ''^ => 6
+	|   ''` => 6
+	|   ''| => 6
+	|   ''~ => 6
+	})
+| (10,yyChar) => (case yyChar in {
+	    X::yyChInRange(X,''\a,''\r) => 17
+	|   ''\e => 17
+	|   X::yyChInRange(X,'' ,''/) => 17
+	|   X::yyChInRange(X,''1,''\d) => 17
+	|   ''0 => 35
+	})
+| (9,yyChar) => (case yyChar in {
+	    X::yyChInRange(X,''0,''9) => 28
+	|   X::yyChInRange(X,''A,''F) => 28
+	|   X::yyChInRange(X,''a,''f) => 28
+	})
+| (8,yyChar) => (case yyChar in {
+	    X::yyChInRange(X,''0,''9) => 29
+	|   ''E => 36
+	|   ''e => 36
+	})
+| (7,yyChar) => (case yyChar in {
+	    X::yyChInRange(X,''\a,''\r) => 30
+	|   ''\e => 30
+	|   X::yyChInRange(X,'' ,''/) => 30
+	|   X::yyChInRange(X,''1,''\d) => 30
+	|   ''0 => 37
+	})
+| (6,yyChar) => (case yyChar in {
+	    ''\a => 32
+	|   ''\b => 32
+	|   ''\t => 32
+	|   ''\v => 32
+	|   ''\f => 32
+	|   ''\r => 32
+	|   ''\e => 32
+	|   X::yyChInRange(X,'' ,''\d) => 32
+	|   ''\n => 33
+	})
+| (5,yyChar) => (case yyChar in {
+	    X::yyChInRange(X,''\a,''\r) => 17
+	|   ''\e => 17
+	|   ''  => 17
+	|   ''! => 17
+	|   X::yyChInRange(X,''#,''/) => 17
+	|   X::yyChInRange(X,''8,''[) => 17
+	|   X::yyChInRange(X,''],''\d) => 17
+	|   ''\" => 27
+	|   X::yyChInRange(X,''0,''7) => 35
+	|   ''\\ => 26
+	})
+| (4,yyChar) => (case yyChar in {
+	    ''+ => 39
+	|   ''- => 39
+	|   X::yyChInRange(X,''0,''9) => 38
+	})
+| (3,yyChar) => (case yyChar in {
+	    X::yyChInRange(X,''0,''7) => 37
+	})
+| (2,yyChar) => (case yyChar in {
+	    X::yyChInRange(X,''0,''9) => 38
+	})
+| (1,yyChar) => (case yyChar in {
+	    ''\a => 41
+	|   ''\b => 41
+	|   ''\t => 41
+	|   ''\v => 41
+	|   ''\f => 41
+	|   ''\r => 41
+	|   ''\e => 41
+	|   X::yyChInRange(X,'' ,'')) => 41
+	|   X::yyChInRange(X,''+,''\d) => 41
+	|   ''\n => 43
+	|   ''* => 42
+	})
+| (0,yyChar) => (case yyChar in {
+	    ''/ => 44
+	})
+};
+
+yyRev(L) => valof {  -- non-recursive reverse
+  R : []; LL : L;
+  while [E,..EE].=LL do {
+    R := [E,..R];
+    LL := EE;
+  };
+  valis R
+};
+
+-- The postamble
+
+tok2Num(token) => number%%(string%%token);
+
+dequoteStr = {
+  [] => []
+| [''\\,C,..L] => [qtChar(C),..dequoteStr(L)]
+| [C,..L] => [C,..dequoteStr(L)]
+};
+
+qtChar = {
+  ''a => ''\a
+| ''b => ''\b
+| ''d => ''\d
+| ''e => ''\e
+| ''f => ''\f
+| ''n => ''\n
+| ''r => ''\r
+| ''t => ''\t
+| ''v => ''\v
+| X => X
+};
+ 
+
+tok2Str([''\",..X]) => dequoteStr(front(X,listlen(X)-1));
+
+} export yyNextToken;

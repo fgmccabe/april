@@ -1,0 +1,102 @@
+/*
+ * Transform the april source program into CPS
+ */
+
+#include "abstract.ah";		/* definition of April abstract syntax */
+#include "cps.ah";		/* Definition of the CPS style abstract syntax */
+
+program {
+  reverse(?L) => theta{
+    rev = { ([],?B) => B
+          | ([?E,..?R],?B) => rev(R,[E,..B])
+      	    }
+  }.rev(L,[]);
+
+  fExpL(?Args,?Cont) => theta {
+      g = { ([],?Vars) => Cont(reverse(Vars))
+          | ([?E,..?R],?Vars) => fExp(E, (?v)=> g(R, [v,..Vars]))
+          }
+    }.g(Args,[]);
+
+  fExp = { (VAR(?ident),?Cont) => Cont(var(ident))
+         | (SYM(?ident),?Cont) => Cont(sym(ident))
+	 | (NUM(?nm),?Cont) => Cont(num(nm))
+         | (STR(?st),?Cont) => Cont(str(st))
+         | (TUPLE(?lst),?Cont) => valof {
+                w : gensym2("w");
+		valis fExpL(lst,(?a)=>tuple(a,w,Cont(var(x))))
+              }
+         /* Apply a primitive function to a single argument */
+         | (APPLY(PRIMFUN(?fun),[?arg]),?Cont) => valof {
+		x : gensym2("x");	
+		valis fExp(arg, (?v)=>primfn(fun,[v],[x],[Cont(var(x))]))
+	      }
+
+         | {(APPLY(PRIMFUN(?Tst),?Args),?Cont) :: isAtestPrim(Tst)} => valof {
+                x : gensym2("xx");
+                k : gensym2("kk");
+	        valis fExp(Args, (?v)=>fix([(k,[x],Cont(var(x)))],
+			primfn(Tst,[v],[],[apply(var(k),[sym(T)]),
+					    apply(var(k),[sym(F)])])))
+	     }
+
+	 /* Apply a primitive function to a list of arguments */
+         | (APPLY(PRIMFUN(?fun),?args),?Cont) => valof {
+		x : gensym2("y");
+		valis fExpL(args, (?aL)=>primfn(fun,aL,[x],[Cont(var(x))]))
+	      }
+
+         /* A primitive function appearing as a value */
+         | (PRIMFUN(?fun),?Cont) => valof {
+		x : gensym2("z");
+		valis fExp(LAMBDA(x, APPLY(PRIMFUN(fun),[VAR(x)])),Cont)
+	      }
+
+         /* A lambda expression */
+	 | (LAMBDA(?v,?Exp),?Cont) => valof {
+		f : gensym2("l");
+		k : gensym2("k");
+		valis fix([(f,[v,k],fExp(Exp,(?z)=>apply(var(k),[z])))],Cont(var(f)))
+	   }
+	 /* A function call */
+	 | (APPLY(?fun,?args),?Cont) => valof {
+		x : gensym2("x");
+		r : gensym2("r");
+		valis fix([(r,[x],Cont(var(x)))],
+			fExp(fun,(?f)=>fExpL(args,(?e)=>apply(f,e<>[var(r)]))));
+	   }
+         };
+
+  isAtestPrim(?X) => X in [`=', `=<', `>=', `<', `>'];
+
+  main()
+  {
+   /* +(*(a,b),*(c,d)) */
+    Test : APPLY(PRIMFUN(`+'),[APPLY(PRIMFUN(`*'),[VAR(a),VAR(b)]),
+		APPLY(PRIMFUN(`*'),[VAR(c),VAR(d)])]);
+
+    T : fExp(Test, (?x) => result(x));
+
+    writef(stdout,"Result of converting %W is\n %W\n",(Test,T));
+
+    /* ((a,2),()) */
+    Test := TUPLE([TUPLE([VAR(`a'),NUM(2)]),TUPLE([])]);
+
+    T := fExp(Test, (?x) => result(x));
+
+    writef(stdout,"Result of converting %W is\n %W\n",(Test,T));
+
+    /* (?X)=>X*X */
+    Test := LAMBDA(x,APPLY(PRIMFUN(`*'),[VAR(x),VAR(x)]));
+    T := fExp(Test, (?x) => result(x));
+
+    writef(stdout,"Result of converting %W is\n %W\n",(Test,T));
+
+    Test := APPLY(Test,[VAR(A)]);
+
+    T := fExp(Test, (?x) => result(x));
+
+    writef(stdout,"Result of converting %W is\n %W\n",(Test,T));
+
+  }
+} execute main;

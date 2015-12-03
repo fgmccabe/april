@@ -1,0 +1,738 @@
+<HTML>
+<HEAD>
+<!-- Created by texi2html 1.57 from april.texi on September, 7  2004 -->
+
+<TITLE>April Reference Manual - Table of Contents</TITLE>
+</HEAD>
+<BODY >
+<H1>April Reference Manual</H1>
+<H2>Version 5.0.0-beta-12, last updated 22:12 April ./april.texi.</H2>
+<ADDRESS>F.G. McCabe <A HREF="mailto:<A HREF="mailto:fgm@fla.fujitsu.com">fgm@fla.fujitsu.com</A>"><A HREF="mailto:fgm@fla.fujitsu.com">fgm@fla.fujitsu.com</A></A></ADDRESS>
+<P>
+<P><HR><P>
+<UL>
+<LI><A NAME="TOC1" HREF="april.html#SEC1">Compiling <CODE>April</CODE> Programs</A>
+</LI><LI><A NAME="TOC2" HREF="april.html#SEC2">Running <CODE>April</CODE> programs</A>
+</LI><UL>
+<LI><A NAME="TOC3" HREF="april.html#SEC3">Summary of <CODE>April</CODE> command options</A>
+</LI><LI><A NAME="TOC4" HREF="april.html#SEC4">Environment variables</A>
+</LI></UL>
+<LI><A NAME="TOC5" HREF="april.html#SEC5">Format of an <CODE>April</CODE> source file</A>
+</LI><UL>
+<LI><A NAME="TOC6" HREF="april.html#SEC6">Standard <CODE>April</CODE> programs</A>
+</LI><UL>
+<LI><A NAME="TOC7" HREF="april.html#SEC7">Comments in programs</A>
+</LI><LI><A NAME="TOC8" HREF="april.html#SEC8">Command line arguments to programs</A>
+</LI></UL>
+<LI><A NAME="TOC9" HREF="april.html#SEC9"><CODE>April</CODE> module files</A>
+</LI><UL>
+<LI><A NAME="TOC10" HREF="april.html#SEC10">Importing programs from modules</A>
+</LI><LI><A NAME="TOC11" HREF="april.html#SEC11">Importing multiple modules</A>
+</LI><LI><A NAME="TOC12" HREF="april.html#SEC12">Using interface specification files</A>
+</LI></UL>
+<LI><A NAME="TOC13" HREF="april.html#SEC13">Including other source files</A>
+</LI></UL>
+<LI><A NAME="TOC14" HREF="april.html#SEC14"><CODE>April</CODE> data values and types</A>
+</LI><UL>
+<LI><A NAME="TOC15" HREF="april.html#SEC15">Primitive types</A>
+</LI><UL>
+<LI><A NAME="TOC16" HREF="april.html#SEC16"><CODE>number</CODE> type</A>
+</LI><LI><A NAME="TOC17" HREF="april.html#SEC17"><CODE>symbol</CODE> type</A>
+</LI><LI><A NAME="TOC18" HREF="april.html#SEC18"><CODE>char</CODE> type</A>
+</LI><LI><A NAME="TOC19" HREF="april.html#SEC19"><CODE>string</CODE> type</A>
+</LI></UL>
+<LI><A NAME="TOC20" HREF="april.html#SEC20">Compound types</A>
+</LI><UL>
+<LI><A NAME="TOC21" HREF="april.html#SEC21">List type</A>
+</LI><LI><A NAME="TOC22" HREF="april.html#SEC22">Tuple type</A>
+</LI><LI><A NAME="TOC23" HREF="april.html#SEC23">Record type</A>
+</LI><LI><A NAME="TOC24" HREF="april.html#SEC24">Function type</A>
+</LI><LI><A NAME="TOC25" HREF="april.html#SEC25">Procedure type</A>
+</LI><LI><A NAME="TOC26" HREF="april.html#SEC26"><CODE>any</CODE> type</A>
+</LI><LI><A NAME="TOC27" HREF="april.html#SEC27">Quantified types</A>
+</LI></UL>
+<LI><A NAME="TOC28" HREF="april.html#SEC28">Type definitions</A>
+</LI><UL>
+<LI><A NAME="TOC29" HREF="april.html#SEC29">Type renaming definition</A>
+</LI><LI><A NAME="TOC30" HREF="april.html#SEC30">User defined type definition</A>
+</LI><LI><A NAME="TOC31" HREF="april.html#SEC31">Scope of type definitions</A>
+</LI></UL>
+<LI><A NAME="TOC32" HREF="april.html#SEC32">Standard <CODE>April</CODE> Types</A>
+</LI><UL>
+<LI><A NAME="TOC33" HREF="april.html#SEC33"><CODE>logical</CODE> type</A>
+</LI><LI><A NAME="TOC34" HREF="april.html#SEC34"><CODE>handle</CODE> type</A>
+</LI><LI><A NAME="TOC35" HREF="april.html#SEC35"><CODE>error</CODE> type</A>
+</LI><LI><A NAME="TOC36" HREF="april.html#SEC36"><CODE>type_of</CODE> type function</A>
+</LI></UL>
+<LI><A NAME="TOC37" HREF="april.html#SEC37">Types and type inferencing</A>
+</LI><UL>
+<LI><A NAME="TOC38" HREF="april.html#SEC38">Type variables</A>
+</LI><LI><A NAME="TOC39" HREF="april.html#SEC39">Type abstraction and reification</A>
+</LI><UL>
+<LI><A NAME="TOC40" HREF="april.html#SEC40">Type abstraction</A>
+</LI><LI><A NAME="TOC41" HREF="april.html#SEC41">Type reification</A>
+</LI></UL>
+<LI><A NAME="TOC42" HREF="april.html#SEC42">Equality of type expressions</A>
+</LI><LI><A NAME="TOC43" HREF="april.html#SEC43">Type derivation</A>
+</LI><UL>
+<LI><A NAME="TOC44" HREF="april.html#SEC44">Numeric literal type</A>
+</LI><LI><A NAME="TOC45" HREF="april.html#SEC45">String literal</A>
+</LI><LI><A NAME="TOC46" HREF="april.html#SEC46">Symbolic literal type</A>
+</LI><LI><A NAME="TOC47" HREF="april.html#SEC47">Literal symbol type</A>
+</LI><LI><A NAME="TOC48" HREF="april.html#SEC48">Empty list literal type</A>
+</LI><LI><A NAME="TOC49" HREF="april.html#SEC49">Non empty list literal type</A>
+</LI><LI><A NAME="TOC50" HREF="april.html#SEC50">Tuple literal type</A>
+</LI><LI><A NAME="TOC51" HREF="april.html#SEC51">Record literal type</A>
+</LI><LI><A NAME="TOC52" HREF="april.html#SEC52">Function application expression type</A>
+</LI><LI><A NAME="TOC53" HREF="april.html#SEC53">Type of constructor function expressions</A>
+</LI><LI><A NAME="TOC54" HREF="april.html#SEC54">Dot expression type</A>
+</LI><LI><A NAME="TOC55" HREF="april.html#SEC55"><CODE>valof</CODE> expression type</A>
+</LI><LI><A NAME="TOC56" HREF="april.html#SEC56"><CODE>collect</CODE>/<CODE>setof</CODE> expression type</A>
+</LI><LI><A NAME="TOC57" HREF="april.html#SEC57">any expression type</A>
+</LI><LI><A NAME="TOC58" HREF="april.html#SEC58">Function expression type</A>
+</LI><LI><A NAME="TOC59" HREF="april.html#SEC59">Procedure type</A>
+</LI></UL>
+<LI><A NAME="TOC60" HREF="april.html#SEC60">Types and patterns</A>
+</LI><UL>
+<LI><A NAME="TOC61" HREF="april.html#SEC61">Numeric pattern type</A>
+</LI><LI><A NAME="TOC62" HREF="april.html#SEC62">Literal symbol pattern type</A>
+</LI></UL>
+<LI><A NAME="TOC63" HREF="april.html#SEC63">Types and statements</A>
+</LI><UL>
+<LI><A NAME="TOC64" HREF="april.html#SEC64">Variable declaration statement type environment</A>
+</LI><LI><A NAME="TOC65" HREF="april.html#SEC65">Assignment statement type environment</A>
+</LI><LI><A NAME="TOC66" HREF="april.html#SEC66">Match statement type environment</A>
+</LI><LI><A NAME="TOC67" HREF="april.html#SEC67">Statement sequence type environment</A>
+</LI><LI><A NAME="TOC68" HREF="april.html#SEC68">Conditional statement type environment</A>
+</LI></UL>
+<LI><A NAME="TOC69" HREF="april.html#SEC69">Type parameters</A>
+</LI></UL>
+</UL>
+<LI><A NAME="TOC70" HREF="april.html#SEC70"><CODE>April</CODE> expressions</A>
+</LI><UL>
+<LI><A NAME="TOC71" HREF="april.html#SEC71">Value expression forms</A>
+</LI><UL>
+<LI><A NAME="TOC72" HREF="april.html#SEC72">Function application expression</A>
+</LI></UL>
+<LI><A NAME="TOC73" HREF="april.html#SEC73">Syntactic expressions forms</A>
+</LI><UL>
+<LI><A NAME="TOC74" HREF="april.html#SEC74"><CODE>valof</CODE> expression</A>
+</LI><LI><A NAME="TOC75" HREF="april.html#SEC75"><CODE>try</CODE>...<CODE>onerror</CODE> expression</A>
+</LI><LI><A NAME="TOC76" HREF="april.html#SEC76"><CODE>exception</CODE> expression</A>
+</LI><LI><A NAME="TOC77" HREF="april.html#SEC77"><CODE>collect</CODE> expression</A>
+</LI><LI><A NAME="TOC78" HREF="april.html#SEC78"><CODE>setof</CODE> expression</A>
+</LI><LI><A NAME="TOC79" HREF="april.html#SEC79"><CODE>case</CODE> expression</A>
+</LI><LI><A NAME="TOC80" HREF="april.html#SEC80">Conditional expression</A>
+</LI><LI><A NAME="TOC81" HREF="april.html#SEC81">Type coercion expression</A>
+</LI><LI><A NAME="TOC82" HREF="april.html#SEC82">Theta expression</A>
+</LI><LI><A NAME="TOC83" HREF="april.html#SEC83">Dot expression</A>
+</LI></UL>
+</UL>
+<LI><A NAME="TOC84" HREF="april.html#SEC84">Patterns and pattern matching</A>
+</LI><UL>
+<LI><A NAME="TOC85" HREF="april.html#SEC85">Primitive patterns</A>
+</LI><UL>
+<LI><A NAME="TOC86" HREF="april.html#SEC86"><CODE>number</CODE> pattern</A>
+</LI><LI><A NAME="TOC87" HREF="april.html#SEC87"><CODE>symbol</CODE> pattern</A>
+</LI><LI><A NAME="TOC88" HREF="april.html#SEC88"><CODE>string</CODE> pattern</A>
+</LI><LI><A NAME="TOC89" HREF="april.html#SEC89">Variable declaration pattern</A>
+</LI><LI><A NAME="TOC90" HREF="april.html#SEC90">Anonymous variable pattern</A>
+</LI><LI><A NAME="TOC91" HREF="april.html#SEC91">Encapsulated value patterns</A>
+</LI></UL>
+<LI><A NAME="TOC92" HREF="april.html#SEC92">List and other compound patterns</A>
+</LI><UL>
+<LI><A NAME="TOC93" HREF="april.html#SEC93">List pattern</A>
+</LI><LI><A NAME="TOC94" HREF="april.html#SEC94">Append pattern</A>
+</LI><LI><A NAME="TOC95" HREF="april.html#SEC95">Tuple pattern</A>
+</LI><LI><A NAME="TOC96" HREF="april.html#SEC96">Record pattern</A>
+</LI><LI><A NAME="TOC97" HREF="april.html#SEC97">labelled type pattern</A>
+</LI><LI><A NAME="TOC98" HREF="april.html#SEC98"><CODE>handle</CODE> pattern</A>
+</LI><LI><A NAME="TOC99" HREF="april.html#SEC99">Guarded pattern</A>
+</LI></UL>
+<LI><A NAME="TOC100" HREF="april.html#SEC100">Types as patterns</A>
+</LI><LI><A NAME="TOC101" HREF="april.html#SEC101">String patterns</A>
+</LI><UL>
+<LI><A NAME="TOC102" HREF="april.html#SEC102">Character matching</A>
+</LI><LI><A NAME="TOC103" HREF="april.html#SEC103">String partitioning</A>
+</LI><LI><A NAME="TOC104" HREF="april.html#SEC104">Fixed width string pattern</A>
+</LI><LI><A NAME="TOC105" HREF="april.html#SEC105">Membership test</A>
+</LI><LI><A NAME="TOC106" HREF="april.html#SEC106">Value extraction</A>
+</LI></UL>
+</UL>
+<LI><A NAME="TOC107" HREF="april.html#SEC107"><CODE>April</CODE> statements</A>
+</LI><UL>
+<LI><A NAME="TOC108" HREF="april.html#SEC108">Primitive statements</A>
+</LI><UL>
+<LI><A NAME="TOC109" HREF="april.html#SEC109">Variable declaration statement</A>
+</LI><LI><A NAME="TOC110" HREF="april.html#SEC110">Assignment statement</A>
+</LI><LI><A NAME="TOC111" HREF="april.html#SEC111"><CODE>Null</CODE> statement</A>
+</LI><LI><A NAME="TOC112" HREF="april.html#SEC112">Procedure Call statement</A>
+</LI></UL>
+<LI><A NAME="TOC113" HREF="april.html#SEC113">Compound statements</A>
+</LI><UL>
+<LI><A NAME="TOC114" HREF="april.html#SEC114">Statement sequence</A>
+</LI><LI><A NAME="TOC115" HREF="april.html#SEC115"><CODE>while</CODE> statement</A>
+</LI><LI><A NAME="TOC116" HREF="april.html#SEC116"><CODE>for</CODE> statement</A>
+</LI><LI><A NAME="TOC117" HREF="april.html#SEC117">Conditional statement</A>
+</LI><LI><A NAME="TOC118" HREF="april.html#SEC118"><CODE>case</CODE> statement</A>
+</LI><LI><A NAME="TOC119" HREF="april.html#SEC119">Dot statement</A>
+</LI><LI><A NAME="TOC120" HREF="april.html#SEC120"><CODE>onerror</CODE> statement</A>
+</LI><LI><A NAME="TOC121" HREF="april.html#SEC121"><CODE>exception</CODE> statement</A>
+</LI><LI><A NAME="TOC122" HREF="april.html#SEC122">Labelled statement</A>
+</LI><LI><A NAME="TOC123" HREF="april.html#SEC123"><CODE>leave</CODE> statement</A>
+</LI></UL>
+<LI><A NAME="TOC124" HREF="april.html#SEC124">Sending messages between processes</A>
+</LI><UL>
+<LI><A NAME="TOC125" HREF="april.html#SEC125"><CODE><VAR>Msg</VAR> &#62;&#62; <VAR>To</VAR></CODE></A>
+</LI><UL>
+<LI><A NAME="TOC126" HREF="april.html#SEC126">Modifying message attributes</A>
+</LI></UL>
+<LI><A NAME="TOC127" HREF="april.html#SEC127"><CODE><VAR>Msg</VAR> &#62;&#62;&#62; <VAR>To</VAR></CODE></A>
+</LI><LI><A NAME="TOC128" HREF="april.html#SEC128">Post a message on own message queue</A>
+</LI><LI><A NAME="TOC129" HREF="april.html#SEC129"><CODE>_front_msg(<VAR>msg</VAR>,<VAR>reply</VAR>,<VAR>sender</VAR>)</CODE></A>
+</LI><LI><A NAME="TOC130" HREF="april.html#SEC130"><CODE><VAR>msg</VAR> &#62;&#62;* <VAR>recip-list</VAR></CODE></A>
+</LI><LI><A NAME="TOC131" HREF="april.html#SEC131">Message attributes</A>
+</LI><UL>
+<LI><A NAME="TOC132" HREF="april.html#SEC132">Message attribute type</A>
+</LI><LI><A NAME="TOC133" HREF="april.html#SEC133"><CODE>replyTo</CODE> message attribute</A>
+</LI><LI><A NAME="TOC134" HREF="april.html#SEC134"><CODE>leaseTime</CODE> message attribute</A>
+</LI><LI><A NAME="TOC135" HREF="april.html#SEC135"><CODE>receiptRequest</CODE> message attribute</A>
+</LI><LI><A NAME="TOC136" HREF="april.html#SEC136"><CODE>auditTrail</CODE> message attribute</A>
+</LI></UL>
+<LI><A NAME="TOC137" HREF="april.html#SEC137">Sending messages between <CODE>April</CODE> systems</A>
+</LI></UL>
+<LI><A NAME="TOC138" HREF="april.html#SEC138">Receiving messages</A>
+</LI><UL>
+<LI><A NAME="TOC139" HREF="april.html#SEC139">The message receive statement</A>
+</LI><UL>
+<LI><A NAME="TOC140" HREF="april.html#SEC140">Underlying semantics of message receive</A>
+</LI></UL>
+<LI><A NAME="TOC141" HREF="april.html#SEC141">The <CODE>timeout</CODE> message receive clause</A>
+</LI><LI><A NAME="TOC142" HREF="april.html#SEC142"><CODE>repeat</CODE>...<CODE>until</CODE></A>
+</LI><LI><A NAME="TOC143" HREF="april.html#SEC143"><CODE>repeat</CODE>...<CODE>until alarm</CODE></A>
+</LI></UL>
+</UL>
+<LI><A NAME="TOC144" HREF="april.html#SEC144">Tests and Conditions</A>
+</LI><UL>
+<LI><A NAME="TOC145" HREF="april.html#SEC145">Term Matching</A>
+</LI><UL>
+<LI><A NAME="TOC146" HREF="april.html#SEC146">Match condition</A>
+</LI><LI><A NAME="TOC147" HREF="april.html#SEC147">List membership condition</A>
+</LI></UL>
+<LI><A NAME="TOC148" HREF="april.html#SEC148">Comparisons</A>
+</LI><UL>
+<LI><A NAME="TOC149" HREF="april.html#SEC149">Term equality</A>
+</LI><LI><A NAME="TOC150" HREF="april.html#SEC150">Term inequality</A>
+</LI><LI><A NAME="TOC151" HREF="april.html#SEC151">Less than condition</A>
+</LI><LI><A NAME="TOC152" HREF="april.html#SEC152">Greater than test</A>
+</LI><LI><A NAME="TOC153" HREF="april.html#SEC153">Less than or equal condition</A>
+</LI><LI><A NAME="TOC154" HREF="april.html#SEC154">Greater than or equal test</A>
+</LI></UL>
+<LI><A NAME="TOC155" HREF="april.html#SEC155">Logical Connectives</A>
+</LI><UL>
+<LI><A NAME="TOC156" HREF="april.html#SEC156">Logical conjunction</A>
+</LI><LI><A NAME="TOC157" HREF="april.html#SEC157">Logical disjunction</A>
+</LI><LI><A NAME="TOC158" HREF="april.html#SEC158">Logical negation</A>
+</LI></UL>
+</UL>
+<LI><A NAME="TOC159" HREF="april.html#SEC159">Functions and procedures</A>
+</LI><UL>
+<LI><A NAME="TOC160" HREF="april.html#SEC160">Functions</A>
+</LI><UL>
+<LI><A NAME="TOC161" HREF="april.html#SEC161">Function equations</A>
+</LI><LI><A NAME="TOC162" HREF="april.html#SEC162">Function union</A>
+</LI><LI><A NAME="TOC163" HREF="april.html#SEC163">Function application</A>
+</LI><LI><A NAME="TOC164" HREF="april.html#SEC164"><CODE>case</CODE> expression as a function call</A>
+</LI><LI><A NAME="TOC165" HREF="april.html#SEC165">Function expressions</A>
+</LI><LI><A NAME="TOC166" HREF="april.html#SEC166">The <CODE>voidfun</CODE> function</A>
+</LI></UL>
+<LI><A NAME="TOC167" HREF="april.html#SEC167">Procedure</A>
+</LI><UL>
+<LI><A NAME="TOC168" HREF="april.html#SEC168">Procedure clause</A>
+</LI><LI><A NAME="TOC169" HREF="april.html#SEC169">Procedure union</A>
+</LI><LI><A NAME="TOC170" HREF="april.html#SEC170">Procedure application</A>
+</LI><LI><A NAME="TOC171" HREF="april.html#SEC171"><CODE>case</CODE> statement as a procedure call</A>
+</LI><LI><A NAME="TOC172" HREF="april.html#SEC172">Procedure expressions</A>
+</LI><LI><A NAME="TOC173" HREF="april.html#SEC173">Procedures and free variables</A>
+</LI><LI><A NAME="TOC174" HREF="april.html#SEC174">The <CODE>fail</CODE> procedure</A>
+</LI></UL>
+<LI><A NAME="TOC175" HREF="april.html#SEC175">Programs and theta expressions</A>
+</LI><UL>
+<LI><A NAME="TOC176" HREF="april.html#SEC176">Function declaration</A>
+</LI><LI><A NAME="TOC177" HREF="april.html#SEC177">Procedure declaration</A>
+</LI><LI><A NAME="TOC178" HREF="april.html#SEC178">Theta variables</A>
+</LI><LI><A NAME="TOC179" HREF="april.html#SEC179">theta record expression type</A>
+</LI><LI><A NAME="TOC180" HREF="april.html#SEC180">Semantics of modules</A>
+</LI></UL>
+</UL>
+<LI><A NAME="TOC181" HREF="april.html#SEC181">Arithmetic and mathematical functions</A>
+</LI><UL>
+<LI><A NAME="TOC182" HREF="april.html#SEC182">Standard arithmetic functions</A>
+</LI><UL>
+<LI><A NAME="TOC183" HREF="april.html#SEC183">Addition</A>
+</LI><LI><A NAME="TOC184" HREF="april.html#SEC184">Integer Addition</A>
+</LI><LI><A NAME="TOC185" HREF="april.html#SEC185">Subtraction</A>
+</LI><LI><A NAME="TOC186" HREF="april.html#SEC186">Integer Subtraction</A>
+</LI><LI><A NAME="TOC187" HREF="april.html#SEC187">Negation</A>
+</LI><LI><A NAME="TOC188" HREF="april.html#SEC188">Multiplication</A>
+</LI><LI><A NAME="TOC189" HREF="april.html#SEC189">Integer Multiplication</A>
+</LI><LI><A NAME="TOC190" HREF="april.html#SEC190">Division</A>
+</LI><LI><A NAME="TOC191" HREF="april.html#SEC191">Integer quotient</A>
+</LI><LI><A NAME="TOC192" HREF="april.html#SEC192">Remainder function</A>
+</LI><LI><A NAME="TOC193" HREF="april.html#SEC193">Integer Division</A>
+</LI><LI><A NAME="TOC194" HREF="april.html#SEC194">Bitwise and function</A>
+</LI><LI><A NAME="TOC195" HREF="april.html#SEC195">Bitwise or</A>
+</LI><LI><A NAME="TOC196" HREF="april.html#SEC196">Bitwise exclusive or</A>
+</LI><LI><A NAME="TOC197" HREF="april.html#SEC197">Ones complement</A>
+</LI><LI><A NAME="TOC198" HREF="april.html#SEC198">Logical left shift</A>
+</LI><LI><A NAME="TOC199" HREF="april.html#SEC199">Logical right shift</A>
+</LI><LI><A NAME="TOC200" HREF="april.html#SEC200">Absolute value</A>
+</LI><LI><A NAME="TOC201" HREF="april.html#SEC201">Truncate to Integer</A>
+</LI><LI><A NAME="TOC202" HREF="april.html#SEC202">Integer ceiling</A>
+</LI><LI><A NAME="TOC203" HREF="april.html#SEC203">Integer floor</A>
+</LI><LI><A NAME="TOC204" HREF="april.html#SEC204">Integral test</A>
+</LI></UL>
+<LI><A NAME="TOC205" HREF="april.html#SEC205">Mathematical Functions</A>
+</LI><UL>
+<LI><A NAME="TOC206" HREF="april.html#SEC206">Square root</A>
+</LI><LI><A NAME="TOC207" HREF="april.html#SEC207">Cubic root</A>
+</LI><LI><A NAME="TOC208" HREF="april.html#SEC208">Power function</A>
+</LI><LI><A NAME="TOC209" HREF="april.html#SEC209">Natural exponent function</A>
+</LI><LI><A NAME="TOC210" HREF="april.html#SEC210">Natural logarithm function</A>
+</LI><LI><A NAME="TOC211" HREF="april.html#SEC211">Logarithm base 10</A>
+</LI><LI><A NAME="TOC212" HREF="april.html#SEC212">Trigonometric sine</A>
+</LI><LI><A NAME="TOC213" HREF="april.html#SEC213">Trigonometric cosine</A>
+</LI><LI><A NAME="TOC214" HREF="april.html#SEC214">Trigonometric tangent</A>
+</LI><LI><A NAME="TOC215" HREF="april.html#SEC215">Arc sine</A>
+</LI><LI><A NAME="TOC216" HREF="april.html#SEC216">Arc cosine</A>
+</LI><LI><A NAME="TOC217" HREF="april.html#SEC217">Arc tangent</A>
+</LI><LI><A NAME="TOC218" HREF="april.html#SEC218">Hyperbolic sine</A>
+</LI><LI><A NAME="TOC219" HREF="april.html#SEC219">Hyperbolic cosine</A>
+</LI><LI><A NAME="TOC220" HREF="april.html#SEC220">Hyperbolic tangent</A>
+</LI><LI><A NAME="TOC221" HREF="april.html#SEC221">Inverse hyperbolic sine</A>
+</LI><LI><A NAME="TOC222" HREF="april.html#SEC222">Inverse hyperbolic cosine</A>
+</LI><LI><A NAME="TOC223" HREF="april.html#SEC223">Inverse hyperbolic tangent</A>
+</LI></UL>
+<LI><A NAME="TOC224" HREF="april.html#SEC224">Miscellaneous arithmetic functions</A>
+</LI><UL>
+<LI><A NAME="TOC225" HREF="april.html#SEC225">Raise by power of 2</A>
+</LI><LI><A NAME="TOC226" HREF="april.html#SEC226">Compute mantissae and exponent of f.p. number</A>
+</LI><LI><A NAME="TOC227" HREF="april.html#SEC227">Compute integer and fraction part</A>
+</LI><LI><A NAME="TOC228" HREF="april.html#SEC228">Generate random number</A>
+</LI><LI><A NAME="TOC229" HREF="april.html#SEC229">Generate random integer</A>
+</LI><LI><A NAME="TOC230" HREF="april.html#SEC230">Set random number seed</A>
+</LI></UL>
+</UL>
+<LI><A NAME="TOC231" HREF="april.html#SEC231">Input and Output</A>
+</LI><UL>
+<LI><A NAME="TOC232" HREF="april.html#SEC232">Files and file descriptors</A>
+</LI><UL>
+<LI><A NAME="TOC233" HREF="april.html#SEC233">File names and conventions for file names</A>
+</LI><LI><A NAME="TOC234" HREF="april.html#SEC234">File opening mode</A>
+</LI><LI><A NAME="TOC235" HREF="april.html#SEC235">File system access modes</A>
+</LI><LI><A NAME="TOC236" HREF="april.html#SEC236">File permission</A>
+</LI><LI><A NAME="TOC237" HREF="april.html#SEC237">File manager process</A>
+</LI><LI><A NAME="TOC238" HREF="april.html#SEC238">Standard files</A>
+</LI></UL>
+<LI><A NAME="TOC239" HREF="april.html#SEC239">Opening and closing files</A>
+</LI><UL>
+<LI><A NAME="TOC240" HREF="april.html#SEC240">Open a file</A>
+</LI><LI><A NAME="TOC241" HREF="april.html#SEC241">Close file process</A>
+</LI><LI><A NAME="TOC242" HREF="april.html#SEC242">Test for end of file</A>
+</LI><LI><A NAME="TOC243" HREF="april.html#SEC243">Test if file is ready for I/O</A>
+</LI><LI><A NAME="TOC244" HREF="april.html#SEC244">Flush output</A>
+</LI><LI><A NAME="TOC245" HREF="april.html#SEC245">Open a pipe</A>
+</LI><LI><A NAME="TOC246" HREF="april.html#SEC246">Create sub file-manager</A>
+</LI></UL>
+<LI><A NAME="TOC247" HREF="april.html#SEC247">File Positioning</A>
+</LI><UL>
+<LI><A NAME="TOC248" HREF="april.html#SEC248">Report current file position</A>
+</LI><LI><A NAME="TOC249" HREF="april.html#SEC249">Set file position</A>
+</LI></UL>
+<LI><A NAME="TOC250" HREF="april.html#SEC250">Files and Directories</A>
+</LI><UL>
+<LI><A NAME="TOC251" HREF="april.html#SEC251">Compute full name of file</A>
+</LI><LI><A NAME="TOC252" HREF="april.html#SEC252">Test for presence of file</A>
+</LI><LI><A NAME="TOC253" HREF="april.html#SEC253">Get file permissions</A>
+</LI><LI><A NAME="TOC254" HREF="april.html#SEC254">Set file permissions</A>
+</LI><LI><A NAME="TOC255" HREF="april.html#SEC255">Get type of file</A>
+</LI><LI><A NAME="TOC256" HREF="april.html#SEC256">Get file status</A>
+</LI><LI><A NAME="TOC257" HREF="april.html#SEC257">Delete a file</A>
+</LI><LI><A NAME="TOC258" HREF="april.html#SEC258">Rename a file</A>
+</LI><LI><A NAME="TOC259" HREF="april.html#SEC259">Change current directory</A>
+</LI><LI><A NAME="TOC260" HREF="april.html#SEC260">Report current directory</A>
+</LI><LI><A NAME="TOC261" HREF="april.html#SEC261">Report home directory</A>
+</LI><LI><A NAME="TOC262" HREF="april.html#SEC262">Create a new directory</A>
+</LI><LI><A NAME="TOC263" HREF="april.html#SEC263">Remove a directory</A>
+</LI><LI><A NAME="TOC264" HREF="april.html#SEC264">List files in directory</A>
+</LI></UL>
+<LI><A NAME="TOC265" HREF="april.html#SEC265">Reading and writing to files</A>
+</LI><UL>
+<LI><A NAME="TOC266" HREF="april.html#SEC266">Read a single character</A>
+</LI><LI><A NAME="TOC267" HREF="april.html#SEC267">Read a block string</A>
+</LI><LI><A NAME="TOC268" HREF="april.html#SEC268">Read a block of bytes</A>
+</LI><LI><A NAME="TOC269" HREF="april.html#SEC269">Read a byte as ASCII byte</A>
+</LI><LI><A NAME="TOC270" HREF="april.html#SEC270">Read a line of text</A>
+</LI><LI><A NAME="TOC271" HREF="april.html#SEC271">Write character string</A>
+</LI></UL>
+<LI><A NAME="TOC272" HREF="april.html#SEC272">Encoded Input/Output</A>
+</LI><UL>
+<LI><A NAME="TOC273" HREF="april.html#SEC273">Write <CODE>April</CODE> value in encoded form</A>
+</LI><LI><A NAME="TOC274" HREF="april.html#SEC274">Read encoded data value from file</A>
+</LI></UL>
+<LI><A NAME="TOC275" HREF="april.html#SEC275">The Socket library</A>
+</LI><UL>
+<LI><A NAME="TOC276" HREF="april.html#SEC276">Establish a TCP connection</A>
+</LI><LI><A NAME="TOC277" HREF="april.html#SEC277">Establish a TCP server</A>
+</LI></UL>
+<LI><A NAME="TOC278" HREF="april.html#SEC278">Stream Input and Output</A>
+</LI><UL>
+<LI><A NAME="TOC279" HREF="april.html#SEC279">Open a stream</A>
+</LI><LI><A NAME="TOC280" HREF="april.html#SEC280">Open a stream-oriented TCP connection</A>
+</LI><LI><A NAME="TOC281" HREF="april.html#SEC281">Open a stream-oriented TCP server</A>
+</LI></UL>
+</UL>
+<LI><A NAME="TOC282" HREF="april.html#SEC282">String and Character Handling</A>
+</LI><UL>
+<LI><A NAME="TOC283" HREF="april.html#SEC283">Basic string functions</A>
+</LI><UL>
+<LI><A NAME="TOC284" HREF="april.html#SEC284">Length of a string</A>
+</LI><LI><A NAME="TOC285" HREF="april.html#SEC285">String character prepend</A>
+</LI><LI><A NAME="TOC286" HREF="april.html#SEC286">Concatenate strings</A>
+</LI><LI><A NAME="TOC287" HREF="april.html#SEC287">Split a string into segments</A>
+</LI><LI><A NAME="TOC288" HREF="april.html#SEC288">Collapse list of <CODE>string</CODE>s together</A>
+</LI></UL>
+<LI><A NAME="TOC289" HREF="april.html#SEC289">Character handling</A>
+</LI><UL>
+<LI><A NAME="TOC290" HREF="april.html#SEC290"><CODE>charOf</CODE> -- compute character associated with code</A>
+</LI><LI><A NAME="TOC291" HREF="april.html#SEC291"><CODE>charCode</CODE> -- compute Unicode code associated with character</A>
+</LI></UL>
+<LI><A NAME="TOC292" HREF="april.html#SEC292">String formatting</A>
+</LI><UL>
+<LI><A NAME="TOC293" HREF="april.html#SEC293">Higher-level notation for formatting values</A>
+</LI><LI><A NAME="TOC294" HREF="april.html#SEC294">Format value into <CODE>string</CODE></A>
+</LI><LI><A NAME="TOC295" HREF="april.html#SEC295">Format an integer into a <CODE>string</CODE></A>
+</LI><LI><A NAME="TOC296" HREF="april.html#SEC296">Re-format a <CODE>string</CODE></A>
+</LI><LI><A NAME="TOC297" HREF="april.html#SEC297">Encode a value as a <CODE>string</CODE></A>
+</LI><LI><A NAME="TOC298" HREF="april.html#SEC298">Decode an encoded term string</A>
+</LI></UL>
+<LI><A NAME="TOC299" HREF="april.html#SEC299">Accessing elements of <CODE>string</CODE>s</A>
+</LI><UL>
+<LI><A NAME="TOC300" HREF="april.html#SEC300">Convert a <CODE>string</CODE> into list of ASCII bytes</A>
+</LI><LI><A NAME="TOC301" HREF="april.html#SEC301">Extract ASCII byte from <CODE>string</CODE></A>
+</LI></UL>
+<LI><A NAME="TOC302" HREF="april.html#SEC302">Basic symbol processing</A>
+</LI><UL>
+<LI><A NAME="TOC303" HREF="april.html#SEC303"><CODE>explode</CODE> a symbol into a <CODE>string</CODE></A>
+</LI><LI><A NAME="TOC304" HREF="april.html#SEC304"><CODE>implode</CODE> a string into a <CODE>symbol</CODE></A>
+</LI><LI><A NAME="TOC305" HREF="april.html#SEC305">Converting from a string to a list of symbols</A>
+</LI><LI><A NAME="TOC306" HREF="april.html#SEC306">Converting from a list of symbols to a string</A>
+</LI><LI><A NAME="TOC307" HREF="april.html#SEC307">Converting a single character symbol to a number</A>
+</LI><LI><A NAME="TOC308" HREF="april.html#SEC308">Converting a number to a single character symbol</A>
+</LI></UL>
+</UL>
+<LI><A NAME="TOC309" HREF="april.html#SEC309">Lists and Sets</A>
+</LI><UL>
+<LI><A NAME="TOC310" HREF="april.html#SEC310">List Operations</A>
+</LI><UL>
+<LI><A NAME="TOC311" HREF="april.html#SEC311">Index element of a list</A>
+</LI><LI><A NAME="TOC312" HREF="april.html#SEC312">Length of a list</A>
+</LI><LI><A NAME="TOC313" HREF="april.html#SEC313">Extract front elements from list</A>
+</LI><LI><A NAME="TOC314" HREF="april.html#SEC314">Extract end elements from list</A>
+</LI><LI><A NAME="TOC315" HREF="april.html#SEC315">Extract head of list</A>
+</LI><LI><A NAME="TOC316" HREF="april.html#SEC316">Tail of list</A>
+</LI><LI><A NAME="TOC317" HREF="april.html#SEC317">Append lists together</A>
+</LI><LI><A NAME="TOC318" HREF="april.html#SEC318">List construction</A>
+</LI><LI><A NAME="TOC319" HREF="april.html#SEC319">List of numbers</A>
+</LI><LI><A NAME="TOC320" HREF="april.html#SEC320">General iota function</A>
+</LI><LI><A NAME="TOC321" HREF="april.html#SEC321">Map function over elements of a list</A>
+</LI><LI><A NAME="TOC322" HREF="april.html#SEC322">Reduce list</A>
+</LI><LI><A NAME="TOC323" HREF="april.html#SEC323">Sort list</A>
+</LI></UL>
+<LI><A NAME="TOC324" HREF="april.html#SEC324">Pattern based operations on lists</A>
+</LI><UL>
+<LI><A NAME="TOC325" HREF="april.html#SEC325">Select elements from a list</A>
+</LI><LI><A NAME="TOC326" HREF="april.html#SEC326">Remove elements from list</A>
+</LI></UL>
+<LI><A NAME="TOC327" HREF="april.html#SEC327">Lists and set abstractions</A>
+</LI><UL>
+<LI><A NAME="TOC328" HREF="april.html#SEC328"><CODE>setof</CODE> abstraction operator</A>
+</LI><LI><A NAME="TOC329" HREF="april.html#SEC329"><CODE>bagof</CODE> abstraction operator</A>
+</LI><LI><A NAME="TOC330" HREF="april.html#SEC330">Counting abstraction operator</A>
+</LI><LI><A NAME="TOC331" HREF="april.html#SEC331">Lazy generation of elements</A>
+</LI><LI><A NAME="TOC332" HREF="april.html#SEC332">Element generating condition</A>
+</LI><LI><A NAME="TOC333" HREF="april.html#SEC333"><CODE>&#38;&#38;</CODE> abstraction condition</A>
+</LI><LI><A NAME="TOC334" HREF="april.html#SEC334"><CODE>||</CODE> abstraction condition</A>
+</LI><LI><A NAME="TOC335" HREF="april.html#SEC335"><CODE>!</CODE> abstraction condition</A>
+</LI><LI><A NAME="TOC336" HREF="april.html#SEC336"><CODE>istrue</CODE> abstraction condition</A>
+</LI><LI><A NAME="TOC337" HREF="april.html#SEC337"><CODE>forall</CODE> abstraction condition</A>
+</LI></UL>
+</UL>
+<LI><A NAME="TOC338" HREF="april.html#SEC338"><CODE>April</CODE> processes</A>
+</LI><UL>
+<LI><A NAME="TOC339" HREF="april.html#SEC339">Standard processes</A>
+</LI><LI><A NAME="TOC340" HREF="april.html#SEC340">Processes and process control</A>
+</LI><UL>
+<LI><A NAME="TOC341" HREF="april.html#SEC341">Spawn a new process</A>
+</LI><UL>
+<LI><A NAME="TOC342" HREF="april.html#SEC342">Spawning with a public name</A>
+</LI><LI><A NAME="TOC343" HREF="april.html#SEC343">Spawning with a different file manager</A>
+</LI></UL>
+<LI><A NAME="TOC344" HREF="april.html#SEC344">Report process status</A>
+</LI><LI><A NAME="TOC345" HREF="april.html#SEC345">Test for process termination</A>
+</LI><LI><A NAME="TOC346" HREF="april.html#SEC346">Kill local process</A>
+</LI><LI><A NAME="TOC347" HREF="april.html#SEC347">Wait for process termination</A>
+</LI><LI><A NAME="TOC348" HREF="april.html#SEC348">Halt execution of <CODE>April</CODE></A>
+</LI><LI><A NAME="TOC349" HREF="april.html#SEC349">Exit <CODE>April</CODE> system</A>
+</LI><LI><A NAME="TOC350" HREF="april.html#SEC350">Suspend process for a fixed time</A>
+</LI><LI><A NAME="TOC351" HREF="april.html#SEC351">Sleep until some time</A>
+</LI></UL>
+<LI><A NAME="TOC352" HREF="april.html#SEC352">Identification Functions</A>
+</LI><UL>
+<LI><A NAME="TOC353" HREF="april.html#SEC353">Name of host computer</A>
+</LI><LI><A NAME="TOC354" HREF="april.html#SEC354">Location of host computer</A>
+</LI><LI><A NAME="TOC355" HREF="april.html#SEC355"><CODE>handle</CODE> of current process</A>
+</LI><LI><A NAME="TOC356" HREF="april.html#SEC356">Creator of current process</A>
+</LI><LI><A NAME="TOC357" HREF="april.html#SEC357">Identity of the communications server</A>
+</LI></UL>
+</UL>
+<LI><A NAME="TOC358" HREF="april.html#SEC358">How <CODE>April</CODE> programs communicate</A>
+</LI><UL>
+<LI><A NAME="TOC359" HREF="april.html#SEC359">The communicative process</A>
+</LI><LI><A NAME="TOC360" HREF="april.html#SEC360">The Simple Communications System server</A>
+</LI><LI><A NAME="TOC361" HREF="april.html#SEC361">The <CODE>scomms.af</CODE> communications library</A>
+</LI><UL>
+<LI><A NAME="TOC362" HREF="april.html#SEC362">The <CODE>scsConnect</CODE> procedure</A>
+</LI><LI><A NAME="TOC363" HREF="april.html#SEC363">The <CODE>scsConnectAs</CODE> procedure</A>
+</LI></UL>
+</UL>
+<LI><A NAME="TOC364" HREF="april.html#SEC364"><CODE>April</CODE> environment primitives</A>
+</LI><UL>
+<LI><A NAME="TOC365" HREF="april.html#SEC365">Date and Time</A>
+</LI><UL>
+<LI><A NAME="TOC366" HREF="april.html#SEC366">Standard <CODE>date</CODE> type</A>
+</LI><LI><A NAME="TOC367" HREF="april.html#SEC367">Report today's date</A>
+</LI><LI><A NAME="TOC368" HREF="april.html#SEC368">Report current time</A>
+</LI><LI><A NAME="TOC369" HREF="april.html#SEC369">Convert raw time into a date value</A>
+</LI><LI><A NAME="TOC370" HREF="april.html#SEC370">Convert raw time into a UTC date.</A>
+</LI><LI><A NAME="TOC371" HREF="april.html#SEC371">Convert a date record into a raw time</A>
+</LI><LI><A NAME="TOC372" HREF="april.html#SEC372">Report system clock</A>
+</LI><LI><A NAME="TOC373" HREF="april.html#SEC373">Number of seconds</A>
+</LI><LI><A NAME="TOC374" HREF="april.html#SEC374">Convert minutes to time values</A>
+</LI><LI><A NAME="TOC375" HREF="april.html#SEC375">Convert hours to time values</A>
+</LI><LI><A NAME="TOC376" HREF="april.html#SEC376">Convert days to time values</A>
+</LI></UL>
+<LI><A NAME="TOC377" HREF="april.html#SEC377">Hostnames and host addresses</A>
+</LI><UL>
+<LI><A NAME="TOC378" HREF="april.html#SEC378">Compute host name from IP address</A>
+</LI><LI><A NAME="TOC379" HREF="april.html#SEC379">Compute IP addresses associated with a host name</A>
+</LI></UL>
+<LI><A NAME="TOC380" HREF="april.html#SEC380">Program Control</A>
+</LI><UL>
+<LI><A NAME="TOC381" HREF="april.html#SEC381">Command line arguments</A>
+</LI><LI><A NAME="TOC382" HREF="april.html#SEC382">Set Unix environment variable</A>
+</LI><LI><A NAME="TOC383" HREF="april.html#SEC383">Get environment variable</A>
+</LI><LI><A NAME="TOC384" HREF="april.html#SEC384">Report environment variables</A>
+</LI><LI><A NAME="TOC385" HREF="april.html#SEC385">Invoke Unix shell command</A>
+</LI><LI><A NAME="TOC386" HREF="april.html#SEC386">Execute a Unix sub-process</A>
+</LI></UL>
+</UL>
+<LI><A NAME="TOC387" HREF="april.html#SEC387">Resource limited execution</A>
+</LI><UL>
+<LI><A NAME="TOC388" HREF="april.html#SEC388">CPU time</A>
+</LI><UL>
+<LI><A NAME="TOC389" HREF="april.html#SEC389">Create a new Click Counter</A>
+</LI><LI><A NAME="TOC390" HREF="april.html#SEC390">Access current clicks</A>
+</LI><LI><A NAME="TOC391" HREF="april.html#SEC391">Access click counter value</A>
+</LI><LI><A NAME="TOC392" HREF="april.html#SEC392">Modify a click counter</A>
+</LI><LI><A NAME="TOC393" HREF="april.html#SEC393">Constrained execution of a statement</A>
+</LI></UL>
+<LI><A NAME="TOC394" HREF="april.html#SEC394">File manager</A>
+</LI><LI><A NAME="TOC395" HREF="april.html#SEC395">Communications manager</A>
+</LI><UL>
+<LI><A NAME="TOC396" HREF="april.html#SEC396">How the communications manager works</A>
+</LI></UL>
+<LI><A NAME="TOC397" HREF="april.html#SEC397">Code verification</A>
+</LI><UL>
+<LI><A NAME="TOC398" HREF="april.html#SEC398">Privileged processes</A>
+</LI><LI><A NAME="TOC399" HREF="april.html#SEC399">Verify code</A>
+</LI></UL>
+</UL>
+<LI><A NAME="TOC400" HREF="april.html#SEC400">Debugging <CODE>April</CODE> programs</A>
+</LI><UL>
+<LI><A NAME="TOC401" HREF="april.html#SEC401">Connecting to an external debugger</A>
+</LI><LI><A NAME="TOC402" HREF="april.html#SEC402">The standard <CODE>April</CODE> debugger</A>
+</LI><LI><A NAME="TOC403" HREF="april.html#SEC403">Debugging messages</A>
+</LI><UL>
+<LI><A NAME="TOC404" HREF="april.html#SEC404">Standard debugging message type</A>
+</LI><LI><A NAME="TOC405" HREF="april.html#SEC405">The <CODE>line_debug</CODE> message</A>
+</LI><LI><A NAME="TOC406" HREF="april.html#SEC406">The <CODE>entry_debug</CODE> message</A>
+</LI><LI><A NAME="TOC407" HREF="april.html#SEC407">The <CODE>exit_debug</CODE> message</A>
+</LI><LI><A NAME="TOC408" HREF="april.html#SEC408">The <CODE>return_debug</CODE> message</A>
+</LI><LI><A NAME="TOC409" HREF="april.html#SEC409">The <CODE>assign_debug</CODE> message</A>
+</LI><LI><A NAME="TOC410" HREF="april.html#SEC410">The <CODE>scope_debug</CODE> message</A>
+</LI><LI><A NAME="TOC411" HREF="april.html#SEC411">The <CODE>fork_debug</CODE> message</A>
+</LI><LI><A NAME="TOC412" HREF="april.html#SEC412">The <CODE>die_debug</CODE> message</A>
+</LI><LI><A NAME="TOC413" HREF="april.html#SEC413">The <CODE>send_debug</CODE> message</A>
+</LI><LI><A NAME="TOC414" HREF="april.html#SEC414">The <CODE>front_debug</CODE> message</A>
+</LI><LI><A NAME="TOC415" HREF="april.html#SEC415">The <CODE>accept_debug</CODE> message</A>
+</LI><LI><A NAME="TOC416" HREF="april.html#SEC416">The <CODE>suspend_debug</CODE> message</A>
+</LI><LI><A NAME="TOC417" HREF="april.html#SEC417">The <CODE>error_debug</CODE> message</A>
+</LI><LI><A NAME="TOC418" HREF="april.html#SEC418">The <CODE>break_debug</CODE> message</A>
+</LI></UL>
+</UL>
+<LI><A NAME="TOC419" HREF="april.html#SEC419"><CODE>April</CODE> syntax</A>
+</LI><UL>
+<LI><A NAME="TOC420" HREF="april.html#SEC420">Defining an operator grammar</A>
+</LI><LI><A NAME="TOC421" HREF="april.html#SEC421"><CODE>April</CODE> grammar rules</A>
+</LI><UL>
+<LI><A NAME="TOC422" HREF="april.html#SEC422">Primitive syntax expressions</A>
+</LI><UL>
+<LI><A NAME="TOC423" HREF="april.html#SEC423">Comments in programs</A>
+</LI><LI><A NAME="TOC424" HREF="april.html#SEC424">Identifier syntax</A>
+</LI><LI><A NAME="TOC425" HREF="april.html#SEC425">Number syntax</A>
+</LI><LI><A NAME="TOC426" HREF="april.html#SEC426">String syntax</A>
+</LI><LI><A NAME="TOC427" HREF="april.html#SEC427">List syntax</A>
+</LI><LI><A NAME="TOC428" HREF="april.html#SEC428">Tuple syntax</A>
+</LI><LI><A NAME="TOC429" HREF="april.html#SEC429">Syntax of functional expressions</A>
+</LI><LI><A NAME="TOC430" HREF="april.html#SEC430">Parenthetical expressions</A>
+</LI><LI><A NAME="TOC431" HREF="april.html#SEC431">Quoted symbol</A>
+</LI></UL>
+<LI><A NAME="TOC432" HREF="april.html#SEC432">Infix expressions</A>
+</LI><LI><A NAME="TOC433" HREF="april.html#SEC433">Prefix expressions</A>
+</LI><LI><A NAME="TOC434" HREF="april.html#SEC434">Postfix expressions</A>
+</LI></UL>
+<LI><A NAME="TOC435" HREF="april.html#SEC435">Defining a new operator</A>
+</LI><UL>
+<LI><A NAME="TOC436" HREF="april.html#SEC436">Operator priorities</A>
+</LI><LI><A NAME="TOC437" HREF="april.html#SEC437">How operator declarations are interpreted</A>
+</LI><LI><A NAME="TOC438" HREF="april.html#SEC438">Disambiguating infix and postfix</A>
+</LI></UL>
+<LI><A NAME="TOC439" HREF="april.html#SEC439">Syntax errors</A>
+</LI></UL>
+<LI><A NAME="TOC440" HREF="april.html#SEC440">Extending the <CODE>April</CODE> system</A>
+</LI><UL>
+<LI><A NAME="TOC441" HREF="april.html#SEC441">Using a plug-in module</A>
+</LI><LI><A NAME="TOC442" HREF="april.html#SEC442">Defining a plug-in module</A>
+</LI><UL>
+<LI><A NAME="TOC443" HREF="april.html#SEC443">Protecting pointers</A>
+</LI><LI><A NAME="TOC444" HREF="april.html#SEC444">Returning values from a plug-in function</A>
+</LI><LI><A NAME="TOC445" HREF="april.html#SEC445">Reporting errors from a plug-in function</A>
+</LI><LI><A NAME="TOC446" HREF="april.html#SEC446">The signature structure</A>
+</LI></UL>
+<LI><A NAME="TOC447" HREF="april.html#SEC447">Type signature representation</A>
+</LI><LI><A NAME="TOC448" HREF="april.html#SEC448">Support functions and macros</A>
+</LI><UL>
+<LI><A NAME="TOC449" HREF="april.html#SEC449">IsInteger</A>
+</LI><LI><A NAME="TOC450" HREF="april.html#SEC450">IntVal</A>
+</LI><LI><A NAME="TOC451" HREF="april.html#SEC451">allocateInteger</A>
+</LI><LI><A NAME="TOC452" HREF="april.html#SEC452">IsFloat</A>
+</LI><LI><A NAME="TOC453" HREF="april.html#SEC453">FloatVal</A>
+</LI><LI><A NAME="TOC454" HREF="april.html#SEC454">allocateFloat</A>
+</LI><LI><A NAME="TOC455" HREF="april.html#SEC455">IsSymb</A>
+</LI><LI><A NAME="TOC456" HREF="april.html#SEC456">SymVal</A>
+</LI><LI><A NAME="TOC457" HREF="april.html#SEC457">newSymbol</A>
+</LI><LI><A NAME="TOC458" HREF="april.html#SEC458">IsString</A>
+</LI><LI><A NAME="TOC459" HREF="april.html#SEC459">StrVal</A>
+</LI><LI><A NAME="TOC460" HREF="april.html#SEC460">StringText</A>
+</LI><LI><A NAME="TOC461" HREF="april.html#SEC461">StringSize</A>
+</LI><LI><A NAME="TOC462" HREF="april.html#SEC462">allocateString</A>
+</LI><LI><A NAME="TOC463" HREF="april.html#SEC463">allocateSubString</A>
+</LI><LI><A NAME="TOC464" HREF="april.html#SEC464">allocateCString</A>
+</LI><LI><A NAME="TOC465" HREF="april.html#SEC465">IsList</A>
+</LI><LI><A NAME="TOC466" HREF="april.html#SEC466">ListHead</A>
+</LI><LI><A NAME="TOC467" HREF="april.html#SEC467">ListTail</A>
+</LI><LI><A NAME="TOC468" HREF="april.html#SEC468">allocatePair</A>
+</LI><LI><A NAME="TOC469" HREF="april.html#SEC469">updateListHead</A>
+</LI><LI><A NAME="TOC470" HREF="april.html#SEC470">updateListTail</A>
+</LI><LI><A NAME="TOC471" HREF="april.html#SEC471">IsTuple</A>
+</LI><LI><A NAME="TOC472" HREF="april.html#SEC472">tupleArity</A>
+</LI><LI><A NAME="TOC473" HREF="april.html#SEC473">tupleArg</A>
+</LI><LI><A NAME="TOC474" HREF="april.html#SEC474">allocateTpl</A>
+</LI><LI><A NAME="TOC475" HREF="april.html#SEC475">updateTuple</A>
+</LI><LI><A NAME="TOC476" HREF="april.html#SEC476">IsOpaque</A>
+</LI><LI><A NAME="TOC477" HREF="april.html#SEC477">OpaqueType</A>
+</LI><LI><A NAME="TOC478" HREF="april.html#SEC478">OpaqueValue</A>
+</LI><LI><A NAME="TOC479" HREF="april.html#SEC479">allocateOpaque</A>
+</LI></UL>
+</UL>
+<LI><A NAME="TOC480" HREF="april.html#SEC480">Formal <CODE>April</CODE> grammar</A>
+</LI><UL>
+<LI><A NAME="TOC481" HREF="april.html#SEC481">Token syntax</A>
+</LI><UL>
+<LI><A NAME="TOC482" HREF="april.html#SEC482">Syntax of <CODE>April</CODE> <VAR>ident</VAR>s</A>
+</LI><LI><A NAME="TOC483" HREF="april.html#SEC483">Syntax of <CODE>April</CODE> numbers</A>
+</LI><LI><A NAME="TOC484" HREF="april.html#SEC484">Syntax of <CODE>April</CODE> <CODE>strings</CODE></A>
+</LI><LI><A NAME="TOC485" HREF="april.html#SEC485">Syntax of <CODE>April</CODE> comments</A>
+</LI></UL>
+<LI><A NAME="TOC486" HREF="april.html#SEC486">Operator precedence grammar</A>
+</LI><LI><A NAME="TOC487" HREF="april.html#SEC487">Core <CODE>April</CODE> syntax</A>
+</LI><UL>
+<LI><A NAME="TOC488" HREF="april.html#SEC488">Core <CODE>April</CODE> types</A>
+</LI><LI><A NAME="TOC489" HREF="april.html#SEC489">Core <CODE>April</CODE> expressions</A>
+</LI><LI><A NAME="TOC490" HREF="april.html#SEC490">Core <CODE>April</CODE> patterns</A>
+</LI><LI><A NAME="TOC491" HREF="april.html#SEC491">Core <CODE>April</CODE> statements</A>
+</LI><LI><A NAME="TOC492" HREF="april.html#SEC492">Core <CODE>April</CODE> programs</A>
+</LI></UL>
+<LI><A NAME="TOC493" HREF="april.html#SEC493"><CODE>April</CODE> presentation syntax</A>
+</LI></UL>
+<LI><A NAME="TOC494" HREF="april.html#SEC494">Standard operators in <CODE>April</CODE></A>
+</LI><LI><A NAME="TOC495" HREF="april.html#SEC495">Standard error codes</A>
+</LI><LI><A NAME="TOC496" HREF="april.html#SEC496">Encoded term format</A>
+</LI><UL>
+<LI><A NAME="TOC497" HREF="april.html#SEC497">Representation of values</A>
+</LI><UL>
+<LI><A NAME="TOC498" HREF="april.html#SEC498">Integer</A>
+</LI><UL>
+<LI><A NAME="TOC499" HREF="april.html#SEC499">Tagged length</A>
+</LI></UL>
+<LI><A NAME="TOC500" HREF="april.html#SEC500">Floating point encoding</A>
+</LI><LI><A NAME="TOC501" HREF="april.html#SEC501">Variables' encoding</A>
+</LI><LI><A NAME="TOC502" HREF="april.html#SEC502">Symbol encoding</A>
+</LI><LI><A NAME="TOC503" HREF="april.html#SEC503">Character encoding</A>
+</LI><LI><A NAME="TOC504" HREF="april.html#SEC504">String encoding</A>
+</LI><LI><A NAME="TOC505" HREF="april.html#SEC505">Program code</A>
+</LI><LI><A NAME="TOC506" HREF="april.html#SEC506">List encoding</A>
+</LI><LI><A NAME="TOC507" HREF="april.html#SEC507">Structure encoding</A>
+</LI></UL>
+<LI><A NAME="TOC508" HREF="april.html#SEC508">Circular structure and graph structures</A>
+</LI><UL>
+<LI><A NAME="TOC509" HREF="april.html#SEC509">Shorthand references</A>
+</LI></UL>
+<LI><A NAME="TOC510" HREF="april.html#SEC510">Representing types</A>
+</LI><UL>
+<LI><A NAME="TOC511" HREF="april.html#SEC511">Type symbols</A>
+</LI><LI><A NAME="TOC512" HREF="april.html#SEC512">Type constructors</A>
+</LI><LI><A NAME="TOC513" HREF="april.html#SEC513">Variables in types</A>
+</LI></UL>
+<LI><A NAME="TOC514" HREF="april.html#SEC514">Encoded terms in files</A>
+</LI></UL>
+<LI><A NAME="TOC515" HREF="april.html#SEC515">Notes for April v4 programmers</A>
+</LI><UL>
+<LI><A NAME="TOC516" HREF="april.html#SEC516">Unicode compliance</A>
+</LI><LI><A NAME="TOC517" HREF="april.html#SEC517">The <CODE>handle</CODE> data type</A>
+</LI><LI><A NAME="TOC518" HREF="april.html#SEC518">Strings and Characters</A>
+</LI><LI><A NAME="TOC519" HREF="april.html#SEC519">Operators</A>
+</LI><LI><A NAME="TOC520" HREF="april.html#SEC520">Macro language</A>
+</LI><LI><A NAME="TOC521" HREF="april.html#SEC521">Communications infrastructure</A>
+</LI><LI><A NAME="TOC522" HREF="april.html#SEC522">URLs and file systems</A>
+</LI><LI><A NAME="TOC523" HREF="april.html#SEC523">The representation of <CODE>any</CODE> values</A>
+</LI><LI><A NAME="TOC524" HREF="april.html#SEC524">Deprecated functions</A>
+</LI><LI><A NAME="TOC525" HREF="april.html#SEC525">Changed functions</A>
+</LI><LI><A NAME="TOC526" HREF="april.html#SEC526">New functions</A>
+</LI></UL>
+<LI><A NAME="TOC527" HREF="april.html#SEC527">GNU GENERAL PUBLIC LICENSE</A>
+</LI><UL>
+<LI><A NAME="TOC528" HREF="april.html#SEC528">Preamble</A>
+</LI><LI><A NAME="TOC529" HREF="april.html#SEC529">TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION</A>
+</LI><LI><A NAME="TOC530" HREF="april.html#SEC530">How to Apply These Terms to Your New Programs</A>
+</LI></UL>
+<LI><A NAME="TOC531" HREF="april.html#SEC531">Concept index</A>
+</LI><LI><A NAME="TOC532" HREF="april.html#SEC532">Standard function index</A>
+</LI></UL>
+<P><HR><P>
+This document was generated on September, 7  2004 using
+<A HREF="http://www.mathematik.uni-kl.de/~obachman/Texi2html">texi2html</A>&nbsp;1.57.
+
+</BODY>
+</HTML>

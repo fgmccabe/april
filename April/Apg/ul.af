@@ -1,0 +1,5 @@
+/* automatically generated -- do not edit */
+/* Module interface file for ul.aam */
+({
+    (char[],number,number,char[])=>yyType
+   }?parser) from "ul.aam";

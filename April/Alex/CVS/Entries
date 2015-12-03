@@ -1,0 +1,17 @@
+D/Doc////
+/.cvsignore/1.2/Tue Nov 18 23:04:05 2003//
+/.gdb_history/1.1.1.1/Tue Nov 18 23:04:05 2003//
+/Makefile.am/1.2/Tue Nov 18 23:04:06 2003//
+/alex.ap/1.1.1.1/Tue Nov 18 23:04:05 2003//
+/alex.in/1.1.1.1/Tue Nov 18 23:04:05 2003//
+/genapril.ap/1.1.1.1/Tue Nov 18 23:04:06 2003//
+/gendfa.ap/1.1.1.1/Tue Nov 18 23:04:06 2003//
+/genregexp.ap/1.1.1.1/Tue Nov 18 23:04:06 2003//
+/ident.alx/1.1.1.1/Tue Nov 18 23:04:06 2003//
+/ident.ap/1.1.1.1/Tue Nov 18 23:04:06 2003//
+/regexp.ah/1.1.1.1/Tue Nov 18 23:04:06 2003//
+/test.alx/1.1.1.1/Tue Nov 18 23:04:06 2003//
+/test.ap/1.1.1.1/Tue Nov 18 23:04:06 2003//
+/tester.ap/1.1.1.1/Tue Nov 18 23:04:06 2003//
+/token.ah/1.1.1.1/Tue Nov 18 23:04:06 2003//
+/token.alx/1.1.1.1/Tue Nov 18 23:04:06 2003//

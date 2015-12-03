@@ -1,0 +1,191 @@
+#include <objects.ah>;
+
+
+program{
+queue() => object
+  { Q:[];
+    add: {E -> Q:=Q <>[E]};
+    remove()=> valof
+      {[H,..T].=Q;
+      Q:=T;
+      valis H};
+    add2(E1,E2){add(E1);add(E2)};	
+    length() => listlen(Q);
+
+-- add is made an updatable field containing add method
+-- because  another method, add2, of this class function calls add
+-- which may be redefined in a subclass function. If it is 
+-- redefined, subclass object should update the queue add, in its
+-- init() method, to contain 
+-- the new definition so that add2 is also, indirectly, redefined
+		
+    init(){"new queue object created\n" >> stdout}
+ 
+-- if init() proc is defined it is called whenever class
+-- function is called to create a new ob, in this case when
+--  new queues are created 
+-- by calling queue().  This init just displays a message
+
+  }
+  export (getQ,setQ,add,setadd,add2,remove,length);
+
+-- for each updateable field V (one initialised with :) 
+-- in the object getV or  setV or both can be 
+-- exported even when these methods are not defined. 
+-- If they are not defined,
+-- but  exported, approp default defs are automatically added. The default
+--  defs are: setV(N){V:=N) and getV()=>V. So, in this case  default
+-- defs for setadd, getQ and setQ are added to the object returned by 
+-- this class function
+
+-- -----------------------------------------------
+-- Because queue() returns an object allowing update of both add and Q values
+-- this is the class  function that should be used when we want to inherit 
+-- from the queue class  and modify it - see below.
+-- For normal use of a queue object, 
+-- we should define a new object generating function
+-- that does not export setadd and setQ
+
+public_queue(L) => 
+  object queue() where
+  {init()
+    {"queue contains\n"++ L^0 ++"\n" >> stdout;
+    setQ(L)}
+  }	
+  export (getQ,add,add2,remove,length);
+
+-- This is a function returning a modified queue object that does not have
+-- setadd and setQ
+-- public_queue should be used for creating queue objects for use in programs
+-- It allows read access to the current value of Q, via getQ but Q has to
+-- be modified using add and remove only.
+-- This def also has its own init defined. init is special in that it does
+-- not override the super def of init if given. In fact both the  init
+-- proc of  queue  and and this init proc will be called when a 
+-- public queue object is created. The public_queue init  uses the exported 
+-- setQ of the queue object to intialise  Q to the given value L.
+-- We cannot write Q:=L as we could have done in the queue def since here
+-- Q is not in scope. Indeed the queue function could have been imported
+-- from a module, or received in a message, so we may not even have 
+-- the source code.
+
+-- -------------------------------------------------
+
+priority_queue() =>
+  object import (getQ,setQ,add,setadd,add2,remove,length) from queue() 
+
+-- the `import .... from' is optional, it can be used to explicitly
+-- enumerate all the methods you believe are available from 
+-- the object being modified - this is not checked by the compiler
+
+  in	-- can use in or where before new or modified methods 
+  { 
+    setadd(A){add:=A;(super.setadd)(A)};
+    add: {(E,P)-> {
+      string%%(E,P) ++ " being added to " ++ getQ()^0 ++ "\n" 
+		>> stdout;
+      setQ(insert(E,P,getQ()))}};
+    insert(E,P,Q) => {
+      case Q in {    
+	[]=> [(E,P)]
+      | [(?EE,?PP),..?R]  =>
+	  (if P>PP then [(E,P),..Q]
+	  else [(EE,PP),..insert(E,P,R)])
+      }};
+    add3(E1,E2,E3){add(E1);add2(E2,E3)};
+    init(){"pr queue, so updating super's add method\n" >>stdout;
+           (super.setadd)(add)}
+
+-- here init is used to update supers's (queue's) def of add  
+-- so that the def of add2 in queue will use the priority queue add
+-- and not the  queue add
+-- notice that add3 defined here calls this inherited, and hence indirectly
+-- modified def of add2
+
+  }
+  export (getQ,setQ,add,setadd,add2,add3,remove,length);
+
+/* Also notice that for this class  function we have had to define setadd 
+ rather  
+ than  make use of the default def. This is because, should add be further  
+ redefined in a subclass function that modifies priority_queue, we need to 
+ ensure that when setadd is called 
+ to redefine the add of priority_queue 
+ (needed because the priority_queue add is used in add3)
+ then at the same time the add of queue will be updated by calling 
+ super.setadd. If we had not 
+ called add from another method of priority_queue,
+  then the add in priority_queue could have been a 
+ normal 
+ non-updateble field. The setadd being exported would then 
+ have been queue's and a  setadd def in priority_queue would not be needed. */
+
+-- -----------------------------------
+
+public_priority_queue() => 
+  object priority_queue() 
+  export (getQ,add,remove,add2,add3,length);
+
+-- this defines the function to be used for creating priority queues to be used
+-- in an application
+
+-- -----------------------------------
+
+/* public_queue objects cannot be shared across processes because method 
+ invocations are not atomic. To serialise the method invocations we need to 
+ define another  function that returns a message rule procedure that can be 
+ executed by a process */
+
+queue_message_interface= 
+    let {QO=queue()} in 
+    { ('add,E) ->> {"Adding "++string%%E ++ "\n" >> stdout;QO.add(E);
+                                   'ok >> replyto}
+    |
+      'remove :: QO.length() > 0 ->> QO.remove() >> replyto
+    };
+
+
+active_queue() => 
+    object queue() where 
+    harness(){
+    while true do
+     receive  ('add,E) ->> {"Adding "++string%%E ++ "\n" >> stdout;add(E);
+                                   'ok >> replyto}
+             |
+              'remove :: length() > 0 ->> remove() >> replyto
+    } export harness;
+
+main(){
+
+/*  Q=public_queue([]);
+
+  Q.add2(3,4);
+  string%%(Q.remove(),Q.remove()) ++ "\n" >> stdout;
+*/
+
+  PQ=priority_queue();
+  PQ.add(('keith,7));
+  string%%(PQ.getQ())++ "\n" >> stdout;
+  PQ.add3(('sam,10),('bill,11),('tom,12));
+  string%%(PQ.getQ())++ "\n" >> stdout;
+  PQ.add(('john,20));    
+  string%%(PQ.getQ())++ "\n" >> stdout;
+
+  string%%(PQ.remove())++ "\n" >> stdout;
+  string%%(PQ.remove())++ "\n" >> stdout;
+  string%%(PQ.remove())++ "\n" >> stdout;
+
+  AQ=  {spawn 
+           active_queue().harness()};
+  ('add,5)>>AQ; 
+   'ok::sender==AQ <<;
+  "received ok\n" >> stdout;
+  ('add,4)>>AQ;
+  receive 'ok::sender==AQ ->> {};
+  "received ok\n" >> stdout;
+  "active queue AQ head is "++ string%%(AQ! 'remove)++ "\n" >> stdout ;
+
+
+}
+
+} execute main;

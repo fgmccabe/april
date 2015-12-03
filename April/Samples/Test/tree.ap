@@ -1,0 +1,44 @@
+/*
+ * Some simple tree processing programs
+ */
+
+program{
+  tree ::= %a-(%g.{empty | node(%g?left,%a?lbl,%g?right)});
+
+  path = {
+    (E,node(_,E.=lbl,_)) => []
+  | (_,empty) => []
+  | (E,node(_,(e::e<E).=lbl,R.=right)) =>
+        [R,..path(E,R)]
+  | (E,node{L.=left,(e::e>E).=lbl,_}) =>
+        [L,..path(E,L)]
+  };
+
+  insert = {
+    (E,empty) => node(left=empty,lbl=E,right=empty)
+  | (E,node(L.=left,E.=lbl,R.=right)) => node(left=L,lbl=E,right=R)
+  | (E,node(L.=left,(e::E<e).=lbl,R.=right)) =>
+	node(left=insert(E,L),lbl=e,right=R)
+  | (E,node(L.=left,e.=lbl,R.=right)) =>
+	node(left=L,lbl=e,right=insert(E,R))
+  };
+
+  writef(file,str,val)
+  {
+    sprintf(str,val)>>file;
+  };
+
+  main()
+  {
+    T : insert("a",insert("d",insert("b",insert("c",empty))));
+
+    writef(stdout,"Path of %w in %w is %w\n",any??("b",T,path("b",T)));
+    writef(stdout,"Path of %w in %w is %w\n",any??("a",T,path("a",T)));
+    writef(stdout,"Path of %w in %w is %w\n",any??("e",T,path("e",T)));
+
+    T :=insert("b",insert("c",empty));
+
+    writef(stdout,"Path of %w in %w is %w\n",any??("c",T,path("c",T)));
+  }
+} execute main;
+

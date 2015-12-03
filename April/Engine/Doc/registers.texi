@@ -1,0 +1,151 @@
+@node April register model
+@chapter @code{April} register model
+@cindex @code{April} register model
+
+@noindent
+The @code{AM} register model is a combination of RISC and stack
+architecture -- with a strong similarity to the SPARC processor. The
+@code{AM} can be viewed alternately as a stack processor with no general
+purpose registers or a machine with arbitrarily many registers accessed
+via a single register window.
+
+All data manipulation takes place on a local stack which is organized as
+a linear array of cells. Indexing this stack is the Frame Pointer
+register @code{FP} and most instructions refer to cells which are
+offsets from the @code{FP} register. The @code{FP} register effectively
+establishes  a register window -- from the @code{FP} register, up to 253
+`registers' can be accessed directly. 
+
+@menu
+* AM registers::                
+* Evaluation stack::            
+@end menu
+
+@node AM registers
+@section @code{AM} register set
+@cindex @code{AM} register set
+
+@table @code
+@item FP
+The @code{FP} register points into the stack array and forms the basis
+of most addressing within the @code{AM}. By convention, negative offsets
+from @code{FP} are used for `local variables' of a program, and positive
+offsets are used to access parameters of programs.
+
+Offsets of 0,1 and 2 are reserved by the system and may not be used to
+access data values.
+
+The format of @code{April} instructions is such that the range of
+offsets to @code{FP} is -128@dots{}127. This means that the maximum
+number of parameters a program may have is 124, and the maximum number
+of local variables is 128 -- hence the register window in the @code{AM}
+consists of 252 registers.
+
+@item E
+The @code{E} register points to an array of cells which is the current
+program's environment. Generally, the @code{E} register points to the
+array of @emph{free} variables' values. Together with the @code{FP}
+register, the @code{E} register is the only means that a program can
+access other programs.
+
+@item PC
+The @code{PC} register is the program counter. The @code{PC} register is
+used to access the next instruction word and to access program literals
+-- which are addressed using PC-relative addressing.
+
+@item SP
+The @code{SP} register is the stack-top register which addresses the
+`top' of the stack. By convention the evaluation stack grows downwards
+in memory.
+
+Unlike  a true stack machine architecture, the @code{SP} is not always
+maintained in a valid state. In fact, the @code{SP} register is only
+`valid' immediately after a program @code{call} instruction and
+immediately prior to an instruction which may trigger garbage
+collection. Otherwise, the @code{SP} register is @emph{not} normally
+maintained in a valid state.
+
+@end table
+
+@node Evaluation stack
+@section Evaluation stack
+@cindex Evaluation stack
+
+@noindent
+The evaluation stack is where a process stores and manipulates its
+data. The stack is organized as a series of stack frames growing
+downwards in memory.
+
+Each stack frame has a similar structure -- irregardless of whether the
+frame relates to a function call, procedure call or pattern call. The
+`center' of the stack frame is the cell addressed by the @code{FP}
+register. This cell -- @code{fp[0]} -- contains the `previous' value of
+@code{FP} itself; and will be restored when the current program returns.
+Locations @code{fp[1]} and @code{fp[2]} contain the previous values of
+the @code{E} register and @code{PC} register respectively. The cell
+containing @code{E} is actually a tuple-cell: the value of @code{E} is
+always derived from a tuple object.
+
+Locations above @code{fp[2]} are used to pass parameter values into and
+out of programs; and locations below @code{fp[0]} are used for the local
+variables of a program and to pass parameters into a sub-program call.
+
+@menu
+* Function call frame::         
+* Procedure call frame::        
+* Pattern call frame::          
+@end menu
+
+@node Function call frame
+@subsection Function call frame
+@cindex Structure of a function call frame
+
+@noindent
+For a @var{k-arity} function call, locations @code{fp[3]} to
+@code{fp[3+@var{k}]} refer to the parameters of the function in
+@emph{reverse} order (by convention). I.e., the first parameter of a
+function is in @code{fp[3]} and the second parameter in
+@code{fp[4]}. There are no `variable arity' functions in @code{April} so
+the compiler always knows how many parameters there are in a function
+and where they are located.
+
+When a function returns, using the @code{result} instruction --
+@pxref{result} -- the top parameter @code{fp[3+@var{k}]} is overwritten
+with the return value.
+
+@node Procedure call frame
+@subsection Procedure call frame
+@cindex Procedure call frame
+
+@noindent
+For a @var{k-arity} procedure call, locations @code{fp[3]} to
+@code{fp[3+@var{k}]} refer to the parameters of the procedure in
+@emph{reverse} order (by convention). I.e., the first parameter of a
+procedure is in @code{fp[3]} and the second parameter in
+@code{fp[4]}. There are no `variable arity' procedures in @code{April} so
+the compiler always knows how many parameters there are in a procedure
+and where they are located.
+
+Procedures do not return any values -- nor may they side-effect
+non-local variables -- so the issue of dealing with returned values from
+a procedure does not arise.
+
+
+@node Pattern call frame
+@subsection Pattern call frame
+@cindex Pattern call frame
+
+@noindent
+A pattern has one `input' parameter -- the structure to be matched --
+and @var{k+1} `output' parameters -- the returned extracted components
+and a success state.
+
+On entry to a pattern space is reserved for all the parameters for the
+pattern call, the `bottom' parameter cell is used to hold the input
+value to be matched against and the remaining cells used for the
+returned values. 
+
+One exit from a pattern, @code{fp[3]} is replaced by a boolean truth
+value -- @code{true} if the match succeeded and the return parameters
+have a legal value and @code{false} otherwise.
+

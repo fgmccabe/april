@@ -1,0 +1,92 @@
+%{
+ assoc ::= nonA | leftA | rightA | tokenA;
+%}
+
+%token MARK COLON BAR SEMI 
+%token ID%{string%} NUM%{number%} CENTBRACE%{string%} TYPE
+%token BRACE%{string%} TOKEN LEFT RIGHT NONASSOC PREC START EXPECT
+
+%type %{
+ %x.{ EMPTY 
+ | N(yyTokType) 
+ | APGRULESET(%x,%x)
+ | SEQ(%x,%x)
+ | TOKENSPEC(%x)
+ | OPERATORSPEC(%x,assoc)
+ | APPLY(yyTokType,yyTokType)
+ | STARTSPEC(yyTokType)
+ | EXPECTSPEC(yyTokType)
+ | TYPESPEC(yyTokType)
+ | RULESET(yyTokType,%x)
+ | CHOICE(%x,%x)
+ | RULE(%x,%x,%x)
+ }
+%}
+
+%%
+
+  apg : preamble MARK rules MARK { $$ = APGRULESET($1,$3)} ;
+
+  preamble : definition { $$ = $1}
+     | preamble definition { $$ = SEQ($1,$2)}
+     ;
+
+  definition : tokendef
+    | includedef
+    | startdef
+    | expectdef
+    | typedef
+    ;
+
+  tokendef : TOKEN tokenspecs { $$ = TOKENSPEC($2) }
+    | LEFT tokenspecs { $$ = OPERATORSPEC($2,leftA) }
+    | RIGHT tokenspecs { $$ = OPERATORSPEC($2,rightA) }
+    | NONASSOC tokenspecs { $$ = OPERATORSPEC($2,nonA) }
+    ;
+  tokenspecs : tokenspec
+    | tokenspecs tokenspec { $$ = SEQ($1,$2) }
+    ;
+
+  tokenspec : ID { $$ = N($1.tok) }
+    | ID BRACE { $$ = APPLY($1.tok,$2.tok) }
+    | ID CENTBRACE { $$ = APPLY($1.tok,$2.tok) }
+    ;
+
+  includedef : CENTBRACE { $$ = N($1.tok) }
+    ;
+
+  typedef : TYPE CENTBRACE { $$ = TYPESPEC($2.tok) }
+    ;
+
+  startdef : START ID { $$ = STARTSPEC($2.tok) }
+    ;
+
+  expectdef : EXPECT NUM { $$ = EXPECTSPEC($2.tok) }
+    ;
+
+  rules : rule
+    | rules rule { $$ = SEQ($1,$2) }
+    ;
+
+  rule : ID COLON ruleset SEMI { $$ = RULESET($1.tok,$3) } ;
+    
+  ruleset : ruleset BAR production { $$ = CHOICE($1,$3) }
+    | production
+    ;
+
+  production : rhs action { $$ = RULE($1,$2,EMPTY) }
+    | rhs PREC ID action  { $$ = RULE($1,$4,N($3.tok)) }
+    ;
+
+  rhs : ID { $$ = N($1.tok) }
+  | rhs ID { $$ = SEQ($1,N($2.tok)) }
+  | { $$ = EMPTY } 
+  ;
+
+  action : BRACE { $$ = N($1.tok) }
+  | { $$ = EMPTY }
+  ;
+
+%%
+
+

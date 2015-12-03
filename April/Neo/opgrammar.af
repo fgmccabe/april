@@ -1,0 +1,9 @@
+/* automatically generated -- do not edit */
+/* Module interface file for opgrammar.aam */
+({
+    ((yyTokType?yyTok,number?yyLine,char[]?yyFile)[])=>((yyTokType?yyTok,number?yyLine,char[]?yyFile)[],number,asItm)
+   }?parse,{
+    ()=>number
+   }?errCount, %a-( %b-{
+    (char[], %a,char[], %b)=> %b
+   })?reportError) from "opgrammar.aam";

@@ -1,0 +1,30 @@
+/* For one of the processes on a remote machine */
+program{
+  main()
+  {
+    any[]?X := command_line();
+
+    handle ? a := fork mu(){alrm((number?X[2]) mins)} at hdl('bell,'where);
+
+    handle?Z := fork plip at hdl('shell,'where);
+
+    repeat{
+      timeout 1.6 secs -> writef(stdout,"      plop\n",[])
+    } until bell;
+
+    "stop" >> Z;
+  };
+
+  plip()
+  {
+    while true do{
+      stop -> break |
+      timeout 0.5 secs -> write(stdout,"plip\n")
+    }
+  };
+
+  alrm(rtime?T){
+    cancel -> relax
+  | timeout T secs -> bell >> creator
+  }
+}execute main;

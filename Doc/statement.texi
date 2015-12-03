@@ -1,0 +1,1563 @@
+@node Statements
+@chapter @code{April} statements
+@cindex Format of @code{April} statements
+
+@noindent
+@code{April} supports a rich range of statements, including standard 
+procedural operations and message handling operations.  In @code{April} we 
+classify statements into @emph{primitive} statements and @emph{compound} 
+statements -- primitive statements do not have other statements embedded 
+within them.
+
+In addition, there are a number of statements which are not `primitive'
+in @code{April} -- they are processed into combinations of primitive
+statement. Typically, these refer to common programming clichees -- 
+such as message handling streams.
+
+@menu
+* Primitive statements::        Statements with no internal structure
+* Compound statements::         Composite statements
+* Sending messages::            Sending messages between processes
+* Receiving messages::          Handling messages sent to a process
+@end menu
+
+@node Primitive statements
+@section Primitive statements
+@cindex Primitive statements
+
+@noindent
+@code{April} has relatively few different kinds of primitive statement, 
+although there is a rich collection of built-in procedures.
+
+@menu
+* Variable declaration statement::  Declare variables in a procedure
+* Assignment statement::        Reassign a variable to a new value
+* Null statement::              No operation statement
+* Procedure Call statement::    Invoke a procedure
+@end menu
+
+@node Variable declaration statement
+@subsection Variable declaration statement
+@cindex Variable declaration statement
+
+@noindent
+A variable declaration statement takes the one of the forms:
+
+@smallexample
+@var{Ptn} = @var{E}
+@end smallexample
+
+@noindent
+or
+
+@smallexample
+@var{Ptn} : @var{E}
+@end smallexample
+
+@noindent
+The declaration statements combine a pattern match with vairable
+declaration. In the case of an @code{=} statement, the  embedded
+variables are declared single-asignment or read-only; in the @code{:}
+form, the variables are declared multi-assignment or read-write.
+
+In both cases the initial values of the variable(s) are taken from the
+expression on the right hand side. Note that @code{April} does NOT
+permit the declaration of a variable without an initial value.
+
+The scope of a variable introduced by means of a variable declaration
+statement is from the first statement @emph{after} the declaration
+(i.e., @var{V} is not is scope within the declaration statement itself)
+to the last statement of the statement group that directly encloses the
+declaration.
+@cindex scope of variables
+
+Note that it is not permitted to `hide' a variable which was previously
+in scope with a variable declaration statement. In other words, if
+@var{V} already is a variable in scope then a "variable re-declared"
+syntax error will be raised by the compiler.
+
+Since the left hand side of a variable declaration is a pattern, it is
+possible that the pattern match might fail. In this situation, a
+@code{"match error"} exception is raised.
+
+It is possible to explicitly indicate the type of the variable being
+declared by using a @code{?} operator:
+
+@smallexample
+@var{T} ? @var{V} : @var{E}
+@end smallexample
+
+@noindent
+In this case, the compiler will verify that the type of the initial
+value of the variable -- @var{E} -- is consistent with the type @var{T}.
+
+Note that any anonymous variables (i.e., the @code{_} pattern) in the
+pattern on the left hand side of the declaration statement represent
+components of the right hand side that are discarded: it is not possible
+to have a variable whose name is @code{_}.
+@cindex wild card variable in variable declaration
+@cindex @code{_} in lhs of declaration
+
+@node Assignment statement
+@subsection Assignment statement
+@cindex Assignment statement
+
+@noindent
+There are two main forms of the assignment statement in @code{April}; the 
+first takes the form:
+
+@smallexample
+@var{variable} := @var{expression}
+@end smallexample
+
+@noindent
+where @var{variable} is a previously declared read-write variable, and
+@var{expression} is a type-compatible expression. 
+
+The second form of assignment is the @emph{pattern assignment}. In this form 
+several variables can be assigned simultaneously. This allows, for 
+example, a tuple-valued function's results to be unpacked into separate 
+variables.
+@cindex Pattern assignment
+
+The form of pattern assignment is:
+
+@smallexample
+@code{Ptn} := @var{k-tuple expression}
+@end smallexample
+
+@noindent
+Pattern assignment is used in two common situations, where the
+right-hand-side of the assignment is a tuple-valued function call, and
+where the right-hand side is an explicit tuple.  In the latter case the
+order of evaluation is defined to be such that the order of variables
+@var{vi} is not relevant. More precisely, a pattern assignment where the
+right-hand side is a literal value, such as in:
+
+@smallexample
+(@var{v1},@dots{},@var{vk}) := (@var{E1},@dots{},@var{Ek})
+@end smallexample
+
+@noindent
+where @var{Ei} may mention one or more variables from @var{vi}, is 
+equivalent to:
+
+@smallexample
+R : (@var{E1},@dots{},@var{Ek});
+(@var{v1},@dots{},@var{vk}) := R
+@end smallexample
+
+@noindent
+where @code{R} is a variable that does does appear anywhere else in the 
+program text.
+
+Note that on occasion, especially with pattern assignment, not all of the
+returned values are of interest. In this situation, the @code{_} throw away
+variable is useful.
+
+When @code{_} is used as the target of an assignment it means to
+ignore the result -- just as when @code{_} is used in a pattern.
+@cindex wild card variable in assignment
+@cindex @code{_} in lhs of assignment
+
+Suppose that a function returns a structure with three elements, as in
+the case:
+
+@smallexample
+foo(S) => (strlen(S),S, S++"More")
+@end smallexample
+
+@noindent
+and we wish just the first component and third components; ignoring the
+middle component. Using @code{_} we can achieve the desired result by
+using a pattern assignment with the middle argument being ignored:
+
+@smallexample
+(X,_,Z) := foo("Some string");
+@end smallexample
+
+@noindent
+Note that we can also use @code{_} in the case where the @emph{whole} of the
+returned value of a function is to be ignored:
+
+@smallexample
+_ := foo("Some other data");
+@end smallexample
+
+@noindent
+but, in the opinion of the author, frequent occurrences of statements
+like this suggests a poor compromise in the design of the program.
+
+@node Null statement
+@subsection @code{Null} statement
+@cindex @code{Null} statement
+@cindex @code{@{@}} statement
+
+@noindent
+The @code{@{@}} statement is a 'no operation' statement. It does
+nothing, binds no variables and returns no values. Its main use is in
+message @code{receive} statements where a message is to be discarded.
+
+@node Procedure Call statement
+@subsection Procedure Call statement
+@cindex Procedure Call statement
+
+@noindent
+A procedure call statement takes the form:
+
+@smallexample
+@var{proc}(@var{e1},@dots{},@var{ek})
+@end smallexample
+
+@noindent
+where @var{proc} is a procedure-valued expression, and @var{ei} are 
+expressions corresponding to the arguments of the procedure.
+
+Note that using @code{April} operators, a procedure call may be written
+using operator syntax.
+
+Procedure call statements are discussed more fully in @ref{Procedure
+application}.
+
+@node Compound statements
+@section Compound statements
+@cindex Compound statements
+
+@noindent
+Compound statements are statement operators -- they take other 
+statements as `arguments' to derive new forms of statement.
+
+@menu
+* Statement sequence::          
+* while statement::             
+* for statement::               
+* Conditional statement::       
+* case statement::              
+* dot statement::               
+* onerror statement::           
+* exception statement::         
+* Labelled statement::          
+* leave statement::             
+@end menu
+
+@node Statement sequence
+@subsection Statement sequence
+@cindex Statement sequence
+@findex ; @r{statement operator}
+
+@noindent
+Two statements which are to executed in sequence are separated by the
+@code{;} operator. The execution of @var{S1@code{;}S2} involves the
+execution of @var{S1} followed by the execution of @var{S2} -- provided
+that @var{S1} does not raise a run-time exception.
+
+Note that in @code{April}, the statement sequence operator @code{;} is a
+statement @emph{separator} not a statement terminator. This can cause
+some initial confusion, especially in the situation where @var{S1} is
+itself a compound statement.
+
+For example, in the case of:
+
+@smallexample
+@{
+  @var{S1};
+  @var{S2}
+@};
+@var{S3}
+@end smallexample
+
+@noindent
+the trailing @code{;} after the @code{@}} which terminates the @var{S1}
+and @var{S2} pair of statements is necessary.
+
+Note that -- strictly for convenience -- the statement separator is also
+a postfix operator. In this situation it has no effect.
+
+Where the first statement in a statement sequence is itself a
+statement sequence -- as in the example above -- then variables declared
+in @var{S1@code{;}S2} are @emph{not} in scope in @var{S3}.
+
+@node while statement
+@subsection @code{while} statement
+@cindex @code{while} statement
+@findex while @r{statement operator}
+
+@noindent
+The @code{while} statement specifies a loop iteration. The form of a
+@code{while} statement is:
+
+@smallexample
+while @var{test} do
+  @var{statement}
+@end smallexample
+
+@noindent
+For each potential iteration of the @code{while} statement the @var{test} is
+evaluated; if it evaluates to @code{true} then the @var{statement} is
+also executed.
+
+Note that variables declared in @var{test} -- in the case of a matching
+test -- extend their scope to the @var{statement }body of the
+@code{while} loop, but not beyond. For example, in:
+
+@smallexample
+while X .= foo(bar()) do
+  @var{S}
+@end smallexample
+
+@noindent
+the variable @code{X} is declared in the test of the @code{while}, and
+its scope extends to @var{S} but not to any statements following this
+@code{while} statement.
+@cindex scope of variables, in @code{while} statements
+
+@node for statement
+@subsection @code{for} statement
+@cindex @code{for} statement
+@findex for @r{statement operator}
+
+@noindent
+A @code{for} statement is a generator loop. The form of a @code{for}
+statement is:
+
+@smallexample
+for @var{ptn} in @var{list} do
+  @var{S}
+@end smallexample
+
+@noindent
+where @var{ptn} is a pattern, and @var{list} is a list-valued
+expression. Typically, @code{ptn} declares variables which may be
+accessed in @var{S} -- but not outside the @code{for} statement.
+
+For example, the @code{for} statement:
+
+@smallexample
+for E in [1,3,5,-9] do
+  E >> who
+@end smallexample
+
+@noindent
+executes the statement
+
+@smallexample
+E >> who
+@end smallexample
+
+@noindent
+with @code{E} instantiated to 1, 3, 5, and -9. A common form of the
+@code{for} statement corresponds to @code{for} statements in other
+programming languages:
+
+@smallexample
+for I in 1..10 do
+  @var{S}
+@end smallexample
+
+@noindent
+this will execute @var{S} 10 times, with @code{I} instantiated to
+1,2,@dots{},10.@footnote{The compiler recognizes this form of @code{for}
+statement and is able to generate `normal' loop iteration code for it.}
+
+@node Conditional statement
+@subsection Conditional statement
+@cindex Conditional statement
+@cindex @code{if}-@code{then}-@code{else} statements
+@findex if @r{statement operator}
+@findex then @r{statement operator}
+@findex else @r{statement operator}
+
+@noindent
+The @code{if}-@code{then}-@code{else} statement is either of the form:
+
+@smallexample
+if @var{test} then
+  @var{S1}
+else
+  @var{S2}
+@end smallexample
+
+@noindent
+or, if there is no @code{else} case, then it may be of the form:
+
+@smallexample
+if @var{test} then
+  @var{S1}
+@end smallexample
+
+@noindent
+which is equivalent to:
+
+@smallexample
+if @var{test} then
+  @var{S1}
+else
+  @{@}
+@end smallexample
+
+@noindent
+If @var{test} evaluates to @code{true}, then @var{S1} is executed;
+otherwise @var{S2} is executed (or no statement is executed in the case
+that there is no @code{else} branch).
+
+Variables declared in @var{test} extend to @var{S1} (but @emph{not} to
+@var{S2}). Variables declared in @var{test}, @var{S1} or
+@var{S2} do not extend outside the conditional statement.
+
+@node case statement
+@subsection @code{case} statement
+@cindex @code{case} statement
+@findex case @r{statement operator}
+
+@noindent
+The @code{case} statement allows an expression to govern one of several
+statements to execute. The form of the @code{case} statement is:
+
+@smallexample
+case @var{exp} in @{
+  @var{ptn1} -> @var{S1}
+| @var{ptn2} -> @var{S2}
+@dots{}
+| @var{ptnk} -> @var{Sk}
+@}
+@end smallexample
+
+@noindent
+where @var{exp} is the so-called governing expression and @var{ptni} are
+patterns that are applied to the value returned by @code{exp}. The first
+of these patterns that succeeds causes the corresponding statement
+to be executed.
+
+If none of the patterns apply to @var{exp} then a @code{failed}
+exception is raised (@pxref{onerror statement}).
+
+@code{case} statements are discussed further in @ref{Case statement as a
+procedure call}.
+
+@node dot statement
+@subsection Dot statement
+@cindex dot statement
+@findex . @r{statement}
+
+@noindent
+The dot statement is analogous to the dot expression -- it allows a 
+statement to be executed `in the context' of the value of a record. The 
+form of the dot statement is:
+
+@smallexample
+@var{R} . @var{statement}
+@end smallexample
+
+@noindent
+where @var{R} is a record and @var{statement} is any 
+statement. For @var{statement}, the  set of variables in scope is extended 
+by the fields of @var{R}; however, @var{R}'s variables are extended as
+read-only variables only.
+@cindex scope of variables
+
+The restriction that @var{R}'s variables are read-only is to enforce
+@code{April}'s restrictions on assignment -- structures and lists in
+@code{April} may not be side-effected as result of assignment. This
+permits efficient implementation at the same time as protection from
+unintended side-effects between processes and programs.
+
+@emph{Note:}
+@quotation
+There is a subtle difference between a statement such as:
+
+@smallexample
+R.p(A)
+@end smallexample
+
+@noindent
+and the statement:
+@smallexample
+(R.p)(A)
+@end smallexample
+
+@noindent
+They both apply the procedure @code{p} found in @code{R} to argument
+@code{A}. However, the former may `find' @code{A} in @code{R} whereas
+the latter will not look in @code{R} for any definition of @code{A}.
+
+This can lead to mysterious problems where both @code{R} and the current
+scope has a definition for @code{A}.
+@end quotation
+
+@node onerror statement
+@subsection @code{onerror} statement
+@cindex @code{onerror} statement
+@findex onerror @r{statement operator}
+@findex try @r{statement operator}
+
+@noindent
+Errors in a program generally come from three distinct sources --
+machine resource restrictions (such as not enough space or non-existent
+file), run-time type errors (such as invalid type conversion implied by
+a typecast expression, or invalid string in some file operations) and
+explicitly generated exceptions raised by the programmer using
+@code{exception} statements
+@ifinfo
+(@pxref{exception statement}).
+@end ifinfo
+@iftex
+(see below).
+@end iftex
+
+The first two are called @emph{automatic} run-time exceptions and the 
+latter is a programmer raised exception.
+@cindex automatic run-time exception
+@cindex exception, run-time
+@cindex recovering from run-time errors
+
+The @code{onerror} statement is used to allow programmers to control the 
+handling and recovery from most types of run-time 
+exceptions.@footnote{Some run-time exceptions cannot be recovered from and 
+will cause the entire @code{April} machine to terminate. However, this
+situation is not very helpful in situations requiring reliable service;
+the non-recoverable errors are either due to an internal problem
+(a.k.a. bug) or because some vital system resource (such as memory) has
+been exhausted.} The format of the 
+@code{onerror} statement is:
+
+@smallexample
+try
+  @var{S1}
+onerror
+  @var{Proc}
+@end smallexample
+  
+@noindent
+where @var{S1} can be any statement and @var{Proc} is a unary procedure
+(@pxref{Procedure}), commonly an explicit one given directly in terms of
+clauses similar to those in the body of a @code{case} statement.
+
+If @var{S1} executes without causing any run-time exceptions, then the 
+@code{onerror} statement completes also. However, if a run-time exception 
+is caused during the execution of @var{S1} then @var{S1} is terminated and 
+@var{Proc} is executed instead. 
+
+Note that there is no `undo' implied by this -- any actions taken by 
+@var{S1} immediately prior to the run-time exception are @emph{not} undone.
+
+The argument to @code{Proc} is the error value associated with the
+run-time error that caused the exception.  This error value
+encodes the cause of the exception; and -- for automatically raised
+errors -- is of the @code{error} type (@pxref{error type}).
+@findex error @r{standard type}
+@cindex @code{error} type
+For example, the following program reads a file one line at a time and
+`protects' itself against a run-time error caused by reading past the
+end of file:
+
+@smallexample
+read_file(fin) => collect@{
+  loop::
+   @{
+     while not eof(fin) do @{
+       elemis inline(fin)
+     onerror@{
+       error(_,'eof) -> leave loop
+     @};
+   @}
+@};
+@end smallexample
+
+@noindent  
+@code{onerror} statements may be nested, in which case the inner  
+@code{onerror} statement takes precedence.
+
+If a program has no @code{onerror} clause in effect, then the process 
+itself will be terminated, and the exception message will be sent to a
+process'es parent process instead.
+
+@node exception statement
+@subsection @code{exception} statement
+@cindex @code{exception} statement
+
+@noindent
+The @code{exception} statement is used to generate a run-time exception. 
+The form of an @code{exception} statement is:
+
+@smallexample
+exception @var{error}
+@end smallexample
+
+@noindent
+which will have the same effect as an automatically induced run-time
+exception. This statement has the effect of terminating the current
+execution and switching to the error handling clause of the inner-most
+enclosing @code{onerror} statement. The value of @var{error} is passed
+to the error handling procedure.
+
+Normally, the @code{exception} @var{error} will be an expression such
+as:
+
+@smallexample
+error("@var{some string}",@var{error code})
+@end smallexample
+
+@noindent
+in order to maximize the chance that a programmer-raised exception will be 
+handled with the same error handling mechanism that automatic run-time 
+errors are handled.
+
+@node Labelled statement
+@subsection Labelled statement
+@cindex Labelled statement
+
+@noindent
+A labelled statement is a statement which has a label associated with it. 
+The form of a labelled statement is:
+
+@smallexample
+@var{label}::@var{statement}
+@end smallexample
+
+@noindent
+where @var{label} is a symbolic label and @var{statement} is any 
+statement.
+
+Labels in @code{April} have a somewhat different interpretation compared to 
+other procedural languages -- the scope of a label extends only to the 
+labelled statement itself. The only statement that can effectively use a 
+label is the @code{leave} statement.
+@cindex scope of labels
+
+@node leave statement
+@subsection @code{leave} statement
+@cindex @code{leave} statement
+
+@noindent
+The @code{leave} statement is used to force the early termination of a 
+group of statements. The form of the @code{leave} statement is:
+
+@smallexample
+leave @var{label}
+@end smallexample
+
+@noindent
+where @var{label} is the label of a labelled statement that this 
+@code{leave} statement occurs in.
+
+The effect of the @code{leave} statement is to force early termination of 
+the labelled statement whose label is @var{label}. For example, in the 
+example:
+
+@smallexample
+foo::@{
+  while @var{test} do @{
+    if @var{other-test} then
+      leave foo
+    @dots{}
+  @}
+@}
+@end smallexample
+
+@noindent
+if @var{other-test} succeeds then the whole @code{while} loop is 
+terminated. The effect is similar to a break statement in C -- except that 
+the interpretation of @code{leave} is clearer than break.
+
+@code{leave} is a little analogous to the @code{goto}-style statement in
+many procedural languages; however, @code{leave} does not cause a jump
+@emph{to} another statement but instead jumps @emph{out} from a
+statement. To appreciate the difference between @code{leave} and C's
+@code{goto} statement, consider that the following -- legal -- C
+fragment is not possible using labelled @code{April} statements:
+
+@smallexample
+if(X < Y)
+  foo: fprintf(stderr,"how did we get here\n");
+else
+  goto foo
+@end smallexample
+
+@noindent
+Such uses of @code{goto} are opaque at best, and completely 
+incomprehensible and error-prone at worst.
+
+@emph{Hint:}
+@quotation
+We can use labelled statements in combination with the @code{leave}
+statement to implement the @code{break} and @code{continue} statements
+found in languages like C. 
+
+A @code{break} statement -- in the context of a loop such as a
+@code{for} or @code{while} loop -- means that the loop should be
+terminated immediately. We can model this by making the entire loop
+statement a labelled statement, and replacing the @code{break} with a
+@code{leave} from the loop:
+
+@smallexample
+@group
+label :: @{
+  while @var{Predicate} do @{
+    @var{Statement}
+    @dots{}
+    leave label;                -- replacing a break
+  @}
+@}
+@end group
+@end smallexample
+
+@noindent
+Similarly, a @code{continue} statement does not leave the whole loop,
+but only the body of the loop:
+
+@smallexample
+@group
+for @var{Ptn} in @var{Set} do @{
+  label:: @{
+    @var{Body statement}
+    @dots{}
+    leave label;                -- replacing a continue
+  @}
+@}
+@end group
+@end smallexample
+
+@noindent
+Of course, in some situations we may need to combine both in a single
+loop.
+
+@code{April} automatically replaces loops containing @code{break} and
+@code{continue} statements into the equivalent labelled forms.
+@end quotation
+
+@node Sending messages
+@section Sending messages between processes
+@cindex Message sending
+
+@noindent
+In @code{April}, sending a message is technically a `primitive' statement, 
+whereas the message receive statement is a `compound' statement.  This is 
+because the message receive statement selects which statement to execute 
+based on the messages received.
+
+@menu
+* >>::                          Send a message
+* >>>::                         Forward a message
+* self post::                   Post a message on own message queue
+* _front_msg::                  
+* >>*::                         Send a message
+* Message attributes::          Modifying the attributes of a message
+* Remote communication::        Sending messages out of an invocation
+@end menu
+
+
+@node >>
+@subsection @code{@var{Msg} >> @var{To}}
+@cindex send a message
+@findex @code{>>} @r{statement}
+
+@noindent
+where @var{To} is a @code{handle} and @var{Msg} is any expression.  The 
+message @var{Msg} is sent to the @var{To} process.
+
+The @code{April} communications system will attempt to send the message 
+wherever the destination is -- potentially anywhere in the world that has 
+an active @code{April} site.
+
+If a message is sent to a process in the same @code{April} invocation, then 
+it is posted on the receiver process'es message queue.  If the receiver is 
+not a local process, then the message is diverted to the process'es `mail 
+handler'.  This is an @code{April} process which is in direct communication 
+with the @code{April} communications server (@pxref{April communications}).  
+The communications server is able to store and forward the message so that 
+the receiver process can acquire the message.
+
+The sender process is not blocked by sending a message -- execution of the 
+sender can continue even if the receiver process is not yet ready to 
+receive the message. This is known as @emph{asynchronous} message passing.
+
+There is an implicit conversion of the type of the @var{Msg} to type
+@code{any} -- @pxref{any type}. This encapsulation allows messages of
+any type to be sent between processes -- the @code{receive} statements
+make a similar implicit type test to verify the type of the incoming
+message.
+
+Note that it is possible to send messages to explicitly named agents, as in:
+
+@smallexample
+hello >> hdl('tuck,'bib)
+@end smallexample
+which sends the @code{hello} message to the process identified by the handle 
+@smallexample
+hdl('tuck,'bib)
+@end smallexample
+
+@menu
+* Modifying message attributes::  
+@end menu
+
+@node Modifying message attributes
+@subsubsection Modifying message attributes
+@cindex Modifying message attributes
+
+@noindent
+At times it can be convenient to send a message to another process while 
+requiring that any reply to the message should go to a third process. In 
+@code{April}, this can be done using the @code{~~} modifier:
+
+@smallexample
+@var{msg} ~~ [replyTo(@var{from})] >> @var{to}
+@end smallexample
+
+@noindent
+This has the effect of modifying the @code{replyTo} attribute of the 
+@var{msg} so that replies will go to @var{from}. Other attributes of the
+message can also be specified; @pxref{Message attributes}.
+
+Note, however, that this @emph{does not} affect the @code{sender} 
+attribute. This cannot be modified and is always a reliable guide to the 
+true sender of a given message. 
+
+@node >>>
+@subsection @code{@var{Msg} >>> @var{To}}
+@cindex message forwarding
+@findex @code{>>>} @r{statement}
+
+@noindent
+This statement is only permitted on the right hand side of a message
+receive -- @code{->>} -- operator.  The message @var{Msg} is forwarded to
+the new receiver. Any reply which the new recipient sends to this
+message will go directly to the process which sent the message in the
+first place.
+
+Technically, the value of the @code{replyTo} attribute will be the same
+for the new recipient of @var{Msg} as it is for the message that was
+received by this process -- i.e., the message described on the left hand
+side of the @code{->} operator. It is, of course, possible that the
+forwarded message is not identical to the original message.
+
+However the @code{sender} field of the new message will still be this
+process, so the new recipient can -- if necessary -- verify that the
+originator of the message is a trusted process.
+
+@node self post
+@subsection Post a message on own message queue
+@cindex Post a message on own message queue
+
+@noindent
+A message may be placed by a process in its own message queue simply by
+sending a message to iteself:
+
+@smallexample
+hello >> self()
+@end smallexample
+
+@noindent
+However, as with other message sending, this will place the message
+@code{hello} at the end of the process'es message queue. There are
+occasions where it is necessary to place a message at the front of the
+process'es own message queue. This can be done using the @code{!>>} statement:
+
+@smallexample
+@var{Msg} !>>;
+@end smallexample
+
+@noindent
+The effect of this is that the new message will be processed before any
+other messages are received.
+
+@emph{Hint:}
+@quotation
+Self posting can be used to
+implement @emph{atomic transactions}. An atomic transaction can be implemented
+by sending a block of messages in a list:
+@smallexample
+atomic([@var{msg1},@dots{},@var{msgn}])
+@end smallexample
+@noindent
+and the receiving process handles this block by posting the messages to the
+front of its own queue in reverse order:
+
+@smallexample
+atomic(msgs) ->> @{
+  for m in reverse(msgs) do 
+    m !>>
+@}
+@end smallexample
+
+@noindent
+It must be done in reverse order because each `self-posting' of a
+message puts the message on the front of the queue; and we wish to
+ensure that the first message in the list is also the first message to
+be processed after the sequence of self posts.
+@end quotation
+
+@node _front_msg
+@subsection @code{_front_msg(@var{msg},@var{reply},@var{sender})}
+@findex _front_msg @r{Standard procedure}
+
+@noindent
+The `self post' message send statement is short hand for the built-in
+procedure @code{_front_msg}. This built-in procedure allows the
+programmer to post a message on the front of the message queue; and it also
+allows the apparent @var{sender} of that message to be set explicitly -- 
+unlike the normal message send where the @var{sender} cannot be set by
+the programmer.
+
+It is safe for @code{_front_msg} to be able to set the @var{sender}
+field since the message is going to the same process that generated the
+message -- there is no possibility of a `name spoof' attempt.
+
+@node >>*
+@subsection @code{@var{msg} >>* @var{recip-list}}
+@findex >>* @r{Standard procedure}
+
+@noindent
+The @code{>>*} statement sends a message to a list of processes. It is a
+form of multi-cast -- although no efficiency gain is implied by the use
+of this operator.
+
+@node Message attributes
+@subsection Message attributes
+@cindex Message attributes
+
+@noindent
+When a message is sent between processes, a number of attributes may be
+associated with the message. These attributes allow the sending process
+to control some @emph{policy} aspects of the message delivery. Message
+attributes are expressed as a list of attribute records, the standard
+type of which is listed 
+@ifinfo
+in @ref{Message attribute type}.
+@end ifinfo
+@iftex
+below.
+@end iftex
+
+@menu
+* Message attribute type::      
+* replyTo message attribute::   
+* leaseTime message attribute::  
+* receiptRequest message attribute::  
+* auditTrail message attribute::  
+@end menu
+
+@node Message attribute type
+@subsubsection Message attribute type
+@cindex Message attribute type
+
+@noindent
+The message attribute type is defined as:
+
+@smallexample
+msgAttr ::= replyTo(handle)
+  | leaseTime(number)
+  | receiptRequest(any)
+  | auditTrail(handle[]);
+@end smallexample
+
+@noindent
+When a message is sent -- for example using the message send statement
+(@pxref{>>}) -- then a default value is associated with each of these
+message attributes.
+
+@node replyTo message attribute
+@subsubsection @code{replyTo} message attribute
+@cindex @code{replyTo} message attribute
+@findex replyTo @r{message attribute}
+
+@noindent
+The @code{replyTo} message attribute is used in sitatuations where the
+sender of the message would prefer that any replies be sent to another
+process.
+
+The form of the @code{replyTo} message attribute is:
+
+@smallexample
+replyTo(handle)
+@end smallexample
+
+@noindent
+By default, the value of the @code{replyTo} is @code{self()}; i.e., if
+there is no @code{replyTo} attribute then it is as though the message
+attribute were:
+
+@smallexample
+replyTo(self())
+@end smallexample
+
+@node leaseTime message attribute
+@subsubsection @code{leaseTime} message attribute
+@cindex @code{leaseTime} message attribute
+@findex leaseTime @r{message attribute}
+
+@noindent
+The @code{leaseTime} message attribute is used to indicate a valid life-time
+of the message. The form of the @code{leaseTime} attribute is:
+
+@smallexample
+leaseTime(number)
+@end smallexample
+
+@noindent
+The value of the @code{number} field is an @code{April} EPOCH
+time value - i.e., the number of seconds since Jan 1st 1970. 
+
+If a message is sent with a @code{leaseTime} of 0, or if there is no
+@code{leaseTime} message attribute, then it is assumed to be infinite --
+i.e., the sender requests that the message is delivered no matter how
+long it takes.
+
+If a message is sent with a non-zero @code{leaseTime}, then the message
+@emph{may} be discarded before it reaches the destination process. The
+programmer should note however, that the receiving process may still
+receive messages that are out of date in which case the @code{receive}
+statement should check that the message is still valid:
+
+@smallexample
+receive@{
+  @dots{}
+| @var{ptn} :: (leaseTime(w)::w>=now()) in options ->> @dots{}
+@} @dots{}
+@end smallexample
+
+@node receiptRequest message attribute
+@subsubsection @code{receiptRequest} message attribute
+@cindex @code{receiptRequest} message attribute
+@findex receiptRequest @r{message attribute}
+
+@noindent
+The @code{receiptRequest} message attribute is used to request that the
+receiving process has received the message.  The form of the
+@code{receiptRequest} attribute is:
+
+@smallexample
+receiptRequest(@var{code})
+@end smallexample
+
+@noindent
+When the message is received, a reply message of the form:
+
+@smallexample
+receiptRequest(@var{code})
+@end smallexample
+
+@noindent
+is sent to the sending process.@footnote{Not currently implemented due
+to a serious problem with determining when a process has received a
+message.}
+
+Alternatively, if a message @code{leaseTime} has been associated with the
+message, and the message sending infrastructure determines that the
+message may be discarded, then the sending process will receive a
+message of the form:
+
+@smallexample
+timedOut(@var{code})
+@end smallexample
+
+@noindent
+instead of the normal @code{receiptRequest} message.
+
+@node auditTrail message attribute
+@subsubsection @code{auditTrail} message attribute
+@cindex @code{auditTrail} message attribute
+@findex auditTrail @r{message attribute}
+
+@noindent
+The @code{auditTrail} message attribute is used to request an audit
+trail indicating the route that a message goes through from the sending
+process to the process that receives the message.  The form of the
+@code{auditTrail} attribute is:
+
+@smallexample
+auditTrail(handle[]);
+@end smallexample
+
+@noindent
+When a message is received, the @code{auditTrail} will have in its
+argument a list of the @code{handle}s of the intermediate communications
+servers that were involved in delivering the message.
+
+The initial value of the @code{auditTrail} message attribute -- when it
+is initially sent by an @code{April} process -- should be the empty
+list:
+
+@smallexample
+auditTrail([])
+@end smallexample
+
+@noindent
+Normally it is the message handling system that modifies this attribute
+to indicate the path that the message has taken.
+
+@node Remote communication
+@subsection Sending messages between @code{April} systems
+@cindex off-board communication
+
+@noindent
+By default the @code{April} system does not permit processes to communicate across different invocations of the system.@footnote{This is new in version~5.0.}
+
+
+@node Receiving messages
+@section Receiving messages
+@cindex Receiving messages
+
+
+@noindent
+All messages are received by means of special @emph{message receive}
+statements. This can be one message at a time, however, normally
+messages are not consumed one at a time, but rather are consumed as a
+@emph{stream} of messages. In @code{April}, we can consume a stream of
+messages using the @code{repeat} statements. These statements are not
+`primitive' in @code{April}, but are in fact processed into simpler
+statements.
+@cindex Message streams
+@cindex streams of messages
+
+@menu
+* receive::                     Message receive statement
+* timeout::                     Handling timeouts in message receive
+* repeat until::                Message terminated message stream
+* repeat alarm::                Timed message stream
+@end menu
+
+@node receive
+@subsection The message receive statement
+@cindex The message receive statement
+@findex @code{receive} @r{statement}
+
+@noindent
+A process receives a message by executing a @code{receive} statement. A basic
+message receive statement takes the form:
+
+@smallexample
+receive @var{procedure}
+@end smallexample
+
+@noindent
+where @var{procedure} is a message handling procedure. The standard way
+of writing a message handling procedure is as a sequence of message
+handling clauses:
+
+@smallexample
+@group
+receive @{
+  @var{Ptn1} ->> @var{S1}
+| @var{Ptn2} ->> @var{S2}
+| @dots{}
+| @var{Ptnk} ->> @var{Sk}
+@}
+@end group
+@end smallexample
+
+@noindent
+This statement will filter incoming messages until one that matches one
+of the patterns @var{Ptni}. If there are no matching messages then the
+process will suspend and wait for more messages to arrive.
+
+More accurately, the @code{April} engine will examine each message in
+the process'es message queue in turn -- in the order that they were
+received. For each message, each of the patterns @var{Pi} are tried, in
+turn from first to last, to see if it matches.  If it does
+then the corresponding statement @var{Si} is executed.
+
+Messages which do not match any of the @var{Ptni} patterns are not lost
+-- they are simply kept in an internal process message queue until the
+process executes another message receive statement which can accept
+them.
+
+As soon as a matching message is found, then the @var{Si} on the
+right hand side of the @code{->>} operator is executed. Note that the
+@var{Ptni} may declare additional local variables -- the scope of
+these local variables extends to the @var{Si}; but not outside
+the message receive statement itself.
+@cindex scope of variables, in @code{receive} clauses
+
+Each message receive clause has additional `components' which are
+automatically attached to the message: 
+
+@itemize @bullet
+@item
+the @code{handle} of the @code{sender} of the message. This is made
+available as the value of the @code{sender} variable whose scope extends
+to the action part of the message receive clause.
+
+@item
+the @code{replyto} @code{handle} of the process
+that any replies should go to. This is made
+available as the value of the @code{replyto} variable whose scope extends
+to the action part of the message receive clause.
+
+@item
+the list of message attributes associated with the message; as requested
+by the sender of the message. This is made
+available as the value of the @code{options} variable whose scope extends
+to the action part of the message receive clause. The type of
+@code{options} is @code{msgAttr[]} -- which is described in @ref{Message
+attributes}.
+@end itemize
+
+For example, to verify that the @code{sender} and @code{replyto} handle
+of a message matches some pattern, we can use a receive clause like:
+
+@smallexample
+@var{Ptn} :: @var{Sndr} .= sender && @var{Reply} .= replyto ->> @var{S}
+@end smallexample
+
+@noindent
+where @var{Sndr} is a pattern that is applied to the message's sender
+process and @var{Reply} is a pattern that is applied to the intended
+recipient of any replies to the message.@footnote{Normally the
+@var{Reply} process is identical to the @var{Sndr} process; however, it
+can be convenient to route replies to messages to different processes.}
+
+The @code{sender} and @code{replyto} variables offer a convenient means for
+verifying that a particular message is from an expected party:
+
+@smallexample
+@group
+  hello >> h
+  receive @{
+    hi_there :: sender == h ->> "We got a reply\n" >> stdout
+  @}
+@end group
+@end smallexample
+
+@noindent
+@emph{Hint:}
+@quotation
+There are occasions when it is important for a process to handle
+@emph{all} the messages that arrive, even if they are the `wrong' kind
+of message; this is particularly true when building robust applications.
+
+A method for achieving this is to use a `catchall' pattern.  This
+pattern should be the last pattern in the message choice:
+@smallexample
+@group
+receive@{
+  @var{P1} ->> @var{S1}
+| @dots{}
+| @var{Pn} ->> @var{Sn}
+| @var{M} ->> "Funny message " ++ M^0 ++ "\n" >> stdout
+@}
+@end group
+@end smallexample
+@end quotation
+
+@menu
+* Underlying semantics of message receive::  
+@end menu
+
+@node Underlying semantics of message receive
+@subsubsection Underlying semantics of message receive
+@cindex Underlying semantics of message receive
+
+@noindent
+Although we have given a special syntax for the message receive clause,
+in fact the message receive clause is syntactic sugar for a simpler
+underlying structure. The `normal form' of a message receive clause:
+
+@smallexample
+  @var{Ptn} ->> @var{S}
+@end smallexample
+
+@noindent
+is syntactic sugar for the regular procedure clause:
+
+@smallexample
+(handle?sender,handle?replyto,msgAttr[]?options,any(@var{Ptn}))->@var{S}
+@end smallexample
+
+@noindent
+Earlier we stated that the syntax of a message receive statement is:
+
+@smallexample
+receive @var{Proc}
+@end smallexample
+
+@noindent
+The type of @var{Proc} required for a message receive is
+
+@smallexample
+(handle,handle,msgAttr[],any)@{@}
+@end smallexample
+
+@noindent
+I.e., the message handling procedure has four arguments: the message
+itself, the identity of the sender of the message, the identity of the
+reply-to process and the list of message attributes.
+
+This is important because it allows us to @emph{extend} a message
+@code{receive} statement dynamically. If we assume that @code{dynamic}
+is a procedure variable of the correct type, then we can construct a
+message @code{receive} statement that will handle a dynamic range of
+messages:
+
+@smallexample
+@group
+receive@{
+  @var{Ptn} ->> @var{Action}
+| @dots{}
+| dynamic
+@}
+@end group
+@end smallexample
+
+We can even handle messages that allow @var{dynamic} to be extended
+dynamically:
+
+@smallexample
+@group
+augment ::= augment((handle,handle,msgAttr[],any)@{@}?aug);
+
+@dots{}
+
+receive@{
+  @var{Ptn} ->> @var{Action}
+| augment(P) -> dynamic := @{P|dynamic@}
+| @dots{}
+| dynamic
+@}
+@end group
+@end smallexample
+
+The type of any such `message handling procedure' should match the
+expected type of the @var{proc}; i.e., it should also be of type:
+
+@smallexample
+(handle,handle,msgAttr[],any)@{@}
+@end smallexample
+
+@noindent
+More precisely, it is possible to show the `true' colours of a message
+@code{receive} statement, expressed in terms of simpler primitives --
+including the @code{case} statement. The @code{April} compiler
+transforms message @code{receive} into this simpler (although much
+longer) statement:
+
+@smallexample
+@group
+M : -10000;		/* Message number */
+outer::@{
+  while (Msg,Sender,ReplyTo,Opts,NM) .= __nextmsg(M) do @{
+    M := NM;
+    inner :: @{
+      @{
+        (sender,replyto,options,@var{ptn1})->@{A1@}
+      | (sender,replyto,options,@var{ptn2})->@{A2@}
+      | @dots{}
+      | (_,_,_,_)@{
+          __replacemsg(Msg,Sender,Opts,M);
+          leave inner;
+        @}
+      @}(Sender,ReplyTo,Opts,Msg);  -- Procedure with an explicit body
+      leave outer;
+    @};
+  @}
+@}
+@end group
+@end smallexample
+
+@noindent
+Note that the actual cases of the message receive are transformed into a
+procedure call where the procedure is an explicit set of procedure
+clauses.
+
+Briefly, a message @code{receive} statement is transformed into a loop
+which removes a message from the process's message queue (using
+@code{__nextmsg}); attempts to match it with one of the message clauses,
+and if none matches the message is replaced in the message queue and the
+next message is tried. @code{__nextmsg} finds the first message whose
+sequence number is greater than the sequence number supplied to it.
+
+@node timeout
+@subsection The @code{timeout} message receive clause
+@cindex Timing out on a message receive
+@findex @code{timeout} @r{statement}
+
+@noindent
+If one of the message clauses in a message receive has the form:
+
+@smallexample
+timeout @var{Exp} ->> @var{Action}
+@end smallexample
+
+@noindent
+where @var{Exp} is a relative time expression -- i.e., a numeric value
+indicating a @code{number} of seconds, then the process will only wait
+an @var{Exp} amount time for a matching message to arrive.
+
+If no matching message arrives at the process (or is already there)
+before the timeout interval expires, then the statement associated with
+this message receive statement is executed.
+
+For example, if a process only wishes to wait for an @code{accept}
+message for 3 seconds then we could use:
+
+@smallexample
+receive@{
+  'accept ->> @var{Accept statement}
+| timeout 3 secs ->> @var{Timeout statement}
+@}
+@end smallexample
+
+The timeout interval starts at the initial entry point to the message
+@code{receive} choice statement. 
+
+Message @code{receive} statements with @code{timeout} clauses are
+transformed in a similar way to regular message @code{receive}
+statements. However, their translation is more complex since the timeout
+must be managed:
+
+@smallexample
+M : -10000;		/* Message number */
+outer::@{
+  try @{
+    End : now()+E;
+
+    while (Msg,Sender,ReplyTo,Opts,NM) .= __waitmsg(M,End) do @{
+      M := NM;
+      inner :: @{
+        @{
+          (sender,replyto,options,@var{ptn1})->@{A1@}
+        | @dots{}
+        | (_,_,_,_)->@{
+            __replacemsg(Msg,Sender,Opts,M);
+            leave inner;
+          @}
+        @}(Sender,ReplyTo,Opts,Msg);  -- Procedure with an explicit body
+        leave outer;
+      @};
+    @}
+  @}
+  onerror@{
+    'timedout -> @var{time out action}
+  | EE -> exception EE
+  @}
+@}
+@end smallexample
+
+@noindent
+The @code{__waitmsg} primitive is similar to the @code{__nextmsg}
+primitive used for normal message recveive statements except that it
+includes a timeout @var{End}. If no message is received before @var{End}
+then @code{__waitmsg} generates a run-time exception -- @code{timedout}
+-- which is caught by a handler built from the @code{timeout} clause in
+the message @code{receive}.
+
+@node repeat until
+@subsection @code{repeat}@dots{}@code{until}
+@cindex Message terminated message stream
+@findex repeat until @r{statement}
+@cindex Message streams
+@cindex streams of messages
+
+@noindent
+The @code{repeat@dots{}until} statement is a @emph{message terminated} 
+message stream statement. It consumes a stream of messages until a 
+terminating message is received.
+
+The form of the @code{repeat@dots{}until} statement is:
+
+@smallexample
+repeat @{
+  @var{ptn1} ->> @var{S1}
+| @var{ptn2} ->> @var{S2}
+@dots{}
+| @var{ptnk} ->> @var{Sk}
+@} until @var{ptnq}
+@end smallexample
+
+@noindent
+where @var{ptni} are message receive patterns as in the normal message 
+receive statement (@pxref{receive}), and @var{ptnq} is also pattern.
+
+This statement continues to consume any messages of the form @var{ptni} 
+(and executing the corresponding statements @var{Si}) until a message that 
+matches @var{ptnq} is received.
+
+Note that the messages received by a process are handled in order of 
+arrival, thus any termination message is handled @emph{after} other 
+messages which arrived earlier at the process.
+
+Note also that any messages which arrive at the process which match none 
+of @var{ptni} or @var{ptnq} are `held' in the process'es message buffer 
+without otherwise affecting the execution of this statement.
+
+The @code{repeat @var{Body} until @var{QuitPtn}} statement is
+equivalent to a @code{while} iteration of the form:
+
+@smallexample
+@group
+exit::@{
+  while true do
+    receive@{
+      @var{QuitPtn} ->> leave exit
+    | @var{Body}
+    @}
+@}
+@end group
+@end smallexample
+
+@node repeat alarm
+@subsection @code{repeat}@dots{}@code{until alarm}
+@cindex Timed message stream statement
+@findex repeat alarm @r{statement}
+
+@noindent
+The @code{repeat@dots{}until alarm} statement is a @emph{timed} message 
+stream statement. It consumes a stream of messages for a period of 
+real-time.
+
+The form of the @code{repeat@dots{}until alarm} statement is:
+
+@smallexample
+@group
+repeat @{
+  @var{ptn1} ->> @var{S1}
+| @var{ptn2} ->> @var{S2}
+@dots{}
+| @var{ptnk} ->> @var{Sk}
+@} until alarm @var{period}
+@end group
+@end smallexample
+
+@noindent
+where @var{ptni} are message receive patterns as in the normal message 
+receive statement (@pxref{receive}), and @var{period} is an 
+expression representing a period of time.
+
+This statement continues to consume any messages of the form @var{ptni} 
+(and executing the corresponding statements @var{Si}) for @var{period} 
+seconds. For example, to consume a series of @code{tick} messages for 10 
+seconds, use:
+
+@smallexample
+repeat @{
+  'tick ->> "tick\n" >> stdout
+@} until alarm 10 secs
+@end smallexample
+
+As with the @code{repeat@dots{}until} statement,
+@ifinfo
+See @xref{repeat until}.
+@end ifinfo
+messages which are not matched by @var{ptni} patterns are not consumed by 
+the statement but otherwise do not affect the execution of the statement.
+@refill
+
+The @code{repeat @var{body} until alarm} statement is equivalent to the
+statement:
+
+@smallexample
+@group
+@{
+  A = spawn @{
+    delay(P); 'wakeup >> creator()
+  @};
+  
+  exit:: @{
+    while true do @{
+      'wakeup :: A==sender ->> leave exit
+    | @var{Body}
+    @}
+  @}
+@}
+@end group
+@end smallexample

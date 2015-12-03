@@ -1,0 +1,33 @@
+/* 
+ * Test list processing -- with naive reverse
+ */
+
+program{
+  reverse = {
+    [] => [] 
+  | [E,..T] => app(reverse(T),[E])
+  };
+
+  app = {
+    ([],Y) => Y
+  | ([H,..X1],Y) => [H,..app(X1,Y)]
+  };
+
+  main(i,iter)
+  {
+    L = 1..i;
+
+    start = ticks();
+
+    for x in 1..iter do{
+      R = reverse(L)
+    };
+
+    time = ticks()-start;
+
+    iter^0++" reverses of "++i^0++" elements took "++time^0++
+	" milliseconds\n">>stdout;
+
+    "Estimated speed = "++((i*i+i)*iter*1000/(2*time))^0++" lips\n">>stdout;
+  };
+}execute main;

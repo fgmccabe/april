@@ -1,0 +1,14 @@
+#macro spawn ?P ==> spawning(P,"",self(),file_manager(),
+	_mailer(),_manager(),0,false) # {
+  spawning(?P as ?Name,?N,?C,?F,?M,?R,?I,?X) ==>
+    spawning({regICM(Name) ; {try P onerror {##E -> ##E>>C}} ; unRegICM(Name)},
+      valof{handle(##A.=name).=Name;valis A},
+      C,F,M,R,I,X);
+  spawning(?P error_link ?E,?N,?C,?F,?M,?R,?I,?X) ==>
+    spawning({try P onerror {##E -> ##E>>E}},N,C,F,M,U,I,X);
+  spawning(?P managed_by ?U,?N,?C,?F,?M,?R,?I,?X) ==>
+    spawning(P,N,C,F,M,U,I,X);
+  spawning(?P using ?U,?N,?C,?F,?M,?R,?I,?X) ==>
+    spawning(P,N,C,U,M,R,I,X);
+};
+  

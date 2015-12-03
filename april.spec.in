@@ -1,0 +1,49 @@
+Summary:	The April programming language system
+Name:		april
+Version:	@VERSION@
+Release:	1
+Copyright:	GPL
+Group:		Development/Languages
+Source:		april-@VERSION@.tar.gz
+Obsoletes:	april
+Requires:	icm
+
+Vendor:		Francis G. McCabe & Keith L. Clark
+Packager:	Francis G. McCabe <fgm@fla.fujitsu.com>
+URL:		http://www.nar.fujitsulabs.com/april/
+Prefix:		@prefix@
+Docdir:		@prefix@/doc
+BuildRoot:      /var/tmp/april-@VERSION@-root
+
+%description
+April is a programming language that has been designed to
+enable distributed symbolic applications to be developed efficiently.
+
+%changelog
+* Fri Dec 17 1999 F.G.McCabe <fgm@fla.fujitsu.com>
+Fixed problems in gc that caused a crash if many processes were sending
+messages a lot.
+Also made some progress to proper dynamic type variables. More work is needed.
+
+* Tue Nov 30 1999 F.G.McCabe <fgm@fla.fujitsu.com>
+Fixed problems with voidhandle and &&
+
+%prep
+%setup
+
+%build
+./configure --prefix=%{prefix}
+make
+
+%install
+make prefix=$RPM_BUILD_ROOT%{prefix} install
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+%files
+%defattr(-, root, root)
+
+%{prefix}
+
+# %doc AUTHORS COPYING ChangeLog NEWS README

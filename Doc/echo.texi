@@ -1,0 +1,140 @@
+@node Listing of echo
+@appendix Listing of @code{apecho} server
+@cindex Listing of @code{echo} server
+@cindex @code{echo} -- server listing
+
+
+@smallexample
+/*
+ * This is a simple `echo' server implemented as an example to demonstrate 
+ * April's API
+ * $Log: echo.texi,v $
+ * Revision 1.2  2003/05/07 18:30:10  fmccabe
+ * My version
+ *
+ * Revision 1.1.1.1  2000/05/04 20:44:48  fmccabe
+ * Initial import of April in sourceforge's CVS
+ *
+ *
+ * Revision 1.1  1996/07/26 02:13:30  fgm
+ * Initial revision
+ *
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <signal.h>
+#include "april_tcp.h"
+
+char *name = "echo";
+int portNo = 0;
+
+void sig_int(int sig);
+void sig_fatal(int sig);
+
+void pickOpt(char opt,char *optarg,void *cl)
+@{
+  int *errflg = (int*)cl;
+
+  switch(opt)@{
+  case 'P':
+    portNo = atoi(optarg);
+    return;
+  case 'n':
+    name = optarg;
+    return;
+  @}
+@}
+
+
+int main(int argc, char **argv)
+@{
+  int errflag = 0;
+  int sock;
+  int c;
+  extern char *optarg;
+  extern int optind, opterr;
+
+  if(april_getoptions(argc,argv,"n:P:",pickOpt,&errflag)==-1)@{
+    fprintf(stderr,"usage: %s [-n name] [-P port]\n",argv[0]);
+    exit(1);
+  @}
+
+  if(april_init_server(portNo,NULL,NULL,&sock)==Ok)@{
+    set_april_callback(april_agent_alias(april_name_server),
+                       april_ping_handler,NULL);
+
+    signal(SIGINT, sig_int);    /* set up termination routines */
+    signal(SIGBUS, sig_fatal);
+    signal(SIGSEGV, sig_fatal);
+    signal(SIGFPE, sig_fatal);
+
+    /* register ourselves */
+    april_register(name=april_agent_alias(name));
+
+    while(True)@{
+      fd_set fdset, copy;
+      int status;
+
+      FD_ZERO(&fdset);
+      if(april_tcp_socket>0)
+        FD_SET(april_tcp_socket, &fdset);
+
+      copy = fdset;
+      status = select(april_tcp_socket+1, &copy, NULL, NULL, NULL);
+
+      if(status < 0)@{
+        if(errno == EINTR)@{    /* something else interrupted the select */
+          errno = 0;            /* clear the error flag */
+          continue;
+        @}
+        else@{
+          april_log_msg("error %d in select", errno);
+          close_april_comms();
+          exit(1);
+        @}
+      @}
+      else@{
+        handlepo to,from;
+        u_char *buffer;
+        april_status stat;
+
+        while((stat=get_april_msg(&buffer,&to,&from,NULL,0))==Ok)@{
+          april_log_msg("Message `%s' from %s to %s",
+                        sprint_april_msg(buffer),from,to);
+
+          april_send_msg(from,april_canonical_handle(name),"",
+                         "%(echo%#%)",buffer);
+        @}
+        if(stat==Err)@{
+          april_log_msg("Communications server has closed down");
+          exit(1);
+        @}
+        @}
+      @}
+  @}
+  else
+    fprintf(stderr,"Failed to initialize April API\n");
+@}
+
+
+/*
+ * cleanup after CTRL-C and other major errors
+ */
+void sig_int(int sig)
+@{
+  fprintf(stderr,"Control-C exit\n");
+  april_deregister(name);
+  close_april_comms();
+  exit(0);
+@}
+
+void sig_fatal(int sig)
+@{
+  fprintf(stderr, "bus error or segmentation fault\n");
+  april_deregister(name);
+  close_april_comms();
+  exit(0);
+@}
+
+@end smallexample

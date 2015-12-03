@@ -1,0 +1,111 @@
+/*
+ * Set abstraction macros
+ * K.L. Clark
+ * 1999
+ */
+
+#macro setof { ?T : ?Conds} ==> 
+  {setof _transform_(Conds)
+  #
+  {#macro _generator_ ==> elemis T}};
+
+#macro bagof ?Set ==> collect Set;
+
+#macro collect { ?T : ?Conds} ==> 
+  {collect _transform_(Conds)
+  #
+  {#macro _generator_ ==> elemis T}};
+
+#macro ?N of  {?T : ?Conds} ==> 
+  collect{
+    ##count:0;
+    ##L:- _N_transform_(N,T,Conds,##count,##L)
+  };
+
+#macro _N_transform_(?N,?T,?Conds,?count,?L) ==>
+  _transform_(Conds)
+  #
+  {#macro _generator_ ==> 
+     { elemis T;
+       count := count+1;
+       if count >= N then leave L
+     }
+  };
+
+#macro istrue ?P in ?L ==> _in_test_(P,L);
+#macro istrue ?Conds ==> 
+  valof{ _transform_(Conds);valis false }
+  #
+  {#macro _generator_ ==> valis true};
+
+#macro {generator of { ?T : ?Conds}} ==> 
+  spawn ##L:-_gen_transform_(T,Conds,##L);
+
+#macro _gen_transform_(?T,?Conds,?L) ==>
+  { _transform_(Conds);
+    receive{
+      'next->> 'no_more >>replyto
+    | 'quit ->> {}
+    }
+  }
+  #  
+  { #macro _generator_ ==> 
+      receive{
+        'next ->> ('next_is,T)>>replyto
+      | 'quit ->> leave L
+      }
+  };
+        
+#macro ?C2 forall  ?C1 ==>
+  not istrue {C1 && ! istrue C2};
+
+#macro for {?T : ?Conds} do ?A ==> 
+  _transform_( Conds) 
+  #
+  {#macro  _generator_ ==> A};
+
+#macro _transform_(?C) ==> _last_transform_(C);
+					
+#macro _transform_({ ?C && ?Conds}) ==> 
+  if  C then _transform_(Conds);
+
+#macro _transform_({ _in_test_(?P,?L) && ?Conds}) ==> 
+  if  P in L then _transform_(Conds);
+
+#macro _transform_({ ?C && ?Conds}) ==> 
+  if  C then _transform_(Conds);
+
+#macro _transform_({?C1 and ?C2}) ==> _transform_({C1 && C2});
+
+#macro _transform_({{?C1 || ?C2} && ?Conj}) ==>
+  {_transform_({C1 && Conj}) ;
+    _transform_({C2 && Conj})};
+
+#macro _transform_({{?C1 or ?C2} && ?Conj}) ==>
+  {_transform_({C1 && Conj}) ;
+   _transform_({C2 && Conj})};
+
+#macro _transform_({{?C1 && ?C2} && ?C3}) ==>
+  _transform_({C1 && C2 && C3});
+
+#macro _transform_({{?C1 and ?C2} && ?C3}) ==>
+  _transform_({C1 && C2 && C3});
+
+#macro _transform_({ ?P in ?S && ?Conds}) ==> 
+  for P in S do _transform_(Conds);
+
+#macro _last_transform_(?C) ==>
+  if C  then _generator_ ;
+
+#macro _last_transform_( {?P in ?S}) ==> for P in S do _generator_;
+#macro _last_transform_( _in_test_(?P,?S)) ==> {if P in S then _generator_};
+
+#macro _last_transform_({?C1 || ?C2}) ==>
+  {_transform_(C1) ;
+   _transform_(C2)};
+
+#macro _last_transform_({?C1 or ?C2}) ==>
+  {_transform_(C1) ;
+   _transform_(C2)};
+
+

@@ -1,0 +1,4 @@
+Things to do as of version 4.4.0:
+  Major (?) hole in dynamic type unification; strings for representing
+  types dont make this easy.
+

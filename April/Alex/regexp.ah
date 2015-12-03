@@ -1,0 +1,29 @@
+/*
+ * Regular expression abstract data structure
+ */
+
+finalType(%f) ::= state(string) | final(%f) | switch(string,number) ;
+
+regexp(%final) ::= ordRE(char) 
+  | emptyRE
+  | orRE(regexp(%final),regexp(%final))
+  | catRE(regexp(%final),regexp(%final))
+  | starRE(regexp(%final))
+  | plusRE(regexp(%final))
+  | optRE(regexp(%final))
+  | seqRE(char[])
+  | charsRE(char[])
+  | negCharsRE(char[])
+  | periodRE
+  | finalRE(regexp(%final),finalType(%final));
+
+nfaEdge(%final) ::= ordTR(char,number,number)
+  | emptyTR(number,number)
+  | dotTR(number,number)
+  | finalTR(number,%final);
+
+dfaE ::= dfa(char,number) ;
+
+dfaEdge(%final) ::= (number,dfaE[],%final);
+
+

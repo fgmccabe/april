@@ -1,0 +1,20 @@
+#op({object},"f(*)",990);
+#op({exporting},"(*)f(*)",800);
+#op({public},"f(*)",500);
+#op({visible},"f(*)",500);
+
+ #macro {?Obj exporting ?Flds} ==> Obj. _flatten_(_exportize_(Flds)) #
+                              {#macro public {symbol?N} ==>
+                                     {{get_ ## N};{set_ ## N}};
+                                  #macro visible symbol?N ==> {get_ ##
+N}} ;
+#macro _flatten_(?I) ==> I;
+#macro _flatten_({?R;?MoreR}) ==> {R; _flatten_(MoreR)};
+#macro _flatten_({{?R;?MoreR};?More}) ==>
+ _app_rec_(_flatten_({R;MoreR}),_flatten_(More));
+
+#macro _app_rec_(?I,?S) ==> {I;S};
+#macro _app_rec_({?R;},?S) ==> {R;S};
+#macro _app_rec_({?R;?More},?S) ==> {R;_app_rec_(More,S)};
+
+code exporting {b;public s; c};

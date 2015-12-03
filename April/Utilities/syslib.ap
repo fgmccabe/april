@@ -1,0 +1,311 @@
+/*
+ * System library of built-in functions
+ * Primarily the interface to the file system
+ */
+
+-- Disable standard interpretation of standard system libraries ...
+#macro _locate_sys_call_(?I,?B,?H) ==> void;
+
+/* This is a special format module ...
+   A linkable library ...
+ */
+()=>{
+  open(file,mode) => valof {
+    h : file_manager();
+    (_open_, file, string??mode) >> h;
+    receive{
+      handle?fl :: replyto == h  -> valis fl
+    | ?Error :: replyto==h  -> exception Error
+    }
+  };
+
+  close(fp) { _close_ >> fp };
+
+  popen(cmd) => valof {
+    h : file_manager();
+    (_popen_, cmd) >> h;
+    receive{
+      (_pipe_, ?i,?o) :: replyto==h  -> valis (i,o)
+    | ?Error :: replyto==h  -> exception Error
+    }
+  };
+
+  connect(host,port) => valof {
+    h : file_manager();
+    (_connect_, host, port) >> h;
+    receive{
+      (_connection_, handle?inp,handle?out) :: replyto==h  -> valis (inp,out)
+    | ?Error :: replyto==h  -> exception Error
+    }
+  };
+
+  server(port,proc) => valof {
+    h : file_manager();
+    (_server_, port, proc) >> h;
+    receive{
+      (_new_server_, ?fl) :: replyto==h  -> valis fl
+    | ?Error :: replyto==h  -> exception Error
+    }
+  };
+
+  sub_manager(dir,modes) => valof {
+    h : file_manager();
+    (_open_dir_, dir, modes) >> h;
+    receive{
+       handle?fl :: replyto==h  -> valis fl
+    | ?Error :: replyto==h  -> exception Error
+    }
+  };
+
+  filename(fn) => valof {
+    h : file_manager();
+    (_filename_, fn) >> h;
+    receive{
+      string?name :: replyto==h  -> valis name
+    | ?Error :: replyto==h  -> exception Error
+    }
+  };
+
+  file(fn) => valof {
+    h : file_manager();
+    (_file_, fn) >> h;
+    receive{
+      logical?res :: replyto==h  -> valis res
+    | ?Error :: replyto==h  -> exception Error
+    }
+  };
+
+  filetype(nme) => valof {
+    h : file_manager();
+    (_file_type_, nme) >> h;
+    receive{
+      symbol?type :: replyto==h  -> valis type
+    | ?Error :: replyto==h  -> exception Error
+    }
+  };
+
+  stat(fn) => valof {
+    h : file_manager();
+    (_stat_, fn) >> h;
+    receive{
+      _file_status_?stat :: replyto== h  -> valis stat
+    | ?Error :: replyto==h  -> exception Error
+    }
+  };
+
+  rm(fn){
+    h : file_manager();
+    (_rm_, fn) >> h;
+    receive{
+      rm_ok :: replyto== h  -> {}
+    | ?Error :: replyto==h  -> exception Error
+    }
+  };
+
+  cd(fn){
+    h : file_manager();
+    (_cd_, fn) >> h;
+    receive{
+      cd_ok :: replyto== h  -> {}
+    | ?Error :: replyto==h  -> exception Error
+    }
+  };
+
+  pwd() => valof {
+    h : file_manager();
+    _pwd_ >> h;
+    receive{
+      string?cwd :: replyto== h  -> valis cwd
+    | ?Error :: replyto==h  -> exception Error
+    }
+  };
+
+  mkdir(dir,mode){
+    h : file_manager();
+    (_mkdir_, dir,mode) >> h;
+    receive{
+       mkdir_ok :: replyto== h  -> {}
+    | ?Error :: replyto==h  -> exception Error
+    }
+  };
+
+  ls(dir) => valof {
+    h : file_manager();
+    (_ls_, dir) >> h;
+    receive{
+       string[]?list :: replyto== h  -> valis list
+    | ?Error :: replyto==h  -> exception Error
+    }
+  };
+
+  eof(fp) => valof {
+    _eof_ >>  fp;
+    receive {
+      logical?stat :: replyto==fp  -> valis stat
+    }
+  };
+
+  ready(fp) => valof {
+    _ready_ >> fp;
+    receive {
+      logical?stat :: replyto==fp  -> valis stat
+    }
+  };
+
+  flush(fp) { _flush_ >> fp };
+
+  tell(fp) => valof {
+    _ftell_ >>  fp;
+    receive{
+      integer?offset :: replyto==fp -> valis offset
+    | ?Error :: replyto==fp  -> exception Error
+    }
+  };
+
+  seek(fp,pos,mode){
+    (_seek_, pos,mode) >>  fp;
+    receive{
+      seek_ok :: replyto==fp -> {}
+    | ?Error :: replyto==fp  -> exception Error
+    }
+  };
+
+  inchar(fp) => valof {
+   _char_ >> fp;
+   receive{
+     string?char :: replyto== fp -> valis char
+   | ?Error :: replyto==fp  -> exception Error
+   }
+  };
+
+  inbytes(fp,cnt) => valof {
+   (_bytes_, cnt) >> fp;
+   receive{
+      number[]?str :: replyto==fp -> valis str
+   | ?Error :: replyto==fp  -> exception Error
+   }
+  };
+
+  inchars(fp,cnt) => valof {
+   (_chars_, cnt) >> fp;
+   receive{
+     string?str :: replyto==fp -> valis str
+   | ?Error :: replyto==fp  -> exception Error
+   }
+  };
+
+  inascii(fp) => valof {
+   _ascii_ >> fp;
+   receive{
+     integer?ascii :: replyto==fp -> valis ascii
+   | ?Error :: replyto==fp  -> exception Error
+   }
+  };
+
+  inline(fp) => valof {
+   _line_ >> fp;
+   receive{
+     string?line :: replyto==fp -> valis line
+   | ?Error :: replyto==fp  -> exception Error
+   }
+  };
+
+  intoken(fp) => valof {
+   _token_ >> fp;
+   receive{
+     symbol ? tok :: replyto==fp -> valis tok
+   | ?Error :: replyto==fp  -> exception Error
+   }
+  };
+
+  read(fp) => valof {
+   _read_ >> fp;
+   receive{
+     (error, ?code,?call) :: replyto==fp-> exception (error,code,call)
+   | any?term :: replyto== fp -> valis term
+   }
+  };
+
+  decode(fp) => valof {
+   _decode_ >> fp;
+   receive{
+     (error, ?code,?call) :: replyto== fp -> exception (error,code,call)
+   | any?term :: replyto== fp -> valis term
+   }
+  };
+
+  readf(fp,fmt) => valof {
+   (_fread_, fmt) >> fp;
+   receive{
+     (error, ?code,?call) :: replyto==fp -> exception (error,code,call)
+   | ?terms :: replyto==fp -> valis terms
+   }
+  };
+
+  outchar(fp,data) {
+    (_outchar_, string??data) >> fp;
+    receive{
+      write_ok :: replyto==fp -> {}
+    | ?Error :: replyto==fp  -> exception Error
+    }
+  };
+
+  write(fp,data){
+    (_write_, data) >> fp;
+    receive{
+      write_ok :: replyto==fp -> {}
+    | ?Error :: replyto==fp  -> exception Error
+     }
+  };
+
+  encode(fp,data){
+    (_encode_, data) >> fp;
+    receive{
+      write_ok :: replyto==fp -> {}
+    | ?Error :: replyto==fp  -> exception Error
+    }
+  };
+
+  printdepth(fp,level) => valof {
+    (_printdepth_, level) >> fp;
+    receive{
+      (_depth_, ?lvl) :: replyto==fp -> valis lvl
+    | ?Error :: replyto==fp  -> exception Error
+    }
+  };
+
+}.[
+  (`open',open),
+  (`close',close),
+  (`popen',popen),
+  (`connect',connect),
+  (`server',server),
+  (`sub_manager',sub_manager),
+  (`filename',filename),
+  (`file',file),
+  (`stat',stat),
+  (`rm',rm),
+  (`cd',cd),
+  (`pwd',pwd),
+  (`mkdir',mkdir),
+  (`ls',ls),
+  (`filetype',filetype),
+  (`eof',eof),
+  (`ready',ready),
+  (`flush',flush),
+  (`tell',tell),
+  (`seek',seek),
+  (`inchar',inchar),
+  (`inbytes',inbytes),
+  (`inchars,inchars),
+  (`inascii',inascii),
+  (`inline',inline),
+  (`intoken',intoken),
+  (`read',read),
+  (`decode',decode),
+  (`readf',readf),
+  (`outchar',outchar),
+  (`write',write),
+  (`encode',encode),
+  (`printdepth',printdepth)
+]

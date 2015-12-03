@@ -1,0 +1,100 @@
+/*
+ * An example program that demonstrates migrating agents
+ */
+
+#include "mover.ah";
+
+program {
+  /* The central base */
+  central(orig,agentName,home)
+  {
+    data : [];
+    repeat{
+      moveto(newloc) ->> (`public, agentName, 
+	{()->{
+	  come_to_me(self()) >> creator();
+
+          over_to_you ->> rover(orig,agentName,home,data)
+       }}) >> hdl('shell,newloc)
+	  
+    | dir ->> listing(data^file) >> replyto
+    | pickup(f) ->> if (!f,text) in data then
+ 	here_you_are(f,text) >> replyto
+      else
+	sorry >> replyto
+         
+    | come_to_me(where) -> {
+	('migrate,orig,where) >> home;
+
+        ('aliased,_,!where) ->> over_to_you >> where
+      }
+				      
+    | say_hello -> hi_there(string%%self()) >> replyto
+    | coming_home(d) -> {
+	writef(stdout,"We have data %[%(%S / %S%)\n%]\n",(d));
+	data := d;
+        okaeri >> replyto
+      }
+    | M ->> "Unknown message `"++M^4++"\n">>stdout
+    } until 'quit;
+  };
+
+  readFile(fn) => valof{	/* read a file we have been asked for */
+    f = fopen(fn,"r");
+    _file_stat(_,_,_,_,_,_,_,count.=size,_,_,_,_,_) = fstat(fn);
+
+    t = inchars(f,count);
+    fclose(f);
+    valis t;
+  };
+
+  /* This agent can move around */
+  rover(orig,agentName,home,data)
+  {
+    returning : false;
+
+    repeat {
+      pickup(file) ->> {
+	data := [(file=file,content=readFile(file)),..data];
+ 	i_have_it(file) >> replyto
+      }
+    | dir ->> listing(fls(".")) >> replyto
+    | moveto(newloc) -> { ('public, agentName, 
+	{()->{
+	  come_to_me(self()) >> creator();
+
+          over_to_you ->> rover(orig,agentName,home,data)
+       }}) >> hdl('shell,newloc)
+      }
+	  
+    | come_to_me(where) ->> {
+	(migrate,orig,where) >> home;
+
+        (aliased,?,where) -> { over_to_you >> where; break; }
+      }
+				      
+    | say_hello ->> hi_there(string%%self()) >> replyto
+    | come_home ->> { 
+        ('return, orig) >> home; 
+
+        repeat{
+         M ->> writef(stdout,"Other message %3w from %s\n",(M,replyto))
+        } until ('unaliased,_) :: replyto==home;
+
+        returning := true;
+
+        coming_home(data) >> orig;	/* send back our data */
+      }
+    | (pforked, _) -> {}
+
+    } until okaeri :: returning;	/* This rover has gone home */
+  };
+
+  main(name)
+  {
+    name public_spawn 
+      central(self(), name, commserver());
+
+    waitfor(handle%%name);
+  }
+} execute main;

@@ -1,0 +1,18 @@
+/*
+ * Access the MYSQL database functions
+ */
+
+native (
+	{(string,string,string,string,string){}}?myexec,
+	{(string,string,string,string)=>string[]}?mytables,
+  	{(string,string,string,string)=>string[]}?mylistdbs,
+	{(string){}}?mysetdefaults,
+  	{(number,string,string,string,string,string)=>number}?myquery,
+  	{(number)=>string[]}?myfetchrow,
+	{(number){}}?myfreeresult,
+	{(number)=>number}?myrownumber,
+	{(number)=>number}?myfieldnumber,
+  	{(number)=>string[]}?myfieldname,
+	{(number,number){}}?mydataseek
+) from <libmysqlap.so>;
+

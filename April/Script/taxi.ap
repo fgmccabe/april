@@ -1,0 +1,42 @@
+/*
+ * Plan to pick up a passenger
+ */
+#include "script.ah";
+
+to make_money
+
+precond 
+  current_city(?C) in own and
+  passenger_ready(?P,?F,?T) in C
+
+do{
+  achieve offer_journey(P,F,T);
+  achieve complete_trip(P,F,T);
+  achieve make_money
+  };
+
+to offer_journey(P,F,T)
+do{
+  achieve decide_price(F,T,Pr);
+  post price_is(F,T,Pr) to P
+};
+
+to complete_trip(P,F,T)
+precond current_city(F) in own
+  and agrees(P,F,T) in own
+do{
+  achieve collect_passenger(P);
+  achieve travel_to(T);
+  achieve decide_price(F,T,Pr);
+  post please_pay(Pr) to P;
+  achieve collect_payment(P,T,Pr);
+};
+
+to collect_payment(P,Ct,Pr)
+precond current_city(Ct) in own and
+  payment_received(P,Pr) in own
+do{
+  achieve bank_payment(Pr)
+};
+
+  

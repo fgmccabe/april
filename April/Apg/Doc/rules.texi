@@ -1,0 +1,155 @@
+@node Format of an Apg rule file
+@chapter Format of an @code{Apg} rule file
+
+@noindent
+An @code{Apg} rule file has three sections, each section is demarkated
+by a line containing the @code{%%} mark only:
+
+@smallexample
+@var{definitions}
+%%
+@var{rules}
+%%
+@var{postamble}
+@end smallexample
+
+@noindent
+The @var{definitions} give the definitions of the tokens or terminals of
+the grammar; it also denotes the semantic type associated with the value
+returned by the parser. The @var{rules} give the definitions of the
+non-terminals and the productions indicating how to reduce them. The
+@var{postamble} represents text that is copied verbatim into the
+generated parser. One suitable use for the @var{postamble} is to define
+any functions that are referred to in the actions of the rules.
+
+@menu
+* Definitions in an Apg grammar file::  
+* Form of rules ::              
+* The postamble::               
+@end menu
+
+@node Definitions in an Apg grammar file
+@section Definitions in an @code{Apg} grammar file
+
+@noindent
+The definitions section is used to introduce the terminals in the
+grammar, as well as set certain other control features. The definition
+section consists of a sequence of definitions terminated by a line
+containing the @code{%%} mark.
+
+@menu
+* Token definition::            
+* Operator definition::         
+* Semantic type definition::    
+@end menu
+
+@node Token definition
+@subsection Token definition
+
+@noindent
+A token definition  consists of a @code{%token} definition followed by a
+sequence of token specifiers:
+
+@smallexample
+%token @var{token} @dots{} @var{token}
+@end smallexample
+
+@noindent
+Each token specifier is either an identifier, or an identifier followed
+by a type enclosed in @code{%@{%@}}. The former form simply identifies a
+terminal -- which has no internal semantic value attached to it. The
+second form is used to indicate to @code{Apg} that there is a semantic
+value attached to the token and the type of that value is as indicated.
+
+For example, the following @code{%token} definition is from the
+@code{Apg} rule file for @code{Apg} grammars:
+
+@smallexample
+%token ID%@{symbol[]%@} NUM%@{number%@} CENTBRACE%@{symbol[]%@} TYPE
+@end smallexample
+
+@noindent
+The semantic value associated with the @code{ID} token is a
+@code{symbol[]} which is @code{Apg}'s underlying data type for
+representing strings. Similarly, @code{NUM} has a semantic value -- of
+type @code{number}.
+
+Whether a terminal has a semantic value attached to it or not makes no
+difference to its use in the productions of a non-terminal -- it is used
+in order to determine the correct type in productions' actions.
+
+In addition, the semantic value of a token is used when @code{Apg}
+generates the header file for use when writing the lexical analyser (e.g.,
+with @code{Alex}).
+
+@node Operator definition
+@subsection Operator definition
+
+@noindent
+An operator definition is similar to a token definition, except that the
+associativity of the operator is indicated by a leading keyword:
+@code{%left} for left associative operators, @code{%right} for right
+associative operators and @code{%nonassoc} for non associative
+operators.
+@cindex Defining operators
+
+For example, the definitions:
+
+@smallexample
+%left PLUS MINUS
+%left TIMES DIVIDE
+@end smallexample
+
+@noindent
+defines the four operators @code{PLUS}, @code{MINUS}, @code{TIMES}, and
+@code{DIVIDE}; all of them are left associative.
+@cindex operator associativity and precedence
+
+Both the @code{PLUS} and the @code{MINUS} have the same precedence. The
+@code{TIMES} and @code{DIVIDE} operators have a `tighter' precedence than
+@code{PLUS} and @code{MINUS}. In general, all the operators declared in
+a single operator declaration have the same precedence, and operators
+declared later have a tighter precedence than operators declared earlier.
+
+Note that although we declare operators with @code{%left} and related
+declarations, the specific characters that make up those operators is
+determined by the lexical analyser. The above definitions declare the
+existence of @code{PLUS} (say), but the fact that a @code{PLUS} operator
+is written with a @code{+} character is determined by the lexical
+analysis phase.
+@cindex Lexical definition of tokens
+
+@node Semantic type definition
+@subsection Semantic type definition
+
+@noindent
+The semantic type definition is used to declare the type of the value
+returned by the parser. It is mandatory to provide such a definition
+since the parser is compiled as a function; and @code{Apg} needs to
+determine the type of the values returned in the actions of the grammar
+rules.
+
+A semantic type is written:
+
+@smallexample
+%type %@{ @var{April-type} %@}
+@end smallexample
+
+@noindent
+Normally, the semantic type is a recursively defined type with several
+alternates. This is because all of the non-terminal's types are folded
+into a single type definition.
+
+There are two methods for declaring a recursive type definition: using
+@code{April}'s `dotted variable' form of type declaration or using the
+@code{yyType} type as the recursive reference. For example, 
+
+
+
+
+
+@node Form of rules 
+@section Form of rules 
+
+@node The postamble
+@section The postamble

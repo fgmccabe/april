@@ -1,0 +1,123 @@
+
+#include "apg.ah";
+
+module
+import
+{
+  interface "gensets.af"
+}
+in
+{
+  -- compute the closure of a set of items
+  closure(T,rules) => valof {
+    done : false;
+    I : T;
+
+    while not done do{
+      done := true;
+      for item(No,A,B,[X,..Beta],_) in I do
+        for rule(Cnt,X,Tau,_,_,_) in rules do
+          if !item(Cnt,X,[],Tau,_) in I then{
+            I := [item(Cnt,X,[],Tau,[])]\/I;
+	    done := false;
+	  };
+    };
+    valis I;
+  };
+
+  -- compute the kernel of the goto set
+  goto(I,X,rules) => setof{
+    for item(Cnt,A,B,[X,..Beta],LA) in I do
+    elemis item(Cnt,A,B<>[X],Beta,LA);
+  };
+
+
+  -- Compute the set of kernels of the LR(0) items
+  lr0states(rules,start) => valof{
+    Sno : 0;
+    T : [(0,[item(0,'?,[],[start],[])])];
+    G : [];
+    New : T;
+    done : false;
+
+    while not done do{
+      TT : T;
+      Next : [];
+      done := true;
+      for (C,I) in New do{
+        II = closure(I,rules);
+        for item(_,_,alpha,[X,..beta],_) in II do{
+          J = goto(II,X,rules);
+	  if (D,J) in TT then {
+	    if ! (C,X,D) in G then
+	      G := [(C,X,D),..G];
+	  }
+	  else{
+            Sno := Sno+1;
+            TT := [(Sno,J),..TT];
+            Next := [(Sno,J),..Next];
+	    G := [(C,X,Sno),..G];
+	    done := false;
+	  }
+        }
+      };
+      T := TT;
+      New := Next;
+    };
+    valis (T,G);
+  };
+
+  showLits = {
+    [] => ""
+  | [L,..R] => string%%L ++ " " ++ showLits(R)
+  };
+
+  showRule(rule(R,L,A,B,Act,(Assoc,Pre))) => string%%L++" : "++
+    showLits(A)++" . "++showLits(B)++{if Pre!=0 then Assoc^0++":"++Pre^0 else ""};
+
+  showLA = {
+    ([],_) => ""
+  | ([L,..A],P) => P++string%%L++showLA(A,"/")
+  };
+
+  showItem(item(No,L,A,B,LA)) => "\t"++ string%%L++" -> "++
+    showLits(A)++"."++showLits(B)++" ("++string%%No++")";
+
+  displayAction(Act,O) => {case Act in {
+    accept(a) => string%%a++" accept"
+  | reduceBy(a,R) => string%%a++" reduce using rule "++R^0
+  | shiftOn(a,R,_) => string%%a++" shift, goto "++R^0
+  | recoverError([a,.._],R,_) => string%%a++" recover, goto "++R^0
+  | disabled(A) => "["++displayAction(A,O)++"]"
+  }};
+
+  displayStates(T,G,A,NT,O)
+  {
+    for (C,I) in T do{
+      "\nState "++C^0++":\n">>O;
+      for itm in I do
+        showItem(itm)++"\n">>O;
+      "\n">>O;
+      if (C,Acts) in A then {
+	for Act in Acts do 
+	  displayAction(Act,O)++"\n">>O;
+
+	for shiftOn(a,R,Rx) in Acts do {
+	  if reduceBy(a,Ry) in Acts then
+ 	    "Warning: shift/reduce conflict on "++a^0++"\n">>O;
+	};
+
+	for reduceBy(a,Rx) in Acts do {
+	  if reduceBy(a,Ry::Rx!=Ry) in Acts then
+	    "Warning: reduce/reduce conflict on "++a^0++"\n">>O;
+	};
+      }
+      else
+        "No actions found\n">>O;
+      for {(C,X,N)::X in NT} in G do
+        "goto("++string%%X++")="++string%%N++"\n">>O
+    }
+  };
+
+
+} export (lr0states,displayStates);

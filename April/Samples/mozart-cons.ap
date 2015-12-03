@@ -1,0 +1,16 @@
+program{
+consumer(){
+  receive{
+    'start ->> {
+      "Starting\n">>stdout;
+      st = ticks();
+      T:0;
+      repeat 
+        N ->> T:=T+N
+      until 0;
+      time = ticks()-st;
+      (time,T)^0 ++ "\n" >> stdout
+    }
+  }
+};
+}execute consumer;

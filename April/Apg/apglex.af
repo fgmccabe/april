@@ -1,0 +1,5 @@
+/* automatically generated -- do not edit */
+/* Module interface file for apglex.aam */
+( %a-( %b-{
+    (char[],number,number, %a)=>((char[],number,number, %a), %b)
+   })?yyNextToken) from "apglex.aam";

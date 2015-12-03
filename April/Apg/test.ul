@@ -1,0 +1,7 @@
+/*
+ * A test ul program file
+ */
+
+X = 23;
+Y = X;
+print X+Y;

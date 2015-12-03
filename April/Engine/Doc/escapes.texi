@@ -1,0 +1,61 @@
+@node Built-in escapes
+@appendix Built-in escapes
+@cindex Built-in escapes
+
+@noindent
+In this appendix we list the built-in escape functions of the
+@code{April} machine. These function typically provide access to the
+underlying operating system functions for @code{April} programs.
+
+@menu
+* System control::              
+@end menu
+
+@node System control
+@section System control
+
+@menu
+* exit::                        
+* command_line::                
+@end menu
+
+@node exit
+@subsection @code{exit} -- Teminate the @code{AM}
+@findex exit @r{Escape procedure}
+
+@noindent
+Escape format:
+@smallexample
+exit(code): (integer)@{@}
+@end smallexample
+
+@smallexample
+@cartouche
+esc_fun @var{depth},0
+@end cartouche
+@end smallexample
+
+@noindent
+This escape terminates the @code{April} machine, reporting the
+@code{integer} @var{code} value as the return value of the @code{April}
+machine. This is a privilidged escape procedure.
+
+Note that not all operating systems can reasonably make sense of the
+return value of a program.
+
+@node command_line
+@subsection @code{command_line} -- command line arguments
+@findex command_line @r{Escape function}
+
+@noindent
+Escape format:
+@smallexample
+command_line(): ()->string[]
+@end smallexample
+
+@noindent
+This escape function returns the command line arguments that were
+originally supplied to the @code{April} machine. The arguments are
+returned as a list of @code{string}s. Note that not all
+operating systems can supply a meaningful value for this escape.
+

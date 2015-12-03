@@ -1,0 +1,227 @@
+2001-08-31  jak <jak@homer.net.fla.fujitsu.com>
+	* Detect texi2html in configure
+
+2001-08-31  fmccabe  <fgm@homer.net.fla.fujitsu.com>
+	* Corrected multibyte (mblen) behaviour
+
+2001-08-31 
+
+2001-08-21  jak <jak@homer.net.fla.fujitsu.com>
+	* CLOCKS_PER_SEC compilation problem solved
+	* Fixed m_intext primitive
+	* Pipes to external processes are now asynchronous
+	* Getopt no longer permutes arguments
+
+2001-08-21  fmccabe  <fgm@homer.net.fla.fujitsu.com>
+	* Fixed variable scoping problem in pattern compilation
+	* Fixed file flush
+	* Fixed set operations /\ \/ \ to evaluate operands only once
+	* SIGHUP terminal support
+
+2000-08-23  fmccabe  <fmccabe@homer.net.fla.fujitsu.com>
+
+	* Re-engineered the type system to use type labels instead of literal types
+	* Work in progress to allow code to be larger than 32K. Mostly done now
+	* Re-engineered the code format to separate off the literals from the code
+	(to allow april code to execute on a 64-bit Itanium)
+	* Error reporting slightly better
+	* Slightly changed semantics of trunc to force result to integer
+	* Fixed null target in buildHandle
+	* Fixed minor problem in matching any values
+	* Fixed problem with types within theta being misidentified
+	* Fixed problem with killing process siblings
+	* Fixed minor problem in spawn using
+	* Fixed small bug in tokenizer
+	* Fixed ~ (string pinch) compilation problem
+	* Fixed minor lexical definition quoted char
+	* Fixed debugging code so that variables are reported better
+	* Fixed stdout to more problem
+	* Fixed problem with string patterns (X in Y)
+	* Fixed a nasty bug in local_handle
+
+2000-05-31  Francis G. McCabe  <fgm@ceres.net.fla.fujitsu.com>
+
+	* Implement a version of setenv for platforms which do not have a native
+	implementation.
+	* leaseTime, replyHandle, receiptRequest fixed to use
+	applyHead/applyTail, for processing message options like
+	[replyTo(r)] etc. (fixes bug 106650)
+	* Fixed ,+ operator
+
+2000-05-31  Johnny Knottenbelt  <jak@homer.net.fla.fujitsu.com>
+	
+	* Can now produce .src.rpms as well as architecture specific RPMs
+	* In .../Makefile.am: use -include ...april.Make now make 'distclean' works
+
+2000-05-12  Francis G. McCabe  <fgm@ceres.net.fla.fujitsu.com>
+
+	* Extended coerce to allow conversion of numbers to lists of symbols
+
+2000-05-05  Francis G. McCabe  <fgm@miranda.net.fla.fujitsu.com>
+
+	* Fixed GC bug in buildHandle
+	* Fixed minor code generation prob - function entry code
+
+2000-05-04  Francis G. McCabe  <fgm@miranda.net.fla.fujitsu.com>
+
+	* Fixed the _debug escape to expect an any value, and made sure
+	it got one at least from the standard macros.
+	* Fixed a small problem with writing signed values out
+
+2000-05-03  Francis G. McCabe  <fgm@miranda.net.fla.fujitsu.com>
+
+	* Fixed problem with compare handles: didnt work when handles were
+	  foreign
+
+2000-05-02  Francis G. McCabe  <fgm@miranda.net.fla.fujitsu.com>
+
+	* slightly modified format of the cant stat file message
+	* Slight change to the way flushing is done on wait_for_event
+
+2000-04-28  Francis G. McCabe  <fgm@miranda.net.fla.fujitsu.com>
+
+	* Fixed GC problem in theta code generation
+	* Fixed problem with handle types
+
+2000-04-25  Francis G. McCabe  <fgm@miranda.net.fla.fujitsu.com>
+
+	* Fixed a minor buffer overflow problem in locateHost
+
+2000-04-24  Francis G. McCabe  <fgm@ariel.net.fla.fujitsu.com>
+
+	* Changed assign_debug, etc. to use strings instead of any
+	values. In addition, allowed a user-defined function
+	__debug_display__ to display the value instead of the default method.
+
+2000-04-22  Francis G. McCabe  <fgm@ariel.net.fla.fujitsu.com>
+
+	* Fixed a problem in accessing constructor records via dots.
+	* Fixed problem with literal true/false in patterns
+
+2000-04-21  Francis G. McCabe  <fgm@ariel.net.fla.fujitsu.com>
+
+	* Fixed some more bugs: in debugging code.
+	* Had to change representation of constructors, to apply terms.
+
+2000-04-13  Francis G. McCabe  <fgm@ariel.net.fla.fujitsu.com>
+
+	* Changed the way that errors are handled. I had to modify the
+	error type. Noone had noticed that it was broken! 
+	* Fixed a couple of minor glitches -- the core dumping variety in
+					   -- the compiler.
+
+2000-04-12  Francis G. McCabe  <fgm@ariel.net.fla.fujitsu.com>
+
+	* Reworked type inference (again) to use real circular structures
+	for fixpoint types.
+	* Fixed debugging messages to be any-wrapped (no-one spotted this one!)
+
+2000-03-30  Francis G. McCabe  <fgm@ariel.net.fla.fujitsu.com>
+
+	* Fixed minor problem with type inference of constructor patterns
+
+2000-03-17  Francis G. McCabe  <fgm@miranda.net.fla.fujitsu.com>
+        
+	* 4.4.0-pre1a
+	* Fixed problem with assembling type signatures on the fly.
+	* Fixed GC potential problem - when memory is tight
+
+2000-03-14  Francis G. McCabe  <fgm@ariel.net.fla.fujitsu.com>
+
+	* Fixed problem with compiling if then statements: it didnt report
+	an accurate statement of whether it could exit in continuous mode
+	( as opposed to jumping out).
+	* Fixed problem with not generalizing types in type declarations
+	properly.
+
+2000-03-13  Francis G. McCabe  <fgm@ariel.net.fla.fujitsu.com>
+
+	* Slightly modified the formatted write to include %b for binary
+	* Changed the name of flushOutChannels to just flushOut
+	* removed documentation entry for abort -- since it wasnt
+						-- implemented anyway.
+
+2000-03-06  Francis G. McCabe  <fgm@ariel.net.fla.fujitsu.com>
+
+	* 4.3.1i
+	Fixed  problem with the GC -- wasnt growing the heap early enough
+	Actually, there's a harder problem to fix in there: we need to
+	grow the heap to handle additional modifications in old generations.
+
+2000-03-02  Francis G. McCabe  <fgm@miranda.net.fla.fujitsu.com>
+
+	* 4.3.1h
+	Previous version didnt properly rebuild from scratch. Also fixed
+	those annoying warnings about not finding stdio.aam which was there
+	all the time.
+
+4.3.1g:
+	Fixed gc bug: hadnt followed the root pointer rules in decoding an
+	any value in decodeICM.
+4.3.1f:	
+	Reorganized source tree again, to isolate the general library
+4.3.1e:	
+	Thu Feb 17 2000
+	Added new streaming I/O file system
+	Fixed problem with coercing empty string to list of symbols
+4.3.1d:	
+	Reorganized the source tree to avoid bootstrap problems with the
+	compiler. 
+	Fixed the load-time file find so that it doesnt automatically
+	search all sib-directories
+	Ported (again) to Solaris 2.7
+	Fixed problem with re-assigning to theta variables in patterns
+4.3.1c:
+	Fixed a small problem in __any2str (0.123^3 wasnt showing
+	properly)
+	Changed the default for the compiler not to search in
+	subdirectories for files. Now, the path needs to have :: instead
+	of : separating directories for a recursive search
+	Removed R.x := E and R.{x:=E} from the language - due to semantic
+	problems.
+4.3.1b:
+	More bug fixes - especially to do with type expressions:
+	The compiler wasnt handling explicit complex dotted type expressions
+	Also fixed some problems in Alex, to do with proper handling of
+	EOF.
+	Fixed problem in signed write of records - a string field was not
+	displayed correctly if a precedence of 0 was requested.
+	Fixed problem with deeply nested conditionals - not getting scopes
+	of variables right.
+	Changed the way that error handling is implemented, to allow
+	arbitrary depth of onerror statements
+	Fixed problem with compiling deep patterns involving recursive
+	types
+	Started work again on the implementation of the april in april
+	compiler (parsing mostly working at the moment)
+	Changed the default behaviour when a process has an unhandled
+	exception - a message is printed and the process is killed (not
+	the entire April system)
+	Changed the implementation of simple message send - to make it a
+	litte faster
+	Moved the core file libraries from the ICM back to the April
+	engine - to make April more independent from ICM.
+
+4.3.1a:
+        Fri Dec 23 1999
+	Modifies within statement to take a click value rather than a
+	click counter object
+	
+	Tue Dec 21 1999
+4.3.1:
+        Fixed problem with reading hex numbers.
+	Fixed GC problems in message send
+	
+	Tue Nov 30 1999
+4.3.0a:	
+	Fixed problem with voidhandle not being recognized
+	Fixed problem with && in guards
+
+4.3.0:	
+       Fixed a few minor problems
+	Fixed solaris port
+	Implemented a new click counter scheme
+	Started work on fixing type variables in any values (not yet done)
+	
+
+	

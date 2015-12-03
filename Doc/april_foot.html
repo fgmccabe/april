@@ -1,0 +1,195 @@
+<HTML>
+<HEAD>
+<!-- Created by texi2html 1.57 from april.texi on September, 7  2004 -->
+
+<TITLE>April Reference Manual - Footnotes</TITLE>
+</HEAD>
+<BODY >
+<H1>April Reference Manual</H1>
+<H2>Version 5.0.0-beta-12, last updated 22:12 April ./april.texi.</H2>
+<ADDRESS>F.G. McCabe <A HREF="mailto:<A HREF="mailto:fgm@fla.fujitsu.com">fgm@fla.fujitsu.com</A>"><A HREF="mailto:fgm@fla.fujitsu.com">fgm@fla.fujitsu.com</A></A></ADDRESS>
+<P>
+<P><HR><P>
+<H3><A NAME="FOOT1" HREF="april.html#DOCF1">(1)</A></H3>
+<P>This is a new feature of
+version 4.2.7.
+<H3><A NAME="FOOT2" HREF="april.html#DOCF2">(2)</A></H3>
+<P>The <CODE>icm</CODE> is
+designed to be started as a daemon during the normal boot process.
+<H3><A NAME="FOOT3" HREF="april.html#DOCF3">(3)</A></H3>
+<P>The current host's IP
+address is always available as an address for processes.
+<H3><A NAME="FOOT4" HREF="april.html#DOCF4">(4)</A></H3>
+<P>Usually this is <CODE>/opt/april</CODE>.
+<H3><A NAME="FOOT5" HREF="april.html#DOCF5">(5)</A></H3>
+<P>The current version
+of the <CODE>April</CODE> engine uses 64-bit integers when representing
+integral values. This implies that integers have a larger range than
+floating point numbers...
+<H3><A NAME="FOOT6" HREF="april.html#DOCF6">(6)</A></H3>
+<P>This is new in version 4.2.7, prior to this version
+tuples were compatible with records. However, there are semantic
+problems associated with this confusion.
+<H3><A NAME="FOOT7" HREF="april.html#DOCF7">(7)</A></H3>
+<P>The syntax and semantics of <CODE>any</CODE> values 
+changed with version 4.2.7.
+<H3><A NAME="FOOT8" HREF="april.html#DOCF8">(8)</A></H3>
+<P>Universal quantifiers are a new
+feature of version 4.2.7
+<H3><A NAME="FOOT9" HREF="april.html#DOCF9">(9)</A></H3>
+<P>Notwithstanding minor barriers to communication such
+as security `Fire-walls'.
+<H3><A NAME="FOOT10" HREF="april.html#DOCF10">(10)</A></H3>
+<P>The form of the
+<CODE>error</CODE> type changed in version 4.4.0-pre2.
+<H3><A NAME="FOOT11" HREF="april.html#DOCF11">(11)</A></H3>
+<P>According to Websters on-line: 
+Main Entry: re톓fy<BR>
+Function: transitive verb<BR>
+Inflected Form(s): re톓fied; re톓fy톓ng<BR>
+Etymology: Latin res thing -- more at REAL<BR>
+Date: 1854<BR>
+: to regard (something abstract) as a material or concrete thing.
+
+<H3><A NAME="FOOT12" HREF="april.html#DOCF12">(12)</A></H3>
+<P>In the case that there is only a single field, then
+it must be followed by a semi-colon `<CODE>;</CODE>' in order to distinguish
+the expression as a theta expression.
+<H3><A NAME="FOOT13" HREF="april.html#DOCF13">(13)</A></H3>
+<P>It does not even need to refer to
+<EM>any</EM> of <VAR>R</VAR>'s fields.
+<H3><A NAME="FOOT14" HREF="april.html#DOCF14">(14)</A></H3>
+<P>This is new in version 4.2.7.
+<H3><A NAME="FOOT15" HREF="april.html#DOCF15">(15)</A></H3>
+<P>This feature is not
+yet finalized.
+<H3><A NAME="FOOT16" HREF="april.html#DOCF16">(16)</A></H3>
+<P>The fixed width
+pattern is deprecated in version 4.2.7; use character matching instead.
+<H3><A NAME="FOOT17" HREF="april.html#DOCF17">(17)</A></H3>
+<P>The compiler recognizes this form of <CODE>for</CODE>
+statement and is able to generate `normal' loop iteration code for it.
+<H3><A NAME="FOOT18" HREF="april.html#DOCF18">(18)</A></H3>
+<P>Some run-time exceptions cannot be recovered from and 
+will cause the entire <CODE>April</CODE> machine to terminate. However, this
+situation is not very helpful in situations requiring reliable service;
+the non-recoverable errors are either due to an internal problem
+(a.k.a. bug) or because some vital system resource (such as memory) has
+been exhausted.
+<H3><A NAME="FOOT19" HREF="april.html#DOCF19">(19)</A></H3>
+<P>Not currently implemented due
+to a serious problem with determining when a process has received a
+message.
+<H3><A NAME="FOOT20" HREF="april.html#DOCF20">(20)</A></H3>
+<P>This is new in version~5.0.
+<H3><A NAME="FOOT21" HREF="april.html#DOCF21">(21)</A></H3>
+<P>Normally the
+<VAR>Reply</VAR> process is identical to the <VAR>Sndr</VAR> process; however, it
+can be convenient to route replies to messages to different processes.
+<H3><A NAME="FOOT22" HREF="april.html#DOCF22">(22)</A></H3>
+<P>Usually
+based on ASCII
+<H3><A NAME="FOOT23" HREF="april.html#DOCF23">(23)</A></H3>
+<P>Technically all <CODE>April</CODE> functions and
+procedures have one argument -- which is normally a tuple of
+values. However, the <CODE>April</CODE> compiler places an additional
+restriction on functions and procedures: that their single argument is
+always a tuple.
+<H3><A NAME="FOOT24" HREF="april.html#DOCF24">(24)</A></H3>
+<P>A function that has several arguments
+really only has one -- the arguments are all encoded as a tuple which
+forms the single argument of the function.
+<H3><A NAME="FOOT25" HREF="april.html#DOCF25">(25)</A></H3>
+<P>With the major exception of
+so-called <CODE>theta variables</CODE> (see section <A HREF="april.html#SEC178">Theta variables</A>).
+<H3><A NAME="FOOT26" HREF="april.html#DOCF26">(26)</A></H3>
+<P>Where the patterns
+for the two component functions overlap, the first function takes
+precedence over the second. A mathematical function union would require
+that where the patterns overlap, the values of the component functions
+must be the same.
+<H3><A NAME="FOOT27" HREF="april.html#DOCF27">(27)</A></H3>
+<P>The
+variable <CODE>X</CODE> here is bound to a list of numbers of the form
+<CODE>[1,2,...]</CODE>.
+<H3><A NAME="FOOT28" HREF="april.html#DOCF28">(28)</A></H3>
+<P>If executed, the message <CODE>Hello world</CODE> should
+appear on the <EM>sender</EM>'s console rather than the console associated
+with <CODE>execServer</CODE>. This is because <CODE>stdout</CODE> is a free
+variable which is bound to the sender's standard output file process.
+<H3><A NAME="FOOT29" HREF="april.html#DOCF29">(29)</A></H3>
+<P>This must be verified at execution
+time since the imported module code is generally compiled separately
+from the main program.
+<H3><A NAME="FOOT30" HREF="april.html#DOCF30">(30)</A></H3>
+<P>On Intel Linux sysems, integer precision is 64bit.
+<H3><A NAME="FOOT31" HREF="april.html#DOCF31">(31)</A></H3>
+<P>Typically 64 bits are used to
+represent integer <CODE>number</CODE> values.
+<H3><A NAME="FOOT32" HREF="april.html#DOCF32">(32)</A></H3>
+<P>Actually, this interpretation is
+performed by the <CODE>April</CODE> compiler not the <CODE>outchar</CODE>
+procedure.
+<H3><A NAME="FOOT33" HREF="april.html#DOCF33">(33)</A></H3>
+<P>A client of an <CODE>April</CODE> server does
+not need to be aware of the fact that it is connected to a program
+written in <CODE>April</CODE>. Similarly, <CODE>April</CODE> programs can connect to
+non-<CODE>April</CODE> based services.
+<H3><A NAME="FOOT34" HREF="april.html#DOCF34">(34)</A></H3>
+<P>These facilities were
+introduced in Version 4.3.1e, and are experimental.
+<H3><A NAME="FOOT35" HREF="april.html#DOCF35">(35)</A></H3>
+<P>For future reference: each single-character item will
+refer to a single `glyph' rather than a single byte.
+<H3><A NAME="FOOT36" HREF="april.html#DOCF36">(36)</A></H3>
+<P>This feature is not
+yet finalized.
+<H3><A NAME="FOOT37" HREF="april.html#DOCF37">(37)</A></H3>
+<P>That is, not powerful enough
+without a lot of effort.
+<H3><A NAME="FOOT38" HREF="april.html#DOCF38">(38)</A></H3>
+<P>Normally for ASCII and for Latin character sets a glyph is
+represented by a single byte; but some languages use multi-byte
+sequences to represent a single character or glyph.
+<H3><A NAME="FOOT39" HREF="april.html#DOCF39">(39)</A></H3>
+<P>Pronounced <EM>iota</EM> because of the
+symbol used for a similar function in APL.
+<H3><A NAME="FOOT40" HREF="april.html#DOCF40">(40)</A></H3>
+<P>If <CODE>N</CODE> is a variable that is in scope in the
+context of this expression, then this <CODE>setof</CODE> expression is legal and will
+either return <CODE>[N]</CODE> or <CODE>[]</CODE> depending on whether <CODE>N</CODE> is
+actually less than 10 or not.
+<H3><A NAME="FOOT41" HREF="april.html#DOCF41">(41)</A></H3>
+<P>The form of the handle labelled tuple changed in version~5 of <CODE>April</CODE>.
+<H3><A NAME="FOOT42" HREF="april.html#DOCF42">(42)</A></H3>
+<P>In fact, it is a relatively small program -- some 200 lines of <CODE>April</CODE>
+<H3><A NAME="FOOT43" HREF="april.html#DOCF43">(43)</A></H3>
+<P>UTC used to be known as
+Greenwich Mean Time (GMT).
+<H3><A NAME="FOOT44" HREF="april.html#DOCF44">(44)</A></H3>
+<P>A single click is approximately equal to
+0.1 milliseconds of CPU time. However, due to the vagarities of typical
+CPU clocks, any resolution less than 100milliseconds is often not
+especially accurate.
+<H3><A NAME="FOOT45" HREF="april.html#DOCF45">(45)</A></H3>
+<P>At the time of writing, the standard communications
+manager does not enforce any policy restrictions on sending messages
+<H3><A NAME="FOOT46" HREF="april.html#DOCF46">(46)</A></H3>
+<P>April's virtual machine uses  a 32bit word code rather
+than a  byte code.
+<H3><A NAME="FOOT47" HREF="april.html#DOCF47">(47)</A></H3>
+<P>This is an experimental feature, introduced in version
+4.4.0-pre3
+<H3><A NAME="FOOT48" HREF="april.html#DOCF48">(48)</A></H3>
+<P>but that doesnt matter since
+our <CODE>list</CODE> plug-in module is for explicatory purposes only.
+<H3><A NAME="FOOT49" HREF="april.html#DOCF49">(49)</A></H3>
+<P>It is important to properly
+balance the initial call to <CODE>gcAddRoot</CODE> with a call to
+<CODE>gcRemoveRoot</CODE>; the run-time system will complain otherwise.
+<P><HR><P>
+This document was generated on September, 7  2004 using
+<A HREF="http://www.mathematik.uni-kl.de/~obachman/Texi2html">texi2html</A>&nbsp;1.57.
+
+</BODY>
+</HTML>

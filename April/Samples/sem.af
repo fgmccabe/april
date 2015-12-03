@@ -1,0 +1,3 @@
+/* automatically generated -- do not edit */
+/* Module interface file for sem.aam */
+((number){}?sem,(handle){}?p,(handle){}?v) from "sem.aam";

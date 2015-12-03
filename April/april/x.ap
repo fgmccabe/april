@@ -1,0 +1,11 @@
+/*
+ * xml parser stream processor
+ */
+
+
+module
+{
+  test(){
+    sio_term(0,"hello") >> self()
+  }
+} export test;

@@ -1,0 +1,122 @@
+/* An April program to process responses to the questionaire ... */
+program{
+  parse_pairs(body) -> collect{
+    for ?str in body do {
+      for ?cmd in expand(str,"&") do {
+        parts : expand(cmd,"=");
+
+        if |parts| == 2 then{
+          if numstr(parts[2]) then
+	    elemis (symbol%%parts[1],number%%parts[2])
+	  else
+	    elemis (symbol%%parts[1],reformat(parts[2]))
+        }
+      }
+    }
+  };
+
+  reformat(msg) -> 
+    charof(collect {
+      bytes : ascii(msg);
+      for ?i in 1..|bytes| do
+        if bytes[i]== 0x2B then /* + */
+	  elemis 0x20
+	else if bytes[i]==0x25 then  /* % */
+	  elemis valof{
+	    p1 : dehex(bytes[i+1])*16+dehex(bytes[i+2]);
+	    i := i+2;
+	    valis p1;
+	  }
+	else
+	  elemis bytes[i];
+      }
+   );
+
+  dehex(A)-> if A>=0x30 && A<=0x39 then A-0x30
+    else if A>=0x40 && A<=0x4F then A-0x40+9
+    else A-0x60+9;
+
+  parse_msg(msg) -> collect{
+    for ?i in 1..|msg| do{
+      if strprefix("Subject:",msg[i])=!= -1 then {
+        if strprefix("Form posted from Mozilla",msg[i])=!= -1 then {
+          for ?j in i+1..|msg| do {
+            if msg[j]=="" then {	/* extract after the headers */
+              for ?k in j+1 .. |msg| do
+                elemis msg[k];
+              j:=|msg|;
+              i:=|msg|;
+            }
+          }
+        }
+      }
+    }
+  };
+
+  read_file(fin) -> collect{
+    loop::{while not eof(fin) do {
+      { elemis inline(fin) }
+        onerror{
+        error("end of file", ?) -> leave loop
+      };
+    }}
+  };
+  
+  main(adb)
+  {
+    fout : fopen("/home/people/fgm/tmp/questionaire.log","a");
+
+    "Questionaire processor invoked\n">>fout;
+
+    body : parse_msg(read_file(stdin));
+
+    if body=!=[] then {		/* We have a message to handle */
+      {key:symbol;value:any}[]?parts = parse_pairs(body);
+
+      if |parts|>0 then {
+        user : string%%{parts^.(name,?)}.value;
+	survey : symbol%%{parts^.(questionaire,?)}.value;
+
+        writef(fout,"%T We have a record for %S\n",(now(),user));
+
+        (open_dbase,survey) >> adb;
+
+        { (ok, open_dbase) -> relax
+        | ?O -> "Problem at open "++O^0++"\n" >> fout
+        };
+
+        ({select}, survey, (eq, name, user)) >> adb;
+
+        { (selection, survey, []) -> {
+
+            (new_record, survey, parts) >> adb;
+
+            { (ok,?) -> relax
+            | any?O -> "Problem at new "++O^0++"\n" >> fout
+            }
+          }
+
+        | (selection, survey, symbol[]?list) -> {
+            if |list| > 1 then {
+              writef(fout, "Warning: multiple records for %S\n",(user));
+              for integer?i in 2..|list| do {
+                (delete_record, survey, list[i]) >> adb;
+                { (ok, ?) -> relax
+	        | O -> "Problem at delete "++O^0++"\n" >> fout
+        	}
+	      }
+            };
+            (update_record, survey, [(ID, list[1]),..parts]) >> adb;
+            { (ok, ?) -> relax
+	    | any?O -> "Problem at update "++O^0++"\n" >> fout
+            }
+          }
+	| O -> "Problem at select "++O^0++"\n" >> fout
+	};
+      };
+      goodbye >> adb;
+    };
+
+  };
+
+} execute main;

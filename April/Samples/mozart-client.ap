@@ -1,0 +1,9 @@
+program{
+  producer(Adder,P,N){
+    (I,O) = tcp_connect(Adder,P);
+    for i in 1..N do
+      fencode(O,any(i));
+    fencode(O,any(0));
+    fflush(O);
+  }
+}execute producer;

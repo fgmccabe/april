@@ -1,0 +1,262 @@
+main.o main.o: main.c ../../config.h /usr/include/stdlib.h \
+  /usr/include/Availability.h /usr/include/AvailabilityInternal.h \
+  /usr/include/_types.h /usr/include/sys/_types.h \
+  /usr/include/sys/cdefs.h /usr/include/sys/_symbol_aliasing.h \
+  /usr/include/sys/_posix_availability.h /usr/include/machine/_types.h \
+  /usr/include/i386/_types.h /usr/include/sys/wait.h \
+  /usr/include/sys/signal.h /usr/include/sys/appleapiopts.h \
+  /usr/include/machine/signal.h /usr/include/i386/signal.h \
+  /usr/include/i386/_structs.h /usr/include/sys/_structs.h \
+  /usr/include/machine/_structs.h /usr/include/mach/i386/_structs.h \
+  /usr/include/sys/resource.h /usr/include/machine/endian.h \
+  /usr/include/i386/endian.h /usr/include/sys/_endian.h \
+  /usr/include/libkern/_OSByteOrder.h \
+  /usr/include/libkern/i386/_OSByteOrder.h /usr/include/alloca.h \
+  /usr/include/machine/types.h /usr/include/i386/types.h \
+  /usr/include/i386/_types.h /usr/include/string.h /usr/include/strings.h \
+  /usr/include/secure/_string.h /usr/include/secure/_common.h \
+  /usr/include/sys/param.h /usr/include/sys/types.h \
+  /usr/include/sys/syslimits.h /usr/include/machine/param.h \
+  /usr/include/i386/param.h /usr/include/i386/_param.h \
+  /usr/llvm-gcc-4.2/bin/../lib/gcc/i686-apple-darwin11/4.2.1/include/limits.h \
+  /usr/llvm-gcc-4.2/bin/../lib/gcc/i686-apple-darwin11/4.2.1/include/syslimits.h \
+  /Developer/usr/llvm-gcc-4.2/lib/gcc/i686-apple-darwin11/4.2.1/include/limits.h \
+  /Developer/usr/llvm-gcc-4.2/lib/gcc/i686-apple-darwin11/4.2.1/include/syslimits.h \
+  /usr/include/limits.h /usr/include/machine/limits.h \
+  /usr/include/i386/limits.h /usr/include/i386/_limits.h \
+  ../../April/Compiler/Headers/compile.h /opt/nar/ooio/include/ooio.h \
+  ../../config.h /opt/nar/ooio/include/unicode.h \
+  /opt/nar/ooio/include/integer.h /opt/nar/ooio/include/retcode.h \
+  /opt/nar/ooio/include/logical.h /opt/nar/ooio/include/io.h \
+  /opt/nar/ooio/include/number.h /opt/nar/ooio/include/object.h \
+  /usr/include/pthread.h /usr/include/pthread_impl.h /usr/include/sched.h \
+  /usr/include/time.h /usr/include/_structs.h \
+  /opt/nar/ooio/include/formio.h /opt/nar/ooio/include/file.h \
+  /opt/nar/ooio/include/uri.h /opt/nar/ooio/include/iostr.h \
+  /opt/nar/ooio/include/ioTcp.h /opt/nar/ooio/include/pool.h \
+  /opt/nar/ooio/include/hosts.h /opt/nar/ooio/include/pipe.h \
+  /opt/nar/ooio/include/bytes.h /opt/nar/ooio/include/hash.h \
+  /opt/nar/ooio/include/options.h /opt/nar/ooio/include/pool.h \
+  ../../April/Headers/local.h /opt/nar/ooio/include/logical.h \
+  ../../April/Compiler/Headers/cdbgflags.h \
+  ../../April/Compiler/Headers/cell.h /opt/nar/ooio/include/unicode.h \
+  ../../April/Compiler/Headers/filename.h \
+  ../../April/Compiler/Headers/dict.h \
+  ../../April/Compiler/Headers/structure.h \
+  ../../April/Compiler/Headers/stack.h \
+  ../../April/Compiler/Headers/heap.h \
+  ../../April/Compiler/Headers/display.h \
+  ../../April/Compiler/Headers/types.h \
+  ../../April/Compiler/Headers/tree.h ../../April/Compiler/Headers/dict.h \
+  ../../April/Compiler/Headers/keywords.h \
+  ../../April/Compiler/Headers/operators.h \
+  ../../April/Compiler/Headers/macro.h \
+  ../../April/Compiler/Headers/unix.h /usr/include/sys/stat.h \
+  /usr/include/fcntl.h /usr/include/sys/fcntl.h /usr/include/unistd.h \
+  /usr/include/sys/unistd.h /usr/include/sys/select.h \
+  /usr/include/sys/_select.h /opt/nar/ooio/include/ooio.h \
+  ../../April/Compiler/Headers/version.h
+
+../../config.h:
+
+/usr/include/stdlib.h:
+
+/usr/include/Availability.h:
+
+/usr/include/AvailabilityInternal.h:
+
+/usr/include/_types.h:
+
+/usr/include/sys/_types.h:
+
+/usr/include/sys/cdefs.h:
+
+/usr/include/sys/_symbol_aliasing.h:
+
+/usr/include/sys/_posix_availability.h:
+
+/usr/include/machine/_types.h:
+
+/usr/include/i386/_types.h:
+
+/usr/include/sys/wait.h:
+
+/usr/include/sys/signal.h:
+
+/usr/include/sys/appleapiopts.h:
+
+/usr/include/machine/signal.h:
+
+/usr/include/i386/signal.h:
+
+/usr/include/i386/_structs.h:
+
+/usr/include/sys/_structs.h:
+
+/usr/include/machine/_structs.h:
+
+/usr/include/mach/i386/_structs.h:
+
+/usr/include/sys/resource.h:
+
+/usr/include/machine/endian.h:
+
+/usr/include/i386/endian.h:
+
+/usr/include/sys/_endian.h:
+
+/usr/include/libkern/_OSByteOrder.h:
+
+/usr/include/libkern/i386/_OSByteOrder.h:
+
+/usr/include/alloca.h:
+
+/usr/include/machine/types.h:
+
+/usr/include/i386/types.h:
+
+/usr/include/i386/_types.h:
+
+/usr/include/string.h:
+
+/usr/include/strings.h:
+
+/usr/include/secure/_string.h:
+
+/usr/include/secure/_common.h:
+
+/usr/include/sys/param.h:
+
+/usr/include/sys/types.h:
+
+/usr/include/sys/syslimits.h:
+
+/usr/include/machine/param.h:
+
+/usr/include/i386/param.h:
+
+/usr/include/i386/_param.h:
+
+/usr/llvm-gcc-4.2/bin/../lib/gcc/i686-apple-darwin11/4.2.1/include/limits.h:
+
+/usr/llvm-gcc-4.2/bin/../lib/gcc/i686-apple-darwin11/4.2.1/include/syslimits.h:
+
+/Developer/usr/llvm-gcc-4.2/lib/gcc/i686-apple-darwin11/4.2.1/include/limits.h:
+
+/Developer/usr/llvm-gcc-4.2/lib/gcc/i686-apple-darwin11/4.2.1/include/syslimits.h:
+
+/usr/include/limits.h:
+
+/usr/include/machine/limits.h:
+
+/usr/include/i386/limits.h:
+
+/usr/include/i386/_limits.h:
+
+../../April/Compiler/Headers/compile.h:
+
+/opt/nar/ooio/include/ooio.h:
+
+../../config.h:
+
+/opt/nar/ooio/include/unicode.h:
+
+/opt/nar/ooio/include/integer.h:
+
+/opt/nar/ooio/include/retcode.h:
+
+/opt/nar/ooio/include/logical.h:
+
+/opt/nar/ooio/include/io.h:
+
+/opt/nar/ooio/include/number.h:
+
+/opt/nar/ooio/include/object.h:
+
+/usr/include/pthread.h:
+
+/usr/include/pthread_impl.h:
+
+/usr/include/sched.h:
+
+/usr/include/time.h:
+
+/usr/include/_structs.h:
+
+/opt/nar/ooio/include/formio.h:
+
+/opt/nar/ooio/include/file.h:
+
+/opt/nar/ooio/include/uri.h:
+
+/opt/nar/ooio/include/iostr.h:
+
+/opt/nar/ooio/include/ioTcp.h:
+
+/opt/nar/ooio/include/pool.h:
+
+/opt/nar/ooio/include/hosts.h:
+
+/opt/nar/ooio/include/pipe.h:
+
+/opt/nar/ooio/include/bytes.h:
+
+/opt/nar/ooio/include/hash.h:
+
+/opt/nar/ooio/include/options.h:
+
+/opt/nar/ooio/include/pool.h:
+
+../../April/Headers/local.h:
+
+/opt/nar/ooio/include/logical.h:
+
+../../April/Compiler/Headers/cdbgflags.h:
+
+../../April/Compiler/Headers/cell.h:
+
+/opt/nar/ooio/include/unicode.h:
+
+../../April/Compiler/Headers/filename.h:
+
+../../April/Compiler/Headers/dict.h:
+
+../../April/Compiler/Headers/structure.h:
+
+../../April/Compiler/Headers/stack.h:
+
+../../April/Compiler/Headers/heap.h:
+
+../../April/Compiler/Headers/display.h:
+
+../../April/Compiler/Headers/types.h:
+
+../../April/Compiler/Headers/tree.h:
+
+../../April/Compiler/Headers/dict.h:
+
+../../April/Compiler/Headers/keywords.h:
+
+../../April/Compiler/Headers/operators.h:
+
+../../April/Compiler/Headers/macro.h:
+
+../../April/Compiler/Headers/unix.h:
+
+/usr/include/sys/stat.h:
+
+/usr/include/fcntl.h:
+
+/usr/include/sys/fcntl.h:
+
+/usr/include/unistd.h:
+
+/usr/include/sys/unistd.h:
+
+/usr/include/sys/select.h:
+
+/usr/include/sys/_select.h:
+
+/opt/nar/ooio/include/ooio.h:
+
+../../April/Compiler/Headers/version.h:

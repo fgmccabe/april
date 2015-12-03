@@ -1,0 +1,82 @@
+/*
+ * A suite of macros to compile GoScript into regular April
+ */
+
+/* Operators that define the syntax of plans */
+#op({to},"f(*)",1298);
+#op({to},"(*)f(*)",1298);
+#op({precond},"(*)f(*)",1297);
+#op({result},"(*)f(*)",1299);
+#op({post},"f(*)",1300);
+#op({achieve},"f(*)",1300);
+#op({>>},"(*)f(*)",1100);
+
+#macro expand_plan(?G,?P,?A,?R,?CS) ->
+  build_plan(
+    handle_goal(G,P,A,R,CS),
+    handle_precond(G,P,A,R,CS),
+    handle_action(G,P,A,R,CS),
+    handle_result(G,P,A,R,CS),
+    G,P,A,R,CS);
+
+#macro handle_goal(?G,?P,?A,?R,?CS) -> G;
+
+#macro handle_precond(?G,?P,?A,?R,?CS) -> P # {
+    #macro ?XX in ?C -> pre(XX,C,{XX::replyto==C});
+    #macro ?XX in own -> pre(XX,CS,{XX::replyto==CS});
+    #macro ?AA and ?BB -> { AA -> BB };
+    #macro ?AA or ?BB -> {AA | BB};
+  };
+
+#macro handle_action(?G,?P,?A,?R,?CS) -> A # {
+    #macro post ?M to own -> assert(M)>>c_space(CS);
+    #macro post ?M to ?C -> assert(M)>>C;
+    #macro achieve ?A -> add_goal(A,CS);
+  };
+
+#macro handle_result(?G,?P,?A,?R,?CS) -> R;
+
+#macro build_plan(?G,?P,?A,none,?OG,?OP,?OA,?OR,?CS) -> 
+	plan(G,{ mu(CS){
+            build_action(P,A)
+          }
+        });
+
+#macro build_plan(?G,?P,?A,{valis ?E},?OG,?OP,?OA,?OR,?CS) ->
+	plan(G,{ lambda(CS) -> valof {
+            build_action(P,{ A; valis E})
+          }
+        });
+
+#macro register_interest(?P,?CS) ->
+   reg_interest({tau()<-P},true)>>CS;
+
+#macro build_action(pre(?C,?CS,?AA) ,?A) -> { 
+  tellme({tau()<-C})>> CS; AA -> A};
+#macro build_action({pre(?C,?CS,?AA) -> ?BB},?A) -> {
+  tellme({tau()<-C})>> CS; AA -> build_action(BB,A)};
+#macro build_action(`{{# ?AA} | {# ?BB}}',?A) -> {
+  build_action(AA,A) | build_action(BB,A)};
+#macro build_action(true,?A) -> A;
+
+
+/* select what kind of plan we are constructing ... */
+#macro to ?G do ?A result ?R ->
+  expand_plan(G,true,A,R,CS);
+
+#macro to ?G do ?A ->
+  expand_plan(G,true,A,none,CS);
+
+#macro to ?G precond ?P do ?A ->
+  expand_plan(G,P,A,none,CS);
+
+#macro to ?G precond ?P result ?R ->
+  expand_plan(G,P,relax,R,CS);
+
+#macro to ?G result ?R ->
+  expand_plan(G,true,relax,R,CS);
+
+#macro to ?G precond ?P do ?A result ?R ->
+  expand_plan(G,P,A,R,CS);
+  
+    

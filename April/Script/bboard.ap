@@ -1,0 +1,59 @@
+/*
+ * Blackboard architecture module for GoScript
+ */
+module{
+
+  db_entry ::= entry(string?key,kqml_msg?value,handle?owner);
+  kqml_item ::= any;
+  kqml_msg ::= assert(kqml_item) | query(kqml_item);
+
+  bb_protocol ::= bb_quit | reg_interest({()<-kqml_msg}?ptn,logical?old) | 
+	reset_interest | dump |
+	new_entry(string?key,kqml_msg?value) |
+	current_entry(string?key,kqml_msg?value);
+
+  bboard()
+  {
+    ?db = [];		/* Database */
+    ?reg = [];		/* interested parties */
+    ?clients = [creator()];
+
+    repeat {
+      reg_interest(?ptn,?old) -> {
+	reg := [(ptn,replyto),..reg];
+        if old then {
+          for entry(?key,{ptn?()}?value,?) in db do
+	    current_entry(key,value) >> replyto
+        };
+        if not replyto in clients then
+	  clients := [replyto,..clients]
+      }
+
+    | reset_interest -> {
+	if sender in clients then { 	/* we dont allow cheaters here */
+	  clients \:= [sender];
+	  reg := reg ^\ (?,sender);
+        }
+      }
+
+    | new_entry(?key,?value)/* :: replyto in clients */-> {
+        db :=[entry(key,value,replyto),..db];
+	for {(?ptn,?interested)::interested=!=replyto} in reg do
+	  if ptn?()=value then
+	    new_entry(key,value) >> interested
+      }
+
+    | dump/*::sender==creator()*/ -> {
+        for ?e in db do 
+          displayEntry(stderr,e)
+      }
+
+    } until bb_quit :: sender==creator();
+  };
+
+  displayEntry(file,db_entry?e)
+  {
+    e.writef(file,"%S(%s):%w",(key,owner,value));
+  };
+
+} export(bboard);      

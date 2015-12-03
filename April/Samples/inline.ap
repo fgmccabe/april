@@ -1,0 +1,18 @@
+program{
+  flasher()
+  {
+    repeat{
+      timeout 3 secs ->> "Ping\n" >> stdout
+    } until 'ok;
+  };
+
+  main()
+  {
+    H : spawn flasher();
+
+    while not eof(stdin) do
+      "Text was "++inline(stdin)++"\n">>stdout;
+
+    'ok >> H;
+  }
+} execute main;  

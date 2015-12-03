@@ -1,0 +1,22 @@
+/*
+ * Test the time and date functions
+ */
+
+month ::= jan | feb | mar | apr | may | jun | jul | aug | sep | oct | nov | dec;
+
+program
+{
+  main()
+  {
+    t : now();
+    date(Year,Month,Day,Dow,Hour,Min,Sec) = timetodate(t);
+    date(gYear,gMonth,gDay,gDow,gHour,gMin,gSec) = timetogmt(t);
+
+    months = [jan,feb, mar, apr, may, jun, jul, aug, sep, oct, nov, dec];
+
+    "now = "++t^0++", date = "++timetodate(t)^0++", gmt = "++timetogmt(t)^0++"\n">>stdout;
+
+    "current month is "++months#Month^0++"\n">>stdout;
+    "Gmt hour is "++gHour^0++"\n">>stdout;
+  }
+} execute main;

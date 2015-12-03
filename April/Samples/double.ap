@@ -1,0 +1,9 @@
+program
+{
+  call(A,B,F) => F(A,B);
+
+  main()
+  {
+    "Try + on 2,3 => "++call(2,3,(+))^0++"\n" >> stdout
+  }
+} execute main;

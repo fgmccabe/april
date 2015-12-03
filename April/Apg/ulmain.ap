@@ -1,0 +1,72 @@
+/*
+ * Demonstrator parser for UL
+ * Main program
+ */
+
+#include "ul_tok.ah";
+
+program
+import interface "ul.af"
+in
+{
+  grabData(fn) => valof {
+    _file_stat(_,_,_,_,_,_,_,count.=size,_,_,_,_,_) = fstat(fn);
+    f = fopen(fn,_open_read);
+
+    t = inchars(f,count);
+    fclose(f);
+
+    valis (t,1,1,fn);
+  };
+  
+  showTree = {
+    N(num) -> num^0>>stdout
+  | I(id) -> string%%id>>stdout
+  | SEQ(A,B) -> { showTree(A); showTree(B); }
+  | EXIT -> "EXIT\n">>stdout
+  | PR(A) -> { "Print(">>stdout;
+               showTree(A);
+               ")\n">>stdout
+             }
+  | ASS(tok,A) -> { string%%tok ++" := ">>stdout;
+                    showTree(A);
+                    "\n">>stdout
+                   }
+  | PL(A,B) -> { "(">>stdout; 
+                 showTree(A);
+                 "+">>stdout; 
+                 showTree(B);
+                 ")">>stdout; 
+                }
+  | MI(A,B) -> { "(">>stdout; 
+                 showTree(A);
+                 "-">>stdout; 
+                 showTree(B);
+                 ")">>stdout; 
+                }
+
+  | ST(A,B) -> { "(">>stdout; 
+                 showTree(A);
+                 "*">>stdout; 
+                 showTree(B);
+                 ")">>stdout; 
+                }
+  | DV(A,B) -> { "(">>stdout; 
+                 showTree(A);
+                 "/">>stdout; 
+                 showTree(B);
+                 ")">>stdout; 
+                }
+  | UM(A) -> { "(">>stdout; 
+                 "-">>stdout; 
+                 showTree(A);
+                 ")">>stdout; 
+                }
+  };
+
+  main(file)
+  {
+    Tree = parser(grabData(file));
+    showTree(Tree);
+  };
+} execute main;

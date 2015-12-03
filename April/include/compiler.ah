@@ -1,0 +1,20 @@
+/*
+ * Type definitions for accessing compiler as a server
+ */
+
+_compilerMsg ::= compileFile(string,_compilerOption[])
+     | compiledOk(string)
+     | errorsFound(number,number)
+     | compilerParseError(string,string,number)
+     | compilerSyntaxError(string,string,number)
+     | compilerWarning(string,string,number)
+     | compilerSyntaxError(string,string,number)
+     | compilerVersion;
+
+_compilerOption ::= symbolDebug 
+     | noWarnings
+     | preProcessOnly
+     | markExecutable
+     | includePath(string)
+     | standardHeader(string);
+     

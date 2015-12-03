@@ -1,0 +1,19 @@
+/*
+ * Debugging message type
+ */
+-- If this has to be changed, then you must also change dict.c in the engine
+
+debugMsgType ::= line_debug(handle,symbol,number) |
+	entry_debug(handle,symbol) |
+	scope_debug(handle,number) |
+	exit_debug(handle,symbol) |
+	return_debug(handle,symbol,string) |
+	fork_debug(handle,handle) |
+	suspend_debug(handle) | 
+	die_debug(handle) |
+	send_debug(handle,handle,string) |
+	front_debug(handle,handle,string) |
+	accept_debug(handle,handle,string) |
+	assign_debug(handle,symbol,string) |
+	error_debug(handle,error) |
+        break_debug(handle,string);

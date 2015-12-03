@@ -1,0 +1,74 @@
+@node Standard macros
+@appendix Standard @code{April} macros
+
+@noindent
+This appendix lists all the standard macros which are part of the
+@code{April} language.  These macros are typically kept in standard
+files which are automatically included in every @code{April} file as it is
+compiled.@footnote{Unless the @code{-X} option is used to compile the program.}
+
+These macro header files are placed in a standard directory within the
+installation tree of @code{April} -- usually at
+@file{/opt/april/include/v4}.
+
+
+@menu
+* Set operation macros::        
+* General macros::              
+* Module handling macros::      
+* Process related macros::      
+* Message handling macros::     
+@end menu
+
+@node Set operation macros
+@appendixsec Set operation macros
+
+@noindent
+These macros implement various set operations over lists. They are held
+in the standard header file @file{setops.ah}.
+
+@smallexample
+@end smallexample
+
+@node General macros
+@appendixsec General macros
+
+@noindent
+These macros are held in the file @file{general.ah} within the standard
+@code{April} distribution directory.
+
+@smallexample
+@end smallexample
+
+@node Module handling macros
+@appendixsec Module handling macros
+@cindex module handle macros
+
+@noindent
+These macros implement the module interface in @code{April}. They are
+contained in the standard header file @file{modules.ah}.
+
+@smallexample
+@end smallexample
+
+@node Process related macros
+@appendixsec Process related macros
+
+@noindent
+These macros implement the standard process @code{spawn} and
+@code{public_spawn} operations. They are held in the standard header
+file @file{process.ah}.
+
+@smallexample
+@end smallexample
+
+@node Message handling macros
+@appendixsec Message handling macros
+
+@noindent
+These macros implement the various message handling features of
+@code{April}. They are held in the standard header file @file{msg.ah}
+
+@smallexample
+@end smallexample
+

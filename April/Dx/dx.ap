@@ -1,0 +1,114 @@
+/*
+ * Module to interface to Dx using the stream I/O processing model
+ */
+ 
+module
+  import {
+    interface "xml.af" and
+    interface <stdio.af>
+  } in
+{
+
+  dxReader(inp,Client)
+  { 
+    count : 0;
+    { while not eof(inp) do{
+        sio_term(count,dxParse(inp)) >> Client;
+        count +:= 1;
+      }
+    }
+    onerror
+    { error("end of file",_) -> {
+        sio_end >> Client;
+	"Eof on connection\n">>stdout;
+      }
+    | X -> 
+	"Other message: "++X^3++"\n">>stdout
+    };
+    count^0++" lines read\n">>stdout;
+  };
+   
+  readALine(inp) => valof{
+    Line = inline(inp);
+    if Lne++"\r".=Line then
+      valis Lne
+    else
+      valis Line
+  };
+
+  readLines(inp,Count) => valof {
+    Text : "";
+    soFar : 0;
+
+    while soFar<Count && !eof(inp) do{
+      Line = readALine(inp);
+      Text := Text++Line;
+      soFar := soFar+listlen(Line)
+    };
+    valis Text;
+  };
+
+  dxParse(inp) => valof{
+    Line : "";
+    
+    /* Look for the Dx sentinel */
+    while not eof(inp) && !"DIALOX 1.1"++_.=Line do{
+      Line := readALine(inp);
+    };
+    
+    atts = collect{
+      Line:=readALine(inp);
+      
+      while !eof(inp) && Line!="" do{
+        if Att++":"++Value.=Line then
+          elemis (Att,Value);
+          
+        Line := readALine(inp);
+      };
+    };
+    
+    if ("Content-Length",L) in atts then{
+      Count = number%%skipSpaces(L);
+      
+      Text = readLines(inp,Count);
+      valis parseXML(Text);
+    }
+    else
+      valis parseXML(readALine(inp));
+  };
+  
+  skipSpaces(L) => valof{
+    S : L;
+   
+    while " "++M.=S do
+      S := M;
+    valis S;
+  };
+  
+  dxWrite(T,out){
+    Text = showXML(T);
+    Len = listlen(Text);
+    
+    outchar(out,"DIALOX 1.1\n");
+    outchar(out,"Content-Length:"++Len^0++"\n");
+    outchar(out,"\n");
+    outchar(out,Text);
+    fflush(out);
+  };
+
+  dxConnect(host,port,Client)
+  {
+    (inp,out) = tcp_connect(host,port);
+    "Connected to DialoX at "++host++"/"++port^0++"\n">>stdout;
+
+    _ = spawn {dxReader(inp,Client)};
+    
+    repeat{
+      sio_term(_,T) ->> 
+        dxWrite(T,out)
+    } until sio_end;
+    
+    fclose(out);
+    fclose(inp);
+  };
+} export (dxConnect);

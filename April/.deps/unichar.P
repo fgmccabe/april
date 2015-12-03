@@ -1,0 +1,42 @@
+unichar.lo unichar.o : ../config.h ../Headers/ioP.h ../Headers/io.h \
+  ../Headers/retcode.h ../Headers/integer.h ../Headers/number.h \
+  ../Headers/logical.h ../Headers/unicode.h ../Headers/formio.h \
+  ../Headers/io.h ../Headers/iostr.h ../Headers/ioTcp.h \
+  /usr/include/stdarg.h /usr/include/va-ppc.h /usr/include/sys/time.h \
+  /usr/include/sys/types.h /usr/include/sys/cdefs.h \
+  /usr/include/machine/types.h /usr/include/ppc/types.h \
+  /usr/include/machine/ansi.h /usr/include/ppc/ansi.h \
+  /usr/include/machine/endian.h /usr/include/ppc/endian.h \
+  /usr/include/time.h /usr/include/machine/limits.h \
+  /usr/include/ppc/limits.h /usr/include/assert.h /usr/include/stdlib.h \
+  unichar.h 
+unichar.o :
+../config.h :
+../Headers/ioP.h :
+../Headers/io.h :
+../Headers/retcode.h :
+../Headers/integer.h :
+../Headers/number.h :
+../Headers/logical.h :
+../Headers/unicode.h :
+../Headers/formio.h :
+../Headers/io.h :
+../Headers/iostr.h :
+../Headers/ioTcp.h :
+/usr/include/stdarg.h :
+/usr/include/va-ppc.h :
+/usr/include/sys/time.h :
+/usr/include/sys/types.h :
+/usr/include/sys/cdefs.h :
+/usr/include/machine/types.h :
+/usr/include/ppc/types.h :
+/usr/include/machine/ansi.h :
+/usr/include/ppc/ansi.h :
+/usr/include/machine/endian.h :
+/usr/include/ppc/endian.h :
+/usr/include/time.h :
+/usr/include/machine/limits.h :
+/usr/include/ppc/limits.h :
+/usr/include/assert.h :
+/usr/include/stdlib.h :
+unichar.h :

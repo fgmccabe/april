@@ -1,0 +1,519 @@
+@node Environment
+@chapter @code{April} environment primitives
+@cindex @code{April} environment primitives
+
+@noindent
+These primitives access @code{April}'s environment -- they include
+primitives to access the current `wall clock' time, to invoke Unix
+programs and to interact with the Unix environment that the @code{April}
+program is embedded within.
+
+@menu
+* Date and time::               Access to the `wall clock'.
+* Hostnames and host addresses::  
+* Program control::             Access to the program's call args etc.
+@end menu
+
+
+@node Date and time
+@section Date and Time
+@cindex Date and Time
+
+@noindent
+Time in @code{April} is kept in @emph{seconds} since the @code{April}
+epoch; which is defined as 00:00:00 UTC@footnote{UTC used to be known as
+Greenwich Mean Time (GMT).}, 1st of January 1970 -- i.e.,
+otherwise known as UNIX epoch. The time by the standard @code{April}
+function @code{now} (@pxref{now}) is returned as a possibly fractional
+number -- allowing sub-second precision in time calculations. However,
+the real accuracy depends on the underlying operating system -- under
+Sun Solaris and Linux, this is at least millisecond accuracy.
+
+@menu
+* date type::                   
+* today::                       Today's date
+* now::                         The time now
+* timetodate::                  Convert time value to local date format
+* timetogmt::                   Convert time value to UTC date
+* datetotime::                  Convert date value to time value
+* ticks::                       Number of milliseconds since @code{April} started
+* secs::                        Convert seconds into numbers
+* mins::                        Convert minutes into numbers
+* hours::                       Convert hours into numbers
+* days::                        Convert days into numbers
+@end menu
+
+@node date type
+@subsection Standard @code{date} type
+@cindex @code{date} type
+@findex date @r{type}
+
+@noindent
+@code{April} uses a standard type -- called @code{date} -- for some of
+its date and time functions. A @code{date} encapsulates the key features
+of a date -- the year, month, day and time.
+
+The declaration of @code{date} is:
+@smallexample
+date ::= date(number?year,
+               number?month,
+               number?day,
+               number?dow,
+               number?hour,
+               number?min,
+               number?sec);
+@end smallexample
+
+@noindent
+Note that not all of the fields may be used by all date/time functions.
+
+The fields of this record are specified as:
+@table @code
+@item year
+The number of years since the Christian Era.
+@item month
+The number of the month, with January counted as 1, and December counted as 12.
+@item day
+The day of the month, from 1 through 31.
+@item dow
+The day of the week, with Sunday counting at 1, and Saturday counted as 7.
+@item hour
+The hour of the time, with 0 being 12 Midnight.
+@item min
+The minutes of the hour, from 0 to 59
+@item sec
+The number of seconds in the minute, in the range [0,60). This is a possible
+@emph{fractional} number, when the time is not an even number of seconds.
+@end table
+
+@node today
+@subsection Report today's date
+@cindex Report today's date
+@findex @code{today} @r{function}
+
+@noindent
+Function template:
+@smallexample
+today() => number
+@end smallexample
+
+@noindent
+This function returns the @code{April} time at midnight today.  This
+function allows for timezone differences.
+
+@node now
+@subsection Report current time
+@cindex Report current time
+@findex now @r{function}
+
+@noindent
+Function template:
+@smallexample
+now() => number
+@end smallexample
+
+@noindent
+This function returns the @code{April} time at the time of call. The
+returned value is generally a fractional number -- the fractional part
+denoting portions of a second. The accuracy of the returned value
+depends on the underlying system clock, but is typically accurate to the
+nearest millisecond.
+
+@node timetodate
+@subsection Convert raw time into a date value
+@cindex Convert raw time into a date value
+@findex timetodate @r{function}
+
+@noindent
+Function template:
+@smallexample
+timetodate(number?@var{When}) => date
+@end smallexample
+
+@noindent
+This function converts a raw time value, as returned by
+@code{now} (@pxref{now}), into a @code{date} value; giving the date in a more
+convenient form.
+
+The @code{date} value returned in relative to the local time zone. 
+
+@node timetogmt
+@subsection Convert raw time into a UTC date.
+@cindex Convert raw time into a date record
+@findex timetogmt @r{function}
+
+@noindent
+Function template:
+@smallexample
+timetogmt(number?@var{when}) => date
+@end smallexample
+
+@noindent
+This function converts a raw time value, as returned by
+@code{now} (@pxref{now}), into a @code{date} value giving the date in a more
+convenient form. The returned record gives the year -- as a number
+starting from 1900 --, the month -- as a number from 1 to 12, the day
+in the month -- as a number from 1 to 31, the time in hours, minutes and
+seconds.
+
+The date returned is relative to universal time, or UTC time. Thus, a
+value calculated using @code{timetogmt} will have the same value at the
+same moment in time, all over the world.
+
+@node datetotime
+@subsection Convert a date record into a raw time
+@cindex Convert a date record into a raw time
+@findex datetotime @r{function}
+
+@noindent
+Function template:
+@smallexample
+datetotime(date?@var{When})=>number
+@end smallexample
+
+@noindent
+This function converts a @code{date} record into a raw time -- i.e.,
+a @code{number} value, as returned by @code{now} (@pxref{now}). The
+input record is interpreted in the normal way: the year field is a number
+starting from 1900, the month field is a number from 1 to 12, the day
+field is a number from 1 to 31, and the time fields specify the hours,
+minutes and seconds of the moment in time. Note that the @code{dow}
+field is ignored in this computation.
+
+@node ticks
+@subsection Report system clock
+@cindex Report system clock
+@findex @code{ticks} @r{function}
+
+
+@noindent
+Function template:
+@smallexample
+ticks() => number
+@end smallexample
+
+@noindent
+This function returns the number of milliseconds passed since the program
+was started. This clock wraps around after approximately one week.
+
+@node secs
+@subsection Number of seconds
+@cindex Number of seconds
+@findex @code{secs} @r{function}
+
+@noindent
+Function template:
+@smallexample
+number?@var{N} secs => number
+@end smallexample
+
+@noindent
+This is a relative time function that converts a number of seconds
+@var{N} into a number.  e.g.
+@smallexample
+delay(35 secs);
+@end smallexample
+
+@noindent
+will cause the process to sleep for 35 seconds.
+
+@node mins
+@subsection Convert minutes to time values
+@cindex Convert minutes to time values
+@cindex Number of minutes
+@findex @code{mins} @r{function}
+
+@noindent
+Function template:
+@smallexample
+number?@var{N} mins => number
+@end smallexample
+
+@noindent
+This function returns the relative time value corresponding to @var{N}
+minutes. The underlying numerical value is expressed in seconds; so this
+function effectively computes the expression:
+@ifinfo
+60 * @var{N}
+@end ifinfo
+@tex
+$60\times N$
+@end tex
+@refill
+
+@node hours
+@subsection Convert hours to time values
+@cindex Convert hours to time values
+@cindex Number of hours
+@findex @code{hours} @r{function}
+
+@noindent
+Function template:
+@smallexample
+number?@var{N} hours => number
+@end smallexample
+
+@noindent
+This function returns the numeric value -- in seconds -- corresponding
+to @var{N} hours. The underlying numerical value is expressed in
+seconds; so this function effectively computes the expression:
+@ifinfo
+3600 * @var{N}
+@end ifinfo
+@tex
+$3600\times N$
+@end tex
+@refill
+
+@node days
+@subsection Convert days to time values
+@cindex Convert days to time values
+@cindex Number of days
+@findex @code{days} @r{function}
+
+@noindent
+Function template:
+@smallexample
+number?@var{N} days => number
+@end smallexample
+
+@noindent
+This function returns the number of seconds corresponding to @var{N}
+days. This function effectively computes the expression:
+@ifinfo
+86400 * @var{N}
+@end ifinfo
+@tex
+$86400\times N$
+@end tex
+@refill
+
+The various time expressions may be mixed as in
+@smallexample
+interval := 2 days + 5 hours + 30 mins;
+@end smallexample
+
+@node Hostnames and host addresses
+@section Hostnames and host addresses
+@cindex Hostnames and host addresses
+
+@noindent
+These functions give access to the Internet's DNS nameserver systems --
+for determining the IP address of a host machine and the host name
+associated with a particular IP address.
+
+Note that in certain situations, using the DNS nameserver network may
+not be totally secure: in particular mapping a host name to its IP
+address may not be secure.
+
+@menu
+* iptohost::                    Compute host name from IP address
+* hosttoip::                    Compute IP address from host name
+@end menu
+
+@node iptohost
+@subsection Compute host name from IP address
+@cindex Compute host name from IP address
+@findex iptohost @r{function}
+
+@noindent
+Function template:
+@smallexample
+iptohost(string?@var{ip})=>string
+@end smallexample
+
+@noindent
+The @code{iptohost} function returns the `canonical' host name
+associated with a particular IP address. The IP address is given as a
+string, in standard Internet quartet form.
+
+Note that there may be additional host names associated with a given IP
+address, and that the returned value may not always be stable -- in the
+situation where multiple hosts share a common IP address for example.
+
+@node hosttoip
+@subsection Compute IP addresses associated with a host name
+@cindex Compute IP addresses associated with a host name
+@findex hosttoip @r{function}
+
+@noindent
+Function template:
+@smallexample
+hosttoip(string?@var{host})=>string[]
+@end smallexample
+
+@noindent
+The @code{hosttoip} function returns a list of IP addresses that are
+associated with a given hostname. A list is returned because a given
+computer may have several connections to the network, and each has a
+separate IP address.
+
+@node Program control
+@section Program Control
+@cindex Program Control
+
+@menu
+* command_line::                Return invoking command line
+* setenv::                      Set O/S environment variable
+* getenv::                      Get O/S environment variable
+* envir::                       Return all environment variables
+* shell::                       Execute other program
+* exec::                        Fork other program
+@end menu
+
+@node command_line
+@subsection Command line arguments
+@cindex Command line arguments
+@findex @code{command_line} @r{function}
+
+@noindent
+Function template:
+@smallexample
+command_line() => string[]
+@end smallexample
+
+@noindent
+This function returns the command line arguments as passed to the
+@code{April} application @var{without any of the option flags}.
+
+The result is a list of strings; generally, elements of this list must
+be via type coercion expressions (@pxref{type coercion}).
+
+@emph{Note:}
+@quotation
+This function does @var{not} convert any of the arguments into
+lists or tuples. For example, the @code{April} invocation:
+@smallexample
+% april foo "(gamma,2)"
+@end smallexample
+
+@noindent
+would result in a returned value of @code{command_line()} of:
+@smallexample
+["foo", "(gamma,2)" ]
+@end smallexample
+
+@noindent
+In order to interpret the second element of this list as an @code{April}
+tuple, use a string pattern such as:
+
+@smallexample
+(symbol,number)[]%%X .= "(gamma,2)"
+@end smallexample
+@end quotation
+
+@emph{Hint:}
+@quotation
+The @code{April} compiler and run-time system arrange for the first
+@var{n} arguments on the command line to be coerced into the appropriate
+type for the call to the program's @code{main} procedure. Where the
+arguments to a program are fixed, it should not be necessary to use
+either the @code{command_line} function to access the arguments suplied
+by the user.
+@end quotation
+
+@node setenv
+@subsection Set Unix environment variable
+@cindex Set Unix environment variable
+@findex @code{setenv} @r{procedure}
+
+@noindent
+Procedure template:
+@smallexample
+setenv(string?@var{var},string?@var{value})@{@}
+@end smallexample
+
+@noindent
+Sets the Unix environment variable @var{var} to @var{value}. Note that
+the environment variable is @emph{not} exported to the calling shell.
+
+@node getenv
+@subsection Get environment variable
+@cindex Get environment variable
+@findex @code{getenv} @r{function}
+
+@noindent
+Function template:
+@smallexample
+getenv(string?@var{var}) => string
+@end smallexample
+
+@noindent
+This function returns the value of the environment variable @var{var}.
+
+If the environment variable is not defined, then an error exception is raised:
+@itemize @bullet
+@item
+@code{"environment variable not defined"}
+@end itemize
+
+@node envir
+@subsection Report environment variables
+@cindex Report environment variables
+@findex @code{envir} @r{function}
+
+@noindent
+Function template:
+@smallexample
+envir() => (string,string)[]
+@end smallexample
+
+@noindent
+Report current environment variables into a list whose elements are
+tuples of the form (variable,value).
+
+@node shell
+@subsection Invoke Unix shell command
+@cindex Invoke Unix shell
+@findex @code{shell} @r{function}
+
+@noindent
+Function template:
+@smallexample
+shell(string?@var{cmd},string[]?@var{args},string[]?@var{env}) => number
+@end smallexample
+
+@noindent
+Execute @var{cmd} with argument and environment lists @var{argv} and
+@var{envp}. @var{argv} must be a list of strings representing the
+arguments to the command. @var{envp} should be a list of strings whose
+elements are of the form "variable=value", defining the environment for
+the command execution.
+
+The @code{shell} function waits for the shell termination before
+returning a value.  The returned value is the return code returned by
+the executed command.
+
+@node exec
+@subsection Execute a Unix sub-process
+@cindex Execute a Unix sub-process
+@findex @code{exec} @r{function}
+
+@noindent
+Function template:
+@smallexample
+exec(string?@var{path},string[]?@var{argv},string[]?@var{envp})@{@}
+@end smallexample
+
+@noindent
+Fork a Unix command specified by @var{path}, with argument and
+environment lists @var{argv} and @var{envp}. @var{argv} must be a
+list of strings representing the arguments to the command.
+@var{envp} should be a list of strings whose elements
+are of the form "variable=value", defining the environment for the
+file execution.
+
+There are several differences between this procedure and the
+@code{shell} function:
+@itemize @bullet
+@item
+The command is executed in parallel with the @code{April} system.
+
+@item
+It is possible to bind the environment variables of the
+sub-process.
+
+@item
+It is somewhat clumsier to use.
+@end itemize
+

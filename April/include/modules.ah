@@ -1,0 +1,152 @@
+/*
+ * Module handling macros 
+ */
+
+
+/* Implement access to `native' code */
+#macro _native_(?F,?I,?L,?W) ==> {#_nodebug_ valof{
+  ##lib = __dll_load_(__mergeURL(W,F),_type_signature_({#tuple(_strip_names(I))}));
+  valis {#tuple(_access_funs(I,##lib,0))}}
+};
+#macro _listify(?A) ==> [A];
+#macro _listify(tuple?A) ==> {#list(A)};
+#macro _listify({?A;?B}) ==> [A,.._listify(B)];
+
+#macro _access_funs([],_,_) ==> [];
+#macro _access_funs([(`(?))(?P,?name),..?L],?lib,?off) ==>
+   [_access_fun(P,name,lib,off),.._access_funs(L,lib,off+1)];
+
+#macro _access_fun(?V - ?T,?name,?lib,?off) ==>
+  _access_fun(T,name,lib,off);
+#macro _access_fun((?P => ?R),?name,?lib,?off) ==> 
+  name=_construct_fun(_ptn_args_(_listify(P),[],[]),R,lib,off);
+#macro _access_fun((?A){},?name,?lib,?off) ==> 
+  name=_construct_proc(_ptn_args_([A],[],[]),lib,off);
+#macro _access_fun((?A1,?A2){},?name,?lib,?off) ==> 
+  name=_construct_proc(_ptn_args_([A1,A2],[],[]),lib,off);
+#macro _access_fun((?A1,?A2,?A3){},?name,?lib,?off) ==> 
+  name=_construct_proc(_ptn_args_([A1,A2,A3],[],[]),lib,off);
+#macro _access_fun((?A1,?A2,?A3,?A4){},?name,?lib,?off) ==> 
+  name=_construct_proc(_ptn_args_([A1,A2,A3,A4],[],[]),lib,off);
+#macro _access_fun((?A1,?A2,?A3,?A4,?A5){},?name,?lib,?off) ==> 
+  name=_construct_proc(_ptn_args_([A1,A2,A3,A4,A5],[],[]),lib,off);
+#macro _access_fun((?A1,?A2,?A3,?A4,?A5,?A6){},?name,?lib,?off) ==> 
+  name=_construct_proc(_ptn_args_([A1,A2,A3,A4,A5,A6],[],[]),lib,off);
+#macro _access_fun((?A1,?A2,?A3,?A4,?A5,?A6,?A7){},?name,?lib,?off) ==> 
+  name=_construct_proc(_ptn_args_([A1,A2,A3,A4,A5,A6,A7],[],[]),lib,off);
+#macro _access_fun((?A1,?A2,?A3,?A4,?A5,?A6,?A7,?A8){},?name,?lib,?off) ==> 
+  name=_construct_proc(_ptn_args_([A1,A2,A3,A4,A5,A6,A7,A8],[],[]),lib,off);
+#macro _access_fun((?A1,?A2,?A3,?A4,?A5,?A6,?A7,?A8,?A9){},?name,?lib,?off) ==> 
+  name=_construct_proc(_ptn_args_([A1,A2,A3,A4,A5,A6,A7,A8,A9],[],[]),lib,off);
+#macro _access_fun((?A1,?A2,?A3,?A4,?A5,?A6,?A7,?A8,?A9,?A10){},?name,?lib,?off) ==> 
+  name=_construct_proc(_ptn_args_([A1,A2,A3,A4,A5,A6,A7,A8,A9,A10],[],[]),lib,off);
+#macro _access_fun((?A1,?A2,?A3,?A4,?A5,?A6,?A7,?A8,?A9,?A10,?A11){},?name,?lib,?off) ==> 
+  name=_construct_proc(_ptn_args_([A1,A2,A3,A4,A5,A6,A7,A8,A9,A10,A11],[],[]),lib,off);
+#macro _access_fun((?A1,?A2,?A3,?A4,?A5,?A6,?A7,?A8,?A9,?A10,?A11,?A12){},?name,?lib,?off) ==> 
+  name=_construct_proc(_ptn_args_([A1,A2,A3,A4,A5,A6,A7,A8,A9,A10,A11,A12],[],[]),lib,off);
+#macro _access_fun((?A1,?A2,?A3,?A4,?A5,?A6,?A7,?A8,?A9,?A10,?A11,?A12,?A13){},?name,?lib,?off) ==> 
+  name=_construct_proc(_ptn_args_([A1,A2,A3,A4,A5,A6,A7,A8,A9,A10,A11,A12,A13],[],[]),lib,off);
+#macro _access_fun((?A1,?A2,?A3,?A4,?A5,?A6,?A7,?A8,?A9,?A10,?A11,?A12,?A13,?A14){},?name,?lib,?off) ==> 
+  name=_construct_proc(_ptn_args_([A1,A2,A3,A4,A5,A6,A7,A8,A9,A10,A11,A12,A13,A14],[],[]),lib,off);
+#macro _access_fun((?A1,?A2,?A3,?A4,?A5,?A6,?A7,?A8,?A9,?A10,?A11,?A12,?A13,?A14,?A15){},?name,?lib,?off) ==> 
+  name=_construct_proc(_ptn_args_([A1,A2,A3,A4,A5,A6,A7,A8,A9,A10,A11,A12,A13,A14,A15],[],[]),lib,off);
+#macro _access_fun((?A1,?A2,?A3,?A4,?A5,?A6,?A7,?A8,?A9,?A10,?A11,?A12,?A13,?A14,?A15,?A16){},?name,?lib,?off) ==> 
+  name=_construct_proc(_ptn_args_([A1,A2,A3,A4,A5,A6,A7,A8,A9,A10,A11,A12,A13,A14,A15,A16],[],[]),lib,off);
+
+
+#macro _strip_names([])==>[];
+#macro _strip_names([(`(?))(?P,?name),.. ?L])==>[P,.. _strip_names(L)];
+
+#macro _ptn_args_([],?R,?A)==>(_reverse_(R,[]),_reverse_(A,[]));
+#macro _ptn_args_([?T,..?L],?R,?A)==>_ptn_args_(L,[T? ##X,..R],[##X,..A]);
+
+#macro _construct_fun((?Ptn,?Args),?Tpe,?Lib,?Off)==>
+   {Ptn=>Tpe%% __dll_fcall_(Lib,Off,Args)};
+
+#macro _construct_proc((?Ptn,?Args),?Lib,?off)==>
+   {Ptn-> __dll_pcall_(Lib,off,Args)};
+
+#macro _reverse_([],?R) ==> {#tuple(R)};
+#macro _reverse_([?E,..?L],?R)==>_reverse_(L,[E,..R]);
+
+#macro _loader_(?F,?I,?L,?W) ==> {#_nodebug_ valof {
+  any(_importize_(I)?Pr) = L(__mergeURL(W,F));
+  valis Pr;
+}};
+
+#macro _imprts_(?I,?L,?W,?B) ==> _import_(I,L,W).B;
+#macro _imprts_(?I and ?J,?L,?W,?B) ==> _import_(I,L,W)._imprts_(J,L,W,B);
+
+#macro _import_(?I from ?F,?L,?W) ==> _loader_({#file(F)},I,L,W);
+-- #macro _import_(interface ?F,?L,?W) ==> _import_({#include F},L,__mergeURL(W,{#file(F)}));
+
+#macro _import_(interface ?F,?L,?W) ==> _import_({#include F},L,W) # 
+{
+  #macro _import_(?II from ?FF,?LL,?WW) ==> _loader_(__mergeURL({#file(F)},{#file(FF)}),II,LL,WW);
+};
+
+#macro _import_(native ?I from ?F,?L,?W) ==> _native_({#file(F)},_listify(I),L,W);
+
+#macro {module ?B . ?E} ==>
+  { (_,_) => any(_thetaize_(B).E) };
+#macro {module import ?I in ?B . ?E} ==> 
+  { (##L,##W) => any(_imprts_(I,##L,##W,_thetaize_(B).E)) };
+#macro {module import ?I where ?B . ?E} ==> 
+  { (##L,##W) => any(_imprts_(I,##L,##W,_thetaize_(B).E)) };
+#macro {_module ?B . ?E} ==> 
+  { (_,_) => any(_thetaize_{B}.E) };
+
+#macro {program ?B execute ?E} ==> 
+ { (##L,##W) => _imprts_(interface {<stdio.af>},##L,##W,any(_thetaize_(B).E)) };
+#macro {program import ?I where ?B execute ?E} ==> 
+ { (##L,##W) => _imprts_(interface {<stdio.af>} and I,##L,##W,any(_thetaize_(B).E))};
+#macro {program import ?I in ?B execute ?E} ==> 
+ { (##L,##W) => _imprts_(interface {<stdio.af>} and I,##L,##W,any(_thetaize_(B).E))};
+ 
+#op('_program,prefix,890);
+
+#macro {_program ?B execute ?E} ==> 
+ { (_,_) => any(_thetaize_(B).E)};
+#macro {_program import ?I in ?B execute ?E} ==> 
+ { (##L,##W) => _imprts_(I,##L,##W,any(_thetaize_(B).E))};
+
+#macro ?Obj export ?Flds ==> Obj. _exportize_(Flds);
+#macro ?Obj export interface ?F ==> Obj. {_dequery({#include F}) #
+  {
+    #macro _dequery(?I from _) ==> { #tuple(_shuffle(I) # {
+      #macro _shuffle((`(?))(_,?N)) ==> [N=N];
+      #macro _shuffle(tuple?A) ==> _shuffle({#list(A)});
+      #macro _shuffle([]) ==> [];
+      #macro _shuffle([(`(?))(_,?N) ,..?R]) ==> [N=N,.._shuffle(R)];
+    })}
+  }};
+
+#macro _thetaize_(?B) ==> {_theta_body(B);};
+
+#macro _theta_body(?F) ==> F;
+/* Convert old-style procedures and functions to new-style ones */
+#macro _theta_body({{symbol?P}@{?A}}{?B}) ==> P={A->B};
+
+#macro _theta_body(({{symbol?F~ '::}@{?A}}=>{?B})) ==> F={A=>B};
+#macro _theta_body(?A= ?B) ==> A=B;
+#macro _theta_body(?A: ?B) ==> A:B;
+#macro _theta_body({?P;?Q}) ==> {_theta_body(P);_theta_body(Q)};
+#macro _theta_body({?P;}) ==> _theta_body(P);
+
+#macro _exportize_(?B) ==> {#tuple{_xptize(B) # {
+  #macro _xptize(tuple?A) ==> _xptize({#list(A)});
+  #macro _xptize([])==>[];
+  #macro _xptize([?A,..?B])==>[A,.._xptize(B)];
+  #macro _xptize([symbol?A,..?B])==>[A=A,.._xptize(B)];
+  #macro _xptize(symbol?A)==>[A=A];
+}}};
+
+#macro _importize_(?B) ==> {#tuple{_imptize(B) # {
+  #macro _imptize(?A) ==> _imptize([A]);
+  #macro _imptize(tuple?A) ==> _imptize({#list(A)});
+  #macro _imptize([])==>[];
+  #macro _imptize([?A,..?B])==>[A,.._imptize(B)];
+  #macro _imptize(symbol?A)==>[A];
+}}};
+
+

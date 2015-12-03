@@ -1,0 +1,19 @@
+program
+{
+  split(str) => valof{
+    uri : str;
+    pref : "";
+    
+    while L++(M in [":","#","/"])++R.=uri do{
+      pref := pref++L++M;
+      uri := R;
+    };
+    
+    valis (pref,uri)
+  };
+  
+  main(S)
+  {
+    split(S)^0++"\n">>stdout
+  }
+} execute main;

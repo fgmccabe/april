@@ -1,0 +1,40 @@
+/* This example demonstrates mobile code
+   Set up some bases -- typically 
+	april base left right
+	april base right left
+
+   Then run the ball:
+	april ball left
+
+   Ball sends a program to left which then moves continuously
+   between the left and right bases.
+   S. Ushijima
+*/
+
+#include "baseball.ah";
+
+program import interface <scomms.af> in
+{
+  base(next_base) {
+    "base: "++self()^1++"\n">>stdout;
+    repeat {
+      doTask(prog) ->> {
+        _ := spawn{ prog(stdout)
+          onerror{
+            X -> "We have a problem: "++X^3++"\n">>stdout
+          }
+        }
+      }
+    | hello ->> {
+        "Welcome: "++replyto^1++"\n">>stdout;
+
+        migrate(next_base) >> replyto;
+      }
+    | O ->> "Other message "++O^0++"\n">>stdout
+    } until quit;
+  };
+
+  main(name,next) {
+    scsConnectAs((()->base(hdl('base,next))),hdl('base,name),"localhost",4545);
+  }
+} execute main;

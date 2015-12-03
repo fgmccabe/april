@@ -1,0 +1,14 @@
+@node Taxis and passengers
+@chapter Taxis and passengers
+@cindex Taxis and passengers
+
+@noindent
+The taxis and passengers scenario represents an environment in which
+agents must compete with each other and at the same time collaborate. A
+set of @code{taxi} agents and @code{passenger} agents share a
+geographical @code{region} in which they operate. As their names
+suggest, a @code{taxi} agent is able to move @code{passenger} agents
+from one @code{node} in the @code{region} to another. In this scenario
+we explore how to build the various agents and how to express their
+individual goals.
+

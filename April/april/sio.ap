@@ -1,0 +1,36 @@
+/*
+ * Stream oriented file handling module
+ */
+
+#include "files.ah";
+
+module {
+  sio_open(file,mode,style,cl) => valof {
+    h = file_manager();
+    _s_open_(file,mode,style,cl) >> h;
+    receive{
+      handle?fl :: replyto == h  ->> valis fl
+    | error(code,call) :: replyto == h  ->> exception error(code,call)
+    }
+  };
+
+  sio_connect(host,port,style,cl) => valof {
+    h = file_manager();
+    _s_connect_(host,port,style,cl) >> h;
+    receive{
+      _connection_(inp,out)::replyto == h  ->> valis (inp,out)
+    | error(code,call) :: replyto==h  ->> exception error(code,call)
+    }
+  };
+
+  sio_server(port,proc,style) => valof {
+    h = file_manager();
+    _s_server_(port,proc,style) >> h;
+    receive{
+      _new_server_(fl) :: replyto ==  h  ->> valis fl
+    | error(code,call) :: replyto ==  h  ->> exception error(code,call)
+    }
+  };
+
+} export (sio_open,sio_connect,sio_server);
+

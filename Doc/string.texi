@@ -1,0 +1,664 @@
+@node String handling
+@chapter String and Character Handling
+@cindex String and Character handling
+
+@noindent
+
+A @code{string} is a list of @code{char} values.
+
+@code{April} supports strings in two main ways -- by providing a suite
+of string manipulation functions such as substring and string append --
+and by a set of string patterns (@pxref{String patterns}) which allow
+strings to be parsed as part of a match statement or expression.
+
+@menu
+* Basic string functions::      
+* Character handling::
+* String formatting::           Make strings from numbers and other values
+* Accessing elements of strings::  
+* Basic symbol processing::     
+@end menu
+
+@node Basic string functions
+@section Basic string functions
+@cindex Basic string functions
+
+@noindent
+The following functions are basic operations on strings. They form a
+simple `spanning set' of operations on strings, allowing them to be
+dismantled as well as being constructed from smaller pieces.
+
+@menu
+* strlen::                      The length of a string
+* string character prepend::    
+* concatenate strings::         Join strings together
+* expand::                      Analyse a string into components
+* collapse::                    Collapse a list of strings into one string
+@end menu
+
+@node strlen
+@subsection Length of a string
+@cindex Length of a string
+@findex @code{strlen} @r{function}
+
+@noindent
+Function template:
+@smallexample
+strlen(string?@var{S}) => number
+@end smallexample
+
+@noindent
+This function returns the length of the string @var{S}.
+
+@node string character prepend
+@subsection String character prepend
+@cindex prepending characters to strings
+@findex ,+
+
+@noindent
+Function template:
+@smallexample
+symbol?@var{sym},+string?@var{str} => string
+@end smallexample
+
+@noindent
+The @code{,+} function returns a @code{string} formed by prepending the
+character -- which is a @code{symbol} -- onto the front of
+@code{str}.@footnote{This feature is not
+yet finalized.} Note that @code{,+} also may act as a matching operator in
+patterns -- @xref{Character matching}.
+
+@node concatenate strings
+@subsection Concatenate strings
+@cindex Join strings together
+@findex ++
+@cindex concatenate strings
+
+@noindent
+Function template:
+@smallexample
+string?@var{str1} ++ string?@var{str2} => string
+@end smallexample
+
+@noindent
+The @code{++} function returns the string formed by concatenating
+@var{str1} and @var{str2} together. Note that @code{++} also acts as a
+special string matching operator in patterns -- @xref{String partitioning}.
+
+@node expand
+@subsection Split a string into segments
+@cindex Split a string into related segments
+@findex @code{expand} @r{function}
+
+@noindent
+Function template:
+@smallexample
+expand(string?@var{Str},string?@var{Key}) => string[]
+@end smallexample
+
+@noindent
+This function is used to analyse a string into components. The @var{Str}
+is searched for occurrences of characters from @var{Key}. The returned
+value is a list of strings, each element consisting of a segment from
+the @var{Str} between points where a character from @var{Key} occurs.
+
+For example, the value of:
+
+@smallexample
+expand("peter@@lg.doc.ic.ac",".@@")
+@end smallexample
+
+@noindent
+is the list:
+
+@smallexample
+["peter","lg","doc","ic","ac"]
+@end smallexample
+
+@emph{Hint:}
+@quotation
+This function can be used to construct a simple tokenizer. For
+example, if a token consists of words separated by spaces then the
+expression:
+
+@smallexample
+expand("This is a string of words"," \t\n")
+@end smallexample
+
+@noindent
+would parse the string into the list of words:
+
+@smallexample
+["This", "is", "a", "string", "of", "words"]
+@end smallexample
+@end quotation
+
+@node collapse
+@subsection Collapse list of @code{string}s together
+@cindex Join up lists of strings
+@cindex Collapse string values into single string
+@findex @code{collapse} @r{function}
+
+@noindent
+Function template:
+@smallexample
+collapse(string[]?@var{Words},string?@var{Glue}) => string
+@end smallexample
+
+@noindent
+This function takes a list of strings, and a `glue' string, and
+concatenates them all together into a single string. A copy of the
+string @var{Glue} is inserted between each word in @var{Words} as it is
+copied into the returned string.
+
+@node Character handling
+@section Character handling
+@cindex Character handling
+@cindex Converting and manipulating characters
+
+@menu
+* charOf::                      Compute character associated with code
+* charCode::                    Compute code associated with a character
+@end menu
+
+@node charOf
+@subsection @code{charOf} -- compute character associated with code
+@cindex Compute character from code
+@findex @code{charOf} @r{function}
+
+@noindent
+Function template:
+@smallexample
+charOf(number?@var{Code}) => char
+@end smallexample
+
+@noindent
+The @code{charOf} function returns the character value associated with a given Unicode value.
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"argument should be an integer"}
+@end itemize
+
+@node charCode
+@subsection @code{charCode} -- compute Unicode code associated with character
+@cindex Compute unicode code of character
+@findex @code{charCode} @r{function}
+
+@noindent
+Function template:
+@smallexample
+charCode(char?@var{Ch}) => number
+@end smallexample
+
+@noindent
+The @code{charCode} function returns the Unicode code associated with a character.
+
+
+@node String formatting
+@section String formatting
+@cindex String formatting
+
+@noindent
+The string formatting functions allow the construction of strings from
+other values.  The most important -- but not only -- use for these
+functions is for formatted output.
+
+@menu
+* Formatting values::           String formatting notation
+* strof::                       Convert a value into a string
+* int2str::                     Convert an integer into a string
+* strpad::                      Reformat a string into another string
+* sencode::                     Encode an any value into a string
+* sdecode::                     Decode a string containing an encoded term
+@end menu
+
+@node Formatting values
+@subsection Higher-level notation for formatting values
+@cindex Higher-level notation for formatting values
+
+@noindent
+Function template:
+@smallexample
+@end smallexample
+
+@noindent
+There is a more compact notation which can be used for formatting
+individual values in a @code{string} expression. This is the @code{~^}
+notation. 
+
+@table @code
+@item ~
+An expression of the form:
+
+@smallexample
+@var{Exp} ~ @var{W}
+@end smallexample
+
+@noindent
+means `format the value @var{Exp} as a @code{string} in @var{W}
+characters'. @var{Exp} can be a @code{number} value, a @code{handle}
+value or a @code{string} value.
+
+If the result of formatting @var{Exp} would result in a @code{string}
+that is shorter than @var{W} then the result is padded. If @code{W} is
+positive then the result is left formatted, otehrwise the result is
+right formatted.
+@item ^
+An expression of the form:
+
+@smallexample
+@var{Exp} ^ @var{P}
+@end smallexample
+
+@noindent
+means format @var{Exp} to precision @var{P}. If @var{Exp} is a number then
+this refers to the number of decimal places after the decimal point; if
+@var{Exp} is a @code{string} then it refers to the number of characters
+from @var{Exp} that are displayed; and if @var{Exp} is a @code{handle}
+then it refers to the form of the handle (@pxref{strof} for more precise
+details of the interpretation of the precision).
+
+Note that an expression such as @code{@var{Exp}^0} has some similarities
+to the expression @code{string%%@var{Exp}}. However, there is a subtle
+difference: the former expression is used to `prepare' the expression
+@var{Exp} for display, whereas the type coercion expression `converts'
+the value into a string. One instance where makes a difference is where
+the type of @var{Exp} is already a @code{string}. For example:
+@cindex The difference between @code{^} and @code{string%%}
+@cindex Type coercion to @code{string} compared to string formatting
+
+@smallexample
+"foo"^0
+@end smallexample
+
+@noindent
+compared to:
+
+@smallexample
+string%%"foo"
+@end smallexample
+
+@noindent
+The values returned by these expressions is different. The value of the
+first is:
+
+@smallexample
+"\"foo\""
+@end smallexample
+
+@noindent
+whereas the second expression returns simply @code{"foo"}.
+
+Another classic example of the difference is with lists of single
+character symbols (including the empty list). The value of the
+expression:
+
+@smallexample
+[''a]^0
+@end smallexample
+
+@noindent
+is the string: @code{"[''a]"}, whereas the value of @code{string%%[''a]}
+is: @code{"a"} -- this is because the @code{%%} operator coerces a list
+of single character symbols into a string. Similarly, the value of
+@code{[]^0} is @code{"[]"}, whereas the value of @code{string%%[]} is
+simply @code{""}.
+
+
+@item ^~
+The @code{~} and @code{^} operators can be combined, as in:
+
+@smallexample
+@var{Exp} ~10 ^3
+@end smallexample
+
+@noindent
+which means display @var{Exp} to precision @code{3} in a field of
+@code{10} characters.
+
+It is also permissable to use these operators as a @code{^~} pair:
+
+@smallexample
+@var{Exp} ^3 ~10
+@end smallexample
+
+@noindent
+which has the same meaning as above.
+@end table
+
+@node strof
+@subsection Format value into @code{string}
+@cindex Format value into @code{string}
+@findex strof
+
+@noindent
+Function template:
+@smallexample
+strof(%t?@var{X},number?@var{precision},number?@var{width})=>string
+@end smallexample
+
+@noindent
+The @code{strof} function formats any @code{April} value into a
+@code{string}.
+
+It is intended to be used with the higher-level @code{~^} string
+formatting notation.
+
+The various cases are:
+
+@table @code
+@item number
+In the case of an integer value, the precision field is ignored. The
+@code{integer} is displayed as a decimal string. If the number is
+negative then a @code{-} character is prepended to the string.
+
+In the case of a fractional value, the precision field denotes the
+number of significant digits to the right of the decimal place that are
+displayed. A precision of 0 means that all the significant digits will
+be displayed.
+
+@item string
+In the case of a @code{string} value, the @var{precision} denotes the number
+of characters from the @var{X} value that will be displayed. If the
+@var{precision} is negative then it refers to the @emph{end} of the
+string; i.e., the last @var{precision} characters will be
+used. Otherwise the first @var{precision} characters from the
+@code{string} value @var{X} will be used. 
+
+A precision of 0 means that all characters in @var{X} will be used.
+
+@item handle
+In the case of a @code{handle} value, the @var{precision} refers to how
+much of the @code{handle} is displayed. 
+
+A precision of 0 means that all of the @code{handle} -- including the
+location address list -- will be displayed. This is the full form of the
+@code{handle}.
+
+A precision of 1 means that only the target and name will be displayed.
+
+A precision of 2 means that the location address field will @emph{not}
+be displayed, but the target, name and home will be displayed.
+
+@item any
+All other cases are displayed using a minimal default form. The @var{precision}
+controls the `depth' that values are formatted. For example, if a precision
+of 2 is selected, then the value:
+
+@smallexample
+(foo,[bar(10),jar([xx])])
+@end smallexample
+
+@noindent
+is displayed as:
+
+@smallexample
+"(foo,[bar(...),jar(...)])"
+@end smallexample
+
+@noindent
+I.e., the top two levels of the structure are displayed, and other
+values are omitted, shown with ellipsis.
+@end table
+
+@node int2str
+@subsection Format an integer into a @code{string}
+@cindex Format a string from an integer
+@findex int2str @r{function}
+
+@noindent
+Function template:
+@smallexample
+int2str(number?@var{N},number?@var{base},number?@var{width},char?@var{Pad},logical?@var{left})=>string
+@end smallexample
+
+@noindent
+The @code{int2str} function formats an integer value; displaying it in
+@code{base} arithmetic (a base of 16 gives a hexadecimal number, and 10
+formats a regular decimal number).
+
+If @var{left} is true, then the number will left formatted, otherwise it will be right formatted. For a right formatted number, the @var{Pad} will be used to pad characters `out to the left' if the number of characters needed to represent @var{N} is less than @var{width}. If the number is left formatted, then a space character will be used to pad to the right.
+
+Note that if the width parameter is zero, then only exactly enough characters to represent the integer on a string will be used, and both @var{Pad} and @var{left} will be ignored.
+
+@node strpad
+@subsection Re-format a @code{string}
+@cindex Re-format a string
+@findex strpad @r{function}
+
+@noindent
+Function template:
+@smallexample
+strpad(string?@var{X},number?@var{width},string?@var{pad}) => string
+@end smallexample
+
+@noindent
+The @code{strpad} function reformats a @code{string} value into another
+string. The length of the output string is given by @var{width} -- if
+@var{width} is 0 then the output is the same as the input, otherwise it
+specifies the length of the output string.
+
+If the @var{width} is negative, then the output is `right formatted' --
+i.e., if the input is smaller than @code{abs(@var{width})} then the
+input is placed at the right hand end of the output string, otherwise
+if the @var{width} is positive, then the output is left-formatted.
+
+If the input is smaller than the output, then additional characters must
+be generated. These additional characters are obtained from the first
+character of @var{pad} -- generally this will be a space character but
+may be anything.
+
+For example, to right-format a hexadecimal integer @var{K} in 10 places,
+with leading zeroes, use:
+
+@smallexample
+strpad(int2str(@var{K},16),-10,"0")
+@end smallexample
+
+@node sencode
+@subsection Encode a value as a @code{string}
+@cindex encode a value into a string
+@findex sencode @r{function}
+
+@noindent
+Function template:
+@smallexample
+sencode(any?@var{X}) => string
+@end smallexample
+
+@noindent
+The @code{sencode} function reformats an @code{any} value into a string in the `encoded term' format. This is the smae format as used by @code{fencode} and @code{April} for representing compiled programs. Encoded term format can represent any legal @code{April} value -- including programs and closures.
+
+The term encoded form of a term is suitable for storing values in persistent storage and for sending between @code{April} applications.
+
+For example, to encode a list of numbers use:
+
+@smallexample
+sencode(any([1,4,2,6]))
+@end smallexample
+
+@node sdecode
+@subsection Decode an encoded term string 
+@cindex decode n encoded term string
+@findex sdecode @r{function}
+
+@noindent
+Function template:
+@smallexample
+sdecode(string?@var{X}) => any
+@end smallexample
+
+@noindent
+The @code{sdecode} function decodes a string containing an encoded term and returns the decoded value as an @code{any} value.
+
+For example, to decode an encoded term containing a list of numbers use:
+
+@smallexample
+sdecode(sencode(any([1,4,2,6]))) = any([1,4,2,6])
+@end smallexample
+
+
+
+@node Accessing elements of strings
+@section Accessing elements of @code{string}s
+@cindex Accessing elements of @code{string}s
+
+@noindent
+These functions provide a mechanism for accessing characters and bytes
+from @code{string} values
+
+@menu
+* ascii::                       Convert a string into a list of ASCII codes
+* nthascii::                    Extract the nth char from a string
+@end menu
+
+@node ascii
+@subsection Convert a @code{string} into list of ASCII bytes
+@cindex Convert a @code{string} into ASCII list
+@findex @code{ascii} @r{function}
+
+@noindent
+Function template:
+@smallexample
+ascii(string?@var{Sym}) => number[]
+@end smallexample
+
+@noindent
+This function returns a list of integers corresponding to the ASCII
+value of the characters in the string.
+
+@node nthascii
+@subsection Extract ASCII byte from @code{string}
+@cindex Extract nth char from a @code{string} as ASCII
+@findex @code{nthascii} @r{function}
+
+@noindent
+Function template:
+@smallexample
+nthascii(string?@var{Str},number?@var{Nth}) => number
+@end smallexample
+
+@noindent
+This function returns an integer corresponding to the ASCII
+value of the @var{Nth} character in the string.
+
+@node Basic symbol processing
+@section Basic symbol processing
+@cindex Basic symbol processing
+
+@noindent
+@code{April} offers some string matching patterns -- @pxref{String
+patterns} -- however, for many applications this is not powerful
+enough. For example, @code{April}'s string patterns are not powerful
+enough to construct parsers.@footnote{That is, not powerful enough
+without a lot of effort.}
+
+For this reason, @code{April} offers some facilities to convert between
+strings and lists of numbers or lists of symbols. In addition, there are
+also some functions for converting between numbers and single character
+symbols.
+
+@menu
+* explode::                     Convert a symbol into a string
+* implode::                     Convert a string into a symbol
+* Converting from a string to a list of symbols::  
+* Converting from a list of symbols to a string::  
+* Converting a single character symbol to a number::  
+* Converting a number to a single character symbol::  
+@end menu
+
+@node explode
+@subsection @code{explode} a symbol into a @code{string}
+@cindex Convert a symbol into a string
+@findex @code{explode} @r{function}
+
+@noindent
+Function template:
+@smallexample
+explode(symbol?@var{Sym}) => char[]
+@end smallexample
+
+@noindent
+
+The @code{explode} function takes a symbol and returns a @code{string} whose characters consist of the letters that make up the symbol's print name.
+
+@node implode
+@subsection @code{implode} a string into a @code{symbol}
+@cindex Convert a string into a symbol
+@findex @code{implode} @r{function}
+
+@noindent
+Function template:
+@smallexample
+implode(string?@var{Sym}) => symbol
+@end smallexample
+
+@noindent
+
+The @code{implode} function is the inverse of the @code{explode} function; it takes a string and returns a @code{symbol} whose print name is composed of the characters of the string.
+
+@node Converting from a string to a list of symbols
+@subsection Converting from a string to a list of symbols
+@cindex Converting from a string to a list of symbols
+
+@noindent
+The type coercion facility of @code{April} -- @pxref{type coercion} --
+can be used to convert a @code{string} into a list of single character
+symbol:
+
+@smallexample
+SS = symbol[]%%"foo";
+@end smallexample
+
+The list generated in this situation is a list of single glyph
+symbols.@footnote{Normally for ASCII and for Latin character sets a glyph is
+represented by a single byte; but some languages use multi-byte
+sequences to represent a single character or glyph.}
+
+Such a list can be processed using @code{April}'s list processing
+facilities which can easily be used to contruct recursive parser
+programs.
+
+Note that the memory requirements of a list of symbols is significantly
+greater than for a @code{string}. For that reason, this approach is not
+used universally within @code{April}.
+
+@node Converting from a list of symbols to a string
+@subsection Converting from a list of symbols to a string
+@cindex Converting from a list of symbols to a string
+
+@noindent
+
+@node Converting a single character symbol to a number
+@subsection Converting a single character symbol to a number
+@cindex Converting a single character symbol to a number
+
+@noindent
+Function template:
+@smallexample
+sym2ascii(symbol) => number
+@end smallexample
+
+@noindent
+The @code{sym2ascii} function converts the first glyph in a symbol to
+its ascii equivalent. Where a glyph is a multi-byte sequence the number
+returned is the product of all the bytes in the sequence.
+
+
+@node Converting a number to a single character symbol
+@subsection Converting a number to a single character symbol
+@cindex Converting a number to a single character symbol
+
+@noindent
+Function template:
+@smallexample
+ascii2sym(number) => symbol
+@end smallexample
+
+@noindent
+The @code{ascii2sym} function converts a number into a single glyph
+symbol. The numeric argument may represent a multi-byte sequence, in
+which case the resulting symbol may be multi-byte -- although still
+represent a single character.

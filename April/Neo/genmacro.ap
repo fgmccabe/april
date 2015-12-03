@@ -1,0 +1,296 @@
+/*
+ * Program to automatically generate macro functions from a macro specification
+ */
+#include "ap_tok.ah";
+#include "op_tree.ah";
+#include "ops.ah";
+
+program
+  import (interface "opgrammar.af" and
+	  interface "aptok.af" and
+          interface "operators.af" and
+          interface "streamer.af" and
+	  interface "display.af") in
+{
+  macCount : 0;
+  syCount : 0;
+
+  genVarName(X) => valof {
+    syCount +:= 1;
+    valis X++string%%syCount
+  };
+
+  genMacPtn(Ptn,Vars) => { case  Ptn in {
+      IDEN(f,l,"_") => ("_",Vars)
+    | IDEN(_,_,N) => ("IDEN(_,_,"++N^0++")",Vars)
+    | NM(_,_,N) => ("NM(_,_,"++N^0++")",Vars)
+    | ST(_,_,S) => ("ST(_,_,"++S^0++")",Vars)
+    | APPLY(IDEN(_,_,"?"),IDEN(_,_,N)) => valof {
+        if (N,XX) in Vars then
+          valis (XX,Vars)
+        else{
+          XX = "__"++N;
+          valis (XX,[(N,XX),..Vars])
+        }
+      }
+
+    | APPLY(IDEN(_,_,[''.,''/]),PAIR(APPLY(IDEN(_,_,[''?]),IDEN(_,_,N)),R)) =>
+      valof {
+        NN = string%%N;
+        XX = "__"++string%%NN;
+        V1 = [(NN,XX),..Vars];
+
+        (RP,V2) = genMacPtn(R,V1);
+        V4 = genVarName("_inner_");
+
+        valis ("( "++XX++":: "++
+		" subMatch({("++V4++") => "++RP++" .= "++V4++"},"++XX++"))",
+		V2);
+      }
+    | APPLY(IDEN(_,_,[''.,''/]),PAIR(L,R)) => valof {
+        (LP,V1) = genMacPtn(L,Vars);
+        (RP,V2) = genMacPtn(R,V1);
+        V3 = genVarName("_sub_");
+        V4 = genVarName("_inner_");
+
+        valis ("( "++V3++":: "++LP++" .= "++V3++
+		" && subMatch({("++V4++") => "++RP++" .= "++V4++"},"++V3++"))",
+		V2);
+      }
+    | APPLY(L,R) => valof{		-- default case for fun apps
+        (LP,V1) = genMacPtn(L,Vars);
+        (RP,V2) = genMacPtn(R,V1);
+        valis ("APPLY("++LP++","++RP++")",V2)
+      }
+    | PAIR(L,R) => valof{
+        (LP,V1) = genMacPtn(L,Vars);
+        (RP,V2) = genMacPtn(R,V1);
+        valis ("PAIR("++LP++","++RP++")",V2)
+      }
+    | END => ("END",Vars)
+    | VOID => ("VOID",Vars)
+    }
+  };
+
+  locateSubPtn(Mt,Ptn) => valof{
+    valis {case Ptn in {
+      APPLY(IDEN(_,_,[''.,''/]),PAIR(L,R))::instanceOf(Mt,L) => R
+    | APPLY(L,R) => valof{		-- default case for fun apps
+        LP = locateSubPtn(Mt,L);
+        if LP!=VOID then
+          valis LP
+        else
+          valis locateSubPtn(Mt,R);
+      }
+    | PAIR(L,R) => valof{
+        LP = locateSubPtn(Mt,L);
+        if LP!=VOID then
+          valis LP
+        else
+          valis locateSubPtn(Mt,R);
+      }
+    | _ => VOID
+    }
+  }};
+
+  instanceOf(N,APPLY(IDEN(_,_,[''?]),M)) => valof {
+    "Checking "++N^0++" against "++M^0++"\n">>stdout;
+     valis M==N;
+  };
+
+  genMacRep(Rep,Vars,Ptn) => { case  Rep in {
+      IDEN(f,l,N) => valof {
+        NN = string%%N;
+        if (NN,XX) in Vars then
+          valis (XX,Vars)
+        else
+          valis ("IDEN("++f^0++","++l^0++","++N^0++")",Vars)
+      }
+    | NM(f,l,N) => ("NM("++f^0++","++l^0++","++N^0++")",Vars)
+    | ST(f,l,S) => ("ST("++f^0++","++l^0++","++S^0++")",Vars)
+    | APPLY(IDEN(f,l,[''#,''#]),IDEN(_,_,N)) => valof {
+        NN = string%%N;
+        if (NN,XX) in Vars then
+          valis (XX,Vars)
+        else{
+          XX = IDEN(f,l,N<>[''_,''_]<>(string%%macCount))^0;
+          valis (XX,[(NN,XX),..Vars])
+        }
+      }
+
+    | APPLY(IDEN(f,l,[''.,''/]),PAIR(L,R)) => valof {
+        "Looking for "++L^0++" in "++Ptn^0++"\n">>stdout;
+        SubPtn = locateSubPtn(L,Ptn);
+        "Found: "++SubPtn^0++"\n">>stdout;
+        (XX,V1) = genMacRep(L,Vars,Ptn);
+
+        (SPtn,V2) = genMacPtn(SubPtn,V1);
+        (SRep,V3) = genMacRep(R,V2,Ptn);
+
+        valis ("valof {\n"
+        "    sub = {\n"
+        "      macroReplace(Exp) => { case Exp in {\n"
+        "        END => END\n"
+	"      | "++SPtn++" =>\n"++
+        "         macroReplace("++SRep++")\n"
+        "      | PAIR(L,R) => PAIR(macroReplace(L),macroReplace(R))\n"
+        "      | APPLY(L,R) => APPLY(macroReplace(L),macroReplace(R))\n"
+        "      | XX => XX\n"
+        "      }};}.macroReplace;\n"
+        "    valis macroReplace(sub(macroReplace("++XX++")))}\n",V1)
+      }
+
+    | APPLY(IDEN(f,l,[''#]),PAIR(L,R)) => valof {
+        (XX,V1) = genMacRep(L,Vars,Ptn);
+        valis ("valof {\n"
+        "    sub = {\n"
+        "      macroReplace(Exp) => { case Exp in {\n"
+        "        END => END\n"++
+        RelativeMacros(R,Vars)++
+        "      | PAIR(L,R) => PAIR(macroReplace(L),macroReplace(R))\n"
+        "      | APPLY(L,R) => APPLY(macroReplace(L),macroReplace(R))\n"
+        "      | XX => XX\n"
+        "      }};}.macroReplace;\n"
+        "    valis macroReplace(sub(macroReplace("++XX++")))}\n",V1)
+      }
+    | APPLY(L,R) => valof{		-- default case for fun apps
+        (LP,V1) = genMacRep(L,Vars,Ptn);
+        (RP,V2) = genMacRep(R,V1,Ptn);
+        valis ("APPLY("++LP++","++RP++")",V2)
+      }
+    | PAIR(L,R) => valof{
+        (LP,V1) = genMacRep(L,Vars,Ptn);
+        (RP,V2) = genMacRep(R,V1,Ptn);
+        valis ("PAIR("++LP++","++RP++")",V2)
+      }
+    | END => ("END",Vars)
+    | VOID => ("VOID",Vars)
+    }
+  };
+
+  subMatch = "  subMatch(F,E) => {\n"
+"    if F(E) then true\n"
+"    else case E in {\n"
+"      APPLY(L,R) => subMatch(F,L) || subMatch(F,R)\n"
+"    | PAIR(L,R) => subMatch(F,L) || subMatch(F,R)\n"
+"    | _ => false\n"
+"    }\n"
+"  };\n";
+
+
+  RelativeMacros(M,Vars) => {case M in {
+    APPLY(IDEN(_,_,['';]),PAIR(L,R)) => 
+      RelativeMacros(L,Vars)++RelativeMacros(R,Vars)
+  | APPLY(IDEN(_,_,['';]),L) => 
+      RelativeMacros(L,Vars)
+  | APPLY(IDEN(_,_,[''#]),
+     APPLY(IDEN(_,_,[''m,''a,''c,''r,''o]),
+	   APPLY(IDEN(_,_,[''=,''=,''>]),PAIR(P,R)))) => valof {
+	     (Ptn,V) = genMacPtn(P,Vars);
+	     (Rep,V1) = genMacRep(R,V,P);
+	     valis "    | "++Ptn++" =>\n"++
+                   "        macroReplace("++Rep++")\n"
+	   }
+  | X => valof {
+      "Unrecognized relative macro definition: \n" >> stderr;
+      displayStmt(X, 0, 0, stderr, false);
+      valis ""
+    }
+  }};
+
+
+
+  rmDots = {
+    APPLY(IDEN(_,_,[''.]),PAIR(L,R)) => rmDots(L)++"."++rmDots(R)
+  | IDEN(_,_,N) => string%%N
+  };
+
+  locateFile(F,inc) => valof {
+    if ffile(F) then
+      valis F
+    else {
+      for P in inc do {
+	file = P++"/"++F;
+	if ffile(file) then
+	  valis file
+      };
+      valis F
+    };
+  };
+
+  process(f,sys,usr,out){
+    S : streamer(f);
+    while (NS,_,T) .= parse(S) && T!=END do{
+      S := NS;
+      if APPLY(IDEN(_,_,[''#]),O).=T then{
+        case O in {
+	  APPLY(IDEN(_,_,[''o,''p]),
+		 PAIR(APPLY(IDEN(_,_,[''']),IDEN(_,_,op)),
+		       PAIR(IDEN(_,_,mode),
+			     NM(_,_,prior)))) -> {
+            addop(opmode%%(symbol%%(string%%mode++"O")),op,prior)
+	    onerror
+              error(E,C) -> E++"\n">>stderr;
+          }
+	| APPLY(IDEN(_,_,"include"),ST(_,_,f)) -> {
+	    file=locateFile(f,usr);
+	    "Request to include file "++file^0++"\n">>stdout;
+
+	    process(file,sys,usr,out);
+	  }
+	| APPLY(IDEN(_,_,"include"),
+		 APPLY(IDEN(_,_,[''>]),
+			APPLY(IDEN(_,_,[''<]),f))) -> {
+	    file = locateFile(rmDots(f),sys);
+	    "Request to include system file "++file^0++"\n">>stdout;
+	    process(file,sys,usr,out);
+	  }
+	| APPLY(IDEN(_,_,"macro"),
+		 APPLY(IDEN(_,_,"==>"),PAIR(P,R))) -> {
+		   (Ptn,V) = genMacPtn(P,[]);
+		   (Rep,V1) = genMacRep(R,V,P);
+		   "  | "++Ptn++" =>\n">>out;
+                   "        macroReplace("++Rep++")\n">>out;
+		 }
+
+        | C -> {}
+        }
+      }
+    }
+  };
+
+  defaultSysIncludePath(inc) => valof{
+    try {
+      ap = expand(getenv("APRIL_DIR"),":");
+      valis ap<>[inc]//{(X)=>X++"/include"}
+    } onerror
+      _ ->
+	valis [inc++"/include"]
+    };
+
+  main(f)
+  {
+    out = fopen("macro.ap",_create_write);
+
+    "-- Automatically generated macro replacement function -- do not edit\n"
+    "#include \"op_tree.ah\";\n\n"
+    "module import interface <stdio.af> in {\n"
+    "  macroReplace(Exp) => \{ case Exp in \{\n"
+    "    END => END\n">>out;
+    
+    process(f,defaultSysIncludePath("/opt/april"),[],out);
+    "  | PAIR(L,R) => PAIR(macroReplace(L),macroReplace(R))\n"
+    "  | APPLY(L,R) => APPLY(macroReplace(L),macroReplace(R))\n"
+    "  | XX => XX\n"
+    "  }};\n\n" >>out;
+
+    subMatch >> out;
+    "} export macroReplace;\n" >> out;
+
+    if errCount()>0 then
+      errCount()^0++" syntax errors found\n">>stderr;
+    fclose(out);
+  };
+
+
+} execute main;

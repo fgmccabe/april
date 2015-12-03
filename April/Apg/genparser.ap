@@ -1,0 +1,334 @@
+/*
+ * Construct the parser from the LALR tables generated 
+ */
+
+#include "apg.ah";
+
+module
+import
+{
+  interface <stdio.af>
+} in
+{
+  genParser(trace,preamble,postamble,lexer,source,actions,gotos,
+    rules,terms,nonterms,tokdata,tokfun) =>
+    "/* Parser automatically generated from \""++source++"\"*/\n"++
+    preamble ++
+    "yyStream ::= (char[],number,number,string);\n"
+    "module\n"
+    "import {\n"
+    "({(yyStream)=>(yyStream,yyToken)}?lexer) from \""++lexer++"\"\n"++
+    {if trace then "and interface <stdio.af>\n" else ""}++
+    "} in {\n"
+    "__item ::= __t(yyToken) | __n(yyType);\n"
+    "parser(stream) => valof {\n"
+    "  Stack : []; Sno : 0;\n"
+    "  __item[]?Vstack : [];\n"
+    "  (w,Tok) : lexer(stream);\t\t-- pick up the first token\n"
+    "  yyErrCount : 0;\n"
+    "  while true do{\n"++
+    "    try{\n"
+    "      case Sno in {\n"
+           ++genStates(actions,gotos,rules,terms,tokdata,tokfun,nonterms,
+	     "      ",trace)++
+    "    }\n"
+    "  } onerror {\n"
+    "    failed -> {\n"++
+    { if trace then 
+    "      \"Detected parse error on \"++Tok.yyTok^0++\", at line \"++Tok.yyLine^0++\", in state \"++Sno^0++\"\\n\">>stdout;\n"
+      else
+       ""
+    }++
+    "      try {\n"
+    "        yyErrCount := yyErrCount+1;\n"
+    "        while ! (!Sno) in "++errorStates(actions)^0++"do{\n"
+    "          Sno:=head(Stack); Stack:=tail(Stack,1); Vstack:=tail(Vstack,1);\n"++
+    { if trace then 
+    "          \"Now in state \"++Sno^0++\"\\n\">>stdout;\n"
+      else
+       ""
+    }++
+    "        }\n"
+    "      }\n"
+    "      onerror\n"
+    "        _ -> exception error(\"unrecoverable parser error at \"++Tok^0,'parser)\n"
+    "    }}\n"
+    "  }\n"
+    "};\n\n"++
+    genGotos(gotos,nonterms)++"\n"++
+    { if trace then
+    " __showStack = {\n"
+    "   ([],[],_) -> {}\n"
+    " | ([0],[],_) -> {}\n"
+    " | ([Sno,..St],[V,..VSt],S) -> {\n"
+    "      \"State : \"++Sno^0++\" = \"++S(V)++\"\\n\">>stdout;\n"
+    "      __showStack(St,VSt,S)\n"
+    "   }\n"
+    "}\n;"
+    else
+    ""}++
+    postamble++
+    "} export parser;\n";
+
+  errorStates(actions) => setof{
+    for ((Sno,Acts) :: recoverError(_,_,_) in Acts) in actions do
+      elemis Sno
+  };
+
+  genStates = {
+    ([],_,_,_,_,_,_,_,_) => ""
+  | ([(Sno,[reduceBy('__default__,Rno)]),..States],G,R,T,TD,TF,NT,P,TR) => 
+      P++Sno^0++" -> {\n"++
+      genReduction(Rno,R,TD,TF,NT,TR)++
+      "}\n"++
+      genStates(States,G,R,T,TD,TF,NT,"    | ",TR)
+
+  | ([(Sno,Acts),..States],G,R,T,TD,TF,NT,P,TR) => 
+      P++Sno^0++" -> {{\n"++(
+        if allShifts(Acts) then{
+          "\tStack := [Sno,..Stack];\n"
+          "\tcase Tok.yyTok in {\n"++
+          genShiftActs(Acts,G,R,T,TD,TF,NT,"\t  ",TR)++
+          "\t};\n"
+          "\tVstack := [__t(Tok),..Vstack];\n"
+          "\t(w,Tok) := lexer(w);\n"++
+          { if TR then 
+          "\t      \"Next token=\"++Tok^0++\"\\n\">>stdout;\n"
+            else
+          ""}++
+          "\t}\n"
+	}
+        else (
+          "\tcase Tok.yyTok in {\n"++
+	       genActions(Acts,G,R,T,TD,TF,NT,"\t  ",TR)++
+	       "\t}}\n"
+       ))++
+      genErrorRecovery(Sno,Acts,G,R,T,TD,NT,TR)++
+      "}\n"++
+      genStates(States,G,R,T,TD,TF,NT,"    | ",TR)
+  };
+
+  genReduction(Rno,R,TD,TF,NT,TR) => valof{
+    if rule(Rno,A,B,_,AA,_) in R then{
+      K = listlen(B);
+      valis {
+	  if K>0 then "\t      ["++
+	    extractVarRefs(1,K,reverse(B),AA,TD,TF,NT,"")++
+	    ",..nVstack].=Vstack;"
+	  else
+	  "\t      nVstack = Vstack;"
+        }++
+        substVars(AA,NT,B,"__Vx")++
+        "\n\t      Vstack:=[__n(__Vx),..nVstack];\n"++
+        {
+	  case K in {
+	    0 => "\t      Stack := [Sno,..Stack]; "
+	         "Sno := goto"++string%%A++"(Sno);\n"
+          | 1 => "\t      Sno := goto"++string%%A++"(head(Stack));\n"
+	  | _ => "\t      ["++stripStack(K-1)++"..NS] .= Stack;"
+                        " Stack := NS;"
+	                " Sno := goto"++string%%A++"(head(Stack));\n"
+          }
+        }++
+        { if TR then 
+        "\t      \"Reduce by rule "++Rno^0++", goto \"++Sno^0++\"\\n\">>stdout;\n"
+--	 "\t     __showStack([Sno,..Stack],Vstack,{(__item?X)=>X^0});\n"
+          else
+           ""
+        }
+    }
+    else 
+      exception error("problem in genparser",'fail)
+  };
+
+  genActions = {
+    ([],_,_,_,_,_,_,_,_) => ""
+  | ([accept(a),..Acts],G,R,T,TD,TF,NT,Pre,TR) =>
+      Pre++matchTok(a,TD,"_")++" -> {\n"++
+     "\t    if yyErrCount>0 then\n"
+     "\t      exception error(\"parse errors detected\",'fail)\n"
+     "\t    else {\n"++
+      valof{
+	if rule(Rno,'?,[A],_,_,_) in R then{
+          if A in NT then 
+	    valis "\t      [__n(__Vx),.._].=Vstack;\n"++
+	          { if TR then 
+                  "\t      \"Accept \"++__Vx^0++\"\\n\">>stdout;\n"
+                  else
+	          ""}++
+	          "\t      valis __Vx;\n"
+          else
+	    valis "\t      [__t(__Vx),.._].=Vstack;\n"
+	          "\t      valis __Vx;\n"
+	}
+        else 
+	  exception error("Problem in generating parser",'fail)
+      }++"\t    }\n\t}\n"++
+    genActions(Acts,G,R,T,TD,TF,NT,"\t| ",TR)
+  | ([shiftOn(a,S,Rn),..Acts],G,R,T,TD,TF,NT,Pre,TR) =>
+      Pre++matchTok(a,TD,"_")++" -> {\n"++
+      { if TR then 
+          "\t      \"Shift "++string%%a++", goto state "++S^0++"\\n\">>stdout;\n"
+        else
+	  ""}++
+      "\t      Vstack := [__t(Tok),..Vstack];\n"
+      "\t      Stack := [Sno,..Stack]; Sno := "++S^0++";"
+      "  (w,Tok) := lexer(w);\n"++
+      { if TR then 
+        "\t      \"Next token=\"++Tok^0++\"\\n\">>stdout;\n"
+      else
+      ""}++
+      "\t    }\n"++
+    genActions(Acts,G,R,T,TD,TF,NT,"\t| ",TR)
+  | ([reduceBy(a,Rno),..Acts],G,R,T,TD,TF,NT,Pre,TR) =>
+      Pre++matchTok(a,TD,"_")++" -> {\n"++
+      genReduction(Rno,R,TD,TF,NT,TR)++
+      "\t    }\n"++
+      genActions(Acts,G,R,T,TD,TF,NT,"\t| ",TR)
+  | ([recoverError(_,_,_),..Acts],G,R,T,TD,TF,NT,Pre,TR) =>
+      genActions(Acts,G,R,T,TD,TF,NT,Pre,TR)
+  | ([disabled(_),..Acts],G,R,T,TD,TF,NT,Pre,TR) =>
+      genActions(Acts,G,R,T,TD,TF,NT,Pre,TR)
+  };
+
+  allShifts = {
+    [] => true
+  | [shiftOn(_,_,_),..Acts] => allShifts(Acts)
+  | _ => false
+  };
+
+  genShiftActs = {
+    ([],_,_,_,_,_,_,_,_) => ""
+  | ([shiftOn(a,S,Rn),..Acts],G,R,T,TD,TF,NT,Pre,TR) =>
+      Pre++matchTok(a,TD,"_")++" -> {\n"++
+      { if TR then 
+          "\t      \"Shift "++string%%a++", goto state "++S^0++"\\n\">>stdout;\n"
+        else
+	  ""}++
+      "\t      Sno := "++S^0++";\n"++
+      "\t    }\n"++
+    genShiftActs(Acts,G,R,T,TD,TF,NT,"\t| ",TR)
+  };
+
+  stripStack = {
+    (0) => ""
+  | (K) => "_,"++stripStack(K-1)
+  };
+
+  matchTok(a,TD,Rep) => { 
+    if a=='__default__ then 
+      "_"
+    else if (a,Txt) in TD then 
+      substVars(Txt,[],[],Rep)
+    else 
+      exception error("missing token information",'fail)
+  };
+
+  extractVarRefs={
+    (_,_,[],_,_,_,_,_) => ""
+  | (N,K,[L,..RL],AA,TD,TF,NT,Pre) :: L in NT => Pre++valof{
+      Kx = [''$,..(string%%K)];
+      Vx = { if _<>Kx<>_ .= AA then "__V"++K^0 else "_"};
+      if Vx!="_" then
+        valis "__n("++Vx++")"
+      else
+	valis "_"
+    }++extractVarRefs(N+1,K-1,RL,AA,TD,TF,NT,",")
+  | (N,K,['error,..RL],AA,TD,TF,NT,Pre) => Pre++valof{
+      Kx = [''$,..(string%%K)];
+      Vx = { if _<>Kx<>_ .= AA then "__V"++K^0 else "_"};
+      if Vx!="_" then
+        valis "__t("++Vx++")"
+      else
+	valis "_"
+      }++
+      extractVarRefs(N+1,K-1,RL,AA,TD,TF,NT,",")
+  | (N,K,[L,..RL],AA,TD,TF,NT,Pre) => Pre++valof{
+      Kx = [''$,..(string%%K)];
+      Vx = { if _<>Kx<>_ .= AA then "__V"++K^0 else "_"};
+      if Vx!="_" then
+	valis "__t(("++matchTok(L,TD,Vx)++".=yyTok"++lineFilePtn(TF,K)++"))"
+      else
+	valis "_"
+    }++extractVarRefs(N+1,K-1,RL,AA,TD,TF,NT,",")
+  };
+
+  lineFilePtn = {
+    ([],iX) => ""
+  | ([Field,..fields],iX) => ","++Field++string%%iX++".="++Field++lineFilePtn(fields,iX)
+  };
+
+  substVars(List,NT,B,V) => { try
+    subVars(List,NT,B,V)
+  onerror
+    _ => valof{
+      "Illegal action string: ["++string%%List++"] for production "++B^0++"\n"
+        >>stderr;
+      valis ""
+    }
+  };
+
+  subVars = {
+    ([],_,_,_) => ""
+  | ([''$,''$,..Text],NT,B,V) => V++subVars(Text,NT,B,V)
+  | ([''$,N,''.,''y,''y,''L,''i,''n,''e,..Text],NT,B,V) => 
+          "yyLine"++string%%[N]++subVars(Text,NT,B,V)
+  | ([''$,N,''.,''y,''y,''F,''i,''l,''e,..Text],NT,B,V) => 
+          "yyFile"++string%%[N]++subVars(Text,NT,B,V)
+  | ([''$,N,..Text],NT,B,V) => 
+          "__V"++string%%[N]++subVars(Text,NT,B,V)
+  | ([C,..Text],NT,B,V) => string%%[C]++subVars(Text,NT,B,V)
+  };
+
+  genErrorRecovery = {
+    (Sno,Acts,G,R,T,TD,NT,TR)::recoverError(LA,Nx,_)in Acts => 
+      "\tonerror{\n"
+      "\t  _ -> {\n"++
+      { if TR then 
+      "\t      \"In error recovery mode\\n\">>stdout;\n"
+      else
+      ""}++
+      {if [H,.._].=LA then 
+        "\t      while !"++H^0++".=Tok.yyTok do{\n"
+        "\t        (w,Tok) := lexer(w);\n"
+        "\t      \"We have a \"++Tok.yyTok^0++\", at line \"++Tok.yyLine^0++\", looking for "++string%%H++"\\n\">>stdout;\n"
+        "\t      };\n"
+        "\t      Stack := [Sno,..Stack];\n"
+        "\t      Sno := "++Nx^0++";\n"
+        "\t      \"Current state is \"++[Sno,..Stack]^0++\"\\n\">>stdout;\n"
+      else
+        ""}++
+      "  \t    }\n"
+      "\t  }\n"
+  | (_,_,_,_,_,_,_,_) => ""
+  };
+
+  genGotos={
+    (G,[]) => ""
+  | (G,[N,..NT]) => genGto(N,G) ++ genGotos(G,NT)
+  };
+
+  genGto(N,G) => 
+    "goto"++string%%N++"(S) => {case S in {\n"++
+     genGs(G,N,"    ")++
+     "  }\n};\n";
+
+  genGs = {
+    ([],_,_) => ""
+  | ([(Sno,N,Nx),..G],N,P) => P++Sno^0++" => "++Nx^0++"\n"++genGs(G,N,"  | ")
+  | ([_,..G],N,P) => genGs(G,N,P)
+  };
+
+  reverse(L) => valof {
+    LL : L;
+    R : [];
+    while [E,..Lx] .= LL do{
+      R := [E,..R];
+      LL := Lx;
+    };
+    valis R;
+  };
+
+} export genParser;
+
+

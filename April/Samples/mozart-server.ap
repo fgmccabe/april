@@ -1,0 +1,20 @@
+program{
+  server(host,port,In,Out){
+    "Connection from "++host++"\n">>stdout;
+    start = ticks();
+    T : 0;
+    while not eof(In) do{
+      any(N) = fdecode(In);
+      T := T+N;
+      if N==0 then
+	break;
+    };
+    end = ticks();
+    "Total = "++T^0++", time taken = "++end-start^0++"\n">>stdout;
+  };
+
+  main(P){
+    server = tcp_server(P,server);
+    waitfor(server);
+  }
+}execute main;

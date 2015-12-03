@@ -1,0 +1,217 @@
+/*
+ * Massage the parse tree into a set of rules for the apg parser generator
+ */
+#include "lextok.ah";
+
+module
+import interface <stdio.af>
+in
+{
+  extToks(Tree) => {case Tree in {
+    EMPTY => []
+  | SEQ(Left,Right) => extToks(Left)<>extToks(Right)
+  | I(tok) => [(symbol%%tok,tok,tok)]
+  | APPLY(tok,arg) => [(symbol%%tok,tok<>[''\(,..arg]<>[''\)],tok<>[''\(,''$,''$,''\)])]
+  }};
+
+  extractTokenSpecs(Tree) => {case Tree in {
+    SEQ(Left,Right) => extractTokenSpecs(Left)<>extractTokenSpecs(Right)
+  | EMPTY => []
+  | TOKENSPEC(toks) => [(extToks(toks),tokenA)]
+  | OPERATORSPEC(toks,Ass) => [(extToks(toks),Ass)]
+  | _ => []
+  }};
+
+  pickStart(Tree) => {case Tree in {
+    SEQ(Left,Right) => pickStart(Left)<>pickStart(Right)
+  | EMPTY => []
+  | STARTSPEC(tok) => [symbol%%tok]
+  | _ => []
+  }};
+
+  extractPreamble(Tree) => {case Tree in {
+    SEQ(Left,Right) => extractPreamble(Left)++extractPreamble(Right)
+  | I(tok) => tok++"\n"
+  | _ => ""
+  }};
+
+  extractType(Tree) => {case Tree in {
+    SEQ(Left,Right) => extractType(Left)++extractType(Right)
+  | TYPESPEC(tok) => tok++"\n"
+  | _ => ""
+  }};
+
+  typeCons = {
+    [T] => T
+  | [T,..Ty] => T <> [''\n,''\ ,''|,''\ ,..typeCons(Ty)]
+  };
+
+  tokenSpecs(toktree) => valof {
+    TS = extractTokenSpecs(toktree);
+    -- Collect the raw token symbols
+    T = collect{
+      for (L,_) in TS do
+        for (t,_,_) in L do
+          elemis t
+    };
+    -- Collect the precedences of the tokens
+    P = collect{
+      Pr : 0;
+      for (L,TT) in TS do{
+	if TT == tokenA then{
+	  for (t,_,_) in L do
+	    elemis (t,nonA,0);
+        }
+	else{
+	  for (t,_,_) in L do
+	    elemis (t,TT,Pr);
+	  Pr := Pr+1;
+        }
+      };
+      -- standard tokens 
+      elemis ('$,nonA,0);
+      elemis ('#,nonA,0);
+    };
+    -- Collect the `token substition' text
+    TD = collect {
+      for (L,_) in TS do{
+	for (t,_,td) in L do
+	  elemis (t,td)
+      };
+      -- Standard token for end of file
+      elemis ('$,"EOF");
+    };
+
+    -- Construct the type signature of the token type
+    Type = "yyTokType ::= "++typeCons(collect{
+      for (L,TT) in TS do{
+	for (t,Type,_) in L do
+	  elemis Type
+      };
+      elemis "EOF"
+    })++";\n\n";
+
+    PreText = extractPreamble(toktree);
+
+    SemType = "\nyyType ::= "++extractType(toktree)++";\n";
+
+    valis (T,P,TD,pickStart(toktree),Type,SemType,PreText);
+      
+  };
+
+  extractRules(Tree,T) => {case Tree in {
+    SEQ(Left,Right) => extractRules(Left,T)<>extractRules(Right,T)
+  | RULESET(nn,Prod) => extractRule(Prod,symbol%%nn,T)
+  | _ => []
+  }};
+
+  extractRule(Tree,nonT,T) => {case Tree in {
+    CHOICE(Left,Right) => extractRule(Left,nonT,T)<>extractRule(Right,nonT,T)
+  | RULE(Prod,Act,Pred) => valof {
+      prod = extractProd(Prod);
+      valis [(nonT,prod,extractAct(Act),extPrec(Pred,prod,T))]
+    }
+  | _ => []
+  }};
+    
+  extractProd(Tree) => {case Tree in {
+    SEQ(Left,Right) => extractProd(Left)<>extractProd(Right)
+  | I(Name) => [symbol%%Name]
+  | _ => []
+  }};
+
+  extractAct(Tree) => {case Tree in {
+    I(T) => T<>['';]
+  | _ => "$$=$1;"
+  }};
+
+  extPrec(Tree,Prod,T) => { case Tree in {
+    EMPTY => valof {
+      PP : Prod;
+      Prec : (nonA,0);
+      while [pr,..Pq] .= PP do{
+        if (pr,Ass,Prc) in T then
+	  Prec := (Ass,Prc);
+        PP := Pq;
+      };
+      valis Prec
+    }
+  | I(tok) :: (!symbol%%tok,Ass,Prec) in T => (Ass,Prec)
+  | _ => (nonA,0)
+  }};
+
+-- attempt to be smart in the final form of the token type
+
+  analyseActions(rules,TT,T,trace) => valof {
+    refs = setof{
+      for rule(_,_,Rhs,[],A,_) in rules do{
+	Lno : 0;
+	Lits : Rhs;
+	while [Lit,..L].=Lits do{
+	  Lno := Lno+1;
+	  Lits := L;
+	  if Lit in T then{
+	    NN = [''$]<>(Lno^0);
+            AA : A;
+	    while _ <> NN <> [''.,..R] .= AA do{
+	      case R in {
+	        [''y,''y,''L,''i,''n,''e,..RR] -> { AA:=RR; elemis 'yyLine}
+	      | [''y,''y,''F,''i,''l,''e,..RR] -> { AA:=RR; elemis 'yyFile}
+	      | _ -> break
+	      };
+	    }
+	  };
+	}
+      }
+    };
+
+    if trace then
+      valis ("yyToken ::= (yyTokType?yyTok,string?yyFile,number?yyLine);\n",["yyFile","yyLine"])
+    else{
+      t : "yyToken ::= (yyTokType?yyTok";
+      xx : [];
+      for aa in refs do{
+        case aa in{
+  	  'yyFile -> { t := t++",string?yyFile"; xx := xx<>["yyFile"] }
+        | 'yyLine -> { t := t++",number?yyLine"; xx := xx<>["yyLine"] }
+        | _ -> {}
+        }
+      };
+      t := t++");\n";
+      valis (t,xx);
+    }
+  };
+    
+  genrules(APGRULESET(toktree,ruletree),string?File,trace) => valof{
+    (T,TP,TD,Start,Type,SemType,pretext) = tokenSpecs(toktree);
+
+    Rls = extractRules(ruletree,TP);
+
+    nonT = setof{
+      for (nt,_,_,_) in Rls do
+        elemis nt
+    };
+
+    -- Check the validity of each rule
+    for (_,rhs,_,_) in Rls do{
+      for t in rhs do
+        if !t in nonT and !t in T then
+	  "No definition for symbol "++string%%t++"\n">> stderr
+    };
+
+    start = { if [St,.._].=Start then St 
+              else if (St,_,_,_) .= head(Rls) then St 
+              else exception error("empty rule set",'fail) };
+
+    rules = collect{
+      Rno : 1;
+      for (L,Rhs,A,Pr) in Rls do{
+        elemis rule(Rno,L,Rhs,[],A,Pr);
+	Rno := Rno+1;
+      }
+    };
+    (tokenType,tokPtn) = analyseActions(rules,Type,T,trace);
+    valis (nonT,T,TP,TD,Type++tokenType,tokPtn,SemType,pretext,start,rules);
+  };
+
+} export genrules;

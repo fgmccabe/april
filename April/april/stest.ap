@@ -1,0 +1,25 @@
+program
+  import interface "sio.af" in
+{
+  main(P)
+  {
+    H = sio_server(P,handler,line_stream);
+
+    "Server "++H^0++" started\n">>stdout;
+
+    waitfor(H)
+  };
+
+  handler(host,number?port,handle?inP,outP)
+  {
+    "Connection from "++host++"["++port^0++"]\n">>stdout;
+
+    repeat
+      sio_text(No,Line) ->> {
+        "Input line "++Line^0++"["++No^0++"] from "++sender^0++"\n">>stdout;
+	sio_text(No,Line) >> outP
+      }
+    until sio_end;
+    "Connection closing\n">>stdout;
+  }
+} execute main;

@@ -1,0 +1,965 @@
+@node Lists and sets
+@chapter Lists and Sets
+@cindex List and set handling functions
+
+@noindent
+One particular `form' of @code{April} list is the set. An @code{April}
+set is simply a list like other lists; however, @code{April} supports a
+number of set-style operations which allow programmers to use lists as
+sets. We refer to this as the @emph{set interpretation} on lists -- to
+distinguish @code{April}'s collect of set-style operators from a true
+(and expensive) set type.
+
+@menu
+* List operations::             Standard list operators
+* Pattern based operations on lists::  
+* Lists and set abstractions::  
+@end menu
+
+@node List operations
+@section List Operations
+@cindex List Operations
+
+@noindent
+These functions operate over all kinds of lists. They provide standard
+functions that manipulate lists. Most of these functions are
+@emph{generic} -- they accept as an arguments lists of any
+type. Where an argument of a function is generic in this way, we will
+use the type -- @var{%a} -- to denote this.
+
+The type checker enforces type strictness of generic arguments:
+for example, the @code{<>} function
+(@pxref{<>}) will append any kinds of lists together: it only
+requires that both of its arguments are the @emph{same} kind of list.
+
+@menu
+* #::                           List indexing
+* listlen::                     List length
+* front::                       Front portion of a list
+* back::                        Back portion of a list
+* head::                        Extract first element of list
+* tail::                        Extract remainder of list
+* <>::                          List append
+* List cons::                   Construct new list
+* ..::                          Generate a list of integers
+* iota::                        Generate a list of integers
+* List map::                    
+* List reduction::              
+* sort::                        Sort list
+@end menu
+
+@node #
+@subsection Index element of a list
+@cindex Index element from a list
+@findex @code{#} @r{function}
+
+@noindent
+Function template:
+@smallexample
+@var{%a}[]?@var{A}#number?@var{i} => @var{%a}
+@end smallexample
+
+@noindent
+The list-indexing function accesses individual elements of a list. The
+index @var{i} should evaluate to an integer between 1 and the
+length of the list; and it returns the @var{i}th
+element of the list @var{A}.  An error occurs if @var{i} is less than 1 or
+greater than the list length.
+
+Note that the base @code{April} language does not allow the `list
+update' operation suggested by a statement such as:
+@smallexample
+A#i:=23;
+@end smallexample
+
+@node listlen
+@subsection Length of a list
+@cindex List cardinality
+@cindex Length of a list
+@findex @code{listlen} @r{function}
+
+@noindent
+Function template:
+@smallexample
+listlen(@var{%a}[]?@var{A}) => number
+@end smallexample
+
+@noindent
+This function returns the length of the list @var{A}. If the list is not
+null-terminated, then the length is returned as a negative number.
+
+@node front
+@subsection Extract front elements from list
+@cindex Extract front elements
+@findex @code{front} @r{function}
+
+@noindent
+Function template:
+@smallexample
+front(@var{%a}[]?@var{T},number?@var{N}) => @var{%a}[]
+@end smallexample
+
+@noindent
+This function returns a list consisting of the first @var{N} elements
+of @var{T}.  If @var{N} is too big, the whole list is returned.  If
+@var{N} is negative, it raises an exception.
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"2nd argument should a positive integer"}
+@end itemize
+
+@node back
+@subsection Extract end elements from list
+@cindex Extract end elements
+@findex @code{back} @r{function}
+
+@noindent
+Function template:
+@smallexample
+back(@var{%a}[]?@var{T},number@var{N}) => @var{%a}[]
+@end smallexample
+
+@noindent
+This function returns a list consisting of the last @var{N} elements of
+@var{T}.  If @var{N} is too big, the whole list is returned.  If
+@var{N} is negative, it raises an exception.
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"2nd argument should a positive integer"}
+@end itemize
+
+@node head
+@subsection Extract head of list
+@cindex Extract head element
+@findex @code{head} @r{function}
+
+@noindent
+Function template:
+@smallexample
+head(@var{%a}[]?@var{T}) => @var{%a}
+@end smallexample
+
+@noindent
+This function returns the first element of the list @var{T}. Note that
+this function can be defined in terms of a @code{valis/valof} expression
+which uses list patterns:
+
+@smallexample
+@group
+valof @{
+  [H,.._] .= @var{T};
+  valis H
+@}
+@end group
+@end smallexample
+
+@node tail
+@subsection Tail of list
+@cindex Extract end elements
+@findex @code{tail} @r{function}
+
+@noindent
+Function template:
+@smallexample
+tail(@var{%a}[]@var{T},number@var{N}) => @var{%a}[]
+@end smallexample
+
+@noindent
+This function returns a list consisting of the remainder of the list
+after counting @var{N} elements from the front of @var{T}.  If @var{N}
+is too big, the empty list is returned.  If @var{N} is negative, it
+raises an exception.
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"2nd argument should a positive integer"}
+@end itemize
+
+@node <>
+@subsection Append lists together
+@cindex Appending lists
+@findex @code{<>} @r{function}
+
+@noindent
+Function template:
+@smallexample
+@var{%a}[]?@var{T1}<>@var{%a}[]?@var{T2} => @var{%a}[]
+@end smallexample
+
+@noindent
+This function returns the list made by appending @var{T2} to the end
+of @var{T1}. 
+
+@node List cons
+@subsection List construction
+@cindex Adding elements to lists lists
+@findex @code{,..} @r{operator}
+
+@noindent
+Function template:
+@smallexample
+[@var{%a}?@var{T1} ,.. @var{%a}[]?@var{T2}] => @var{%a}[]
+@end smallexample
+
+@noindent
+This operator represents the list made by `consing' the element @var{T1}
+to the front of the list @var{T2}.
+
+In general, several elements can be consed onto a list in one step:
+
+@smallexample
+['fred, 'jim, 'harry ,.. @var{names}]
+@end smallexample
+
+@noindent
+is a list which consists of the symbols @code{'fred},
+@code{'jim} and @code{'harry} preprended to the @var{names} list.
+
+@emph{Hint:}
+@quotation
+List cons can also be used in a pattern to extract the first
+element(s) of a list. The pattern in the match statement:
+
+@smallexample
+[first ,.. rest] .= @var{names}
+@end smallexample
+
+@noindent
+checks that @var{names} is a list, and extracts the first
+element of the list into the variable @code{first}, and the remainder of
+the list into the variable @code{rest}.
+@end quotation
+
+@node ..
+@subsection List of numbers
+@cindex The iota function
+@cindex Construct a list of integers
+@findex @code{..} @r{function}
+
+@noindent
+Function template:
+@smallexample
+number?@var{Low}..number?@var{High} => number[]
+@end smallexample
+
+@noindent
+The @code{..} function@footnote{Pronounced @emph{iota} because of the
+symbol used for a similar function in APL.} returns the list of
+integers ranging from @var{Low} to @var{High}.
+
+If @var{High} is smaller than @var{Low}, then the empty list is returned.
+
+@emph{Hint:}
+@quotation
+This function is used in combination with the @code{for} generator loop
+to provide a numeric style of @code{for} loop:
+
+@smallexample
+@group
+for X in @var{Low}..@var{High} do
+  @var{Statement}
+@end group
+@end smallexample
+
+@noindent
+In this situation, the function call to @code{..} is optimized, and the value
+is not actually constructed.
+@end quotation
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"1st argument should be an integer"}
+@item
+@code{"2nd argument should be an integer"}
+@end itemize
+
+@node iota
+@subsection General iota function
+@cindex The general iota function
+@cindex Construct a list of integers
+@findex @code{iota} @r{function}
+
+@noindent
+Function template:
+@smallexample
+iota(number?@var{Low},number?@var{High},number?@var{step}) => number[]
+@end smallexample
+
+@noindent
+The @code{iota} function is a more general version of iota than
+@code{..}; it also  returns the list of 
+integers ranging from @var{Low} to @var{High}. However, it also takes a
+@var{step} argument into account.
+
+If the @var{step} value is greater than zero, then an ascending list of
+numbers is generated. As with @code{..}, if @var{High} is smaller than
+@var{Low}, then the empty list is returned.
+
+If the @var{step} value is less than zero, then a descending list of
+numbers is generated. In the descending mode, if @var{High} is greater than
+@var{Low}, then the empty list is returned.
+
+It is an error for the @var{step} value to be zero -- this would lead to
+an infinite list.
+
+@emph{Hint:}
+@quotation
+This function is used in combination with the @code{for} generator loop
+to provide a numeric style of @code{for} loop where the step value is
+explicitly controlled:
+
+@smallexample
+@group
+for X in @var{Low}..@var{High} step @var{step} do
+  @var{Statement}
+@end group
+@end smallexample
+
+@noindent
+is equivalent to:
+
+@smallexample
+@group
+for X in iota(@var{Low},@var{High},@var{step}) do
+  @var{Statement}
+@end group
+@end smallexample
+
+@noindent
+As with regular @code{for} loops, the function call to @code{iota} is
+optimized, and the list of numbers is not actually constructed.
+@end quotation
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"1st argument should be an integer"}
+@item
+@code{"2nd argument should be an integer"}
+@item
+@code{"3rd argument should be an integer"}
+@item
+@code{"3rd argument should be a non-zero integer"}
+@end itemize
+
+@node List map
+@subsection Map function over elements of a list
+@cindex Apply function to elements of a list 
+@cindex Map function over elements of a list 
+@findex @code{//} @r{function}
+
+@noindent
+Function template:
+@smallexample
+@var{%a}[]?@var{T} // @{(@var{%a})=>@var{%b}@}?@var{F} => @var{%b}[]
+@end smallexample
+
+@noindent
+This is a @emph{higher order} function to apply a single argument
+function -- @var{F} -- to each element of a list -- @var{T} -- and
+returns the result as a list.  The first element is the result of
+applying @var{F} to the first element of @var{T}.  The second element is
+the result of applying @var{F} to the second element of @var{T} and so
+on.  For example:
+@smallexample
+[1,2,3,4,5] // double
+@end smallexample
+@noindent
+gives the result:
+@smallexample
+[2,4,6,8,10]
+@end smallexample
+@noindent
+where @code{double(@var{n})} is defined as multiplying @var{n} by 2.
+
+This higher-order function can be defined in terms of a @code{collect}
+iteration:
+@smallexample
+@group
+collect @{
+  for E in @var{T} do 
+    elemis @var{F}(E)
+ @}
+@end group
+@end smallexample
+
+@node List reduction
+@subsection Reduce list
+@cindex Reduce a list function
+@findex @code{\\} @r{function}
+
+@noindent
+Function template:
+@smallexample
+@var{%a}[]?@var{T} \\ @{(@var{%a},@var{%a}) => @var{%a}@}?@var{F} => @var{%a}
+@end smallexample
+
+@noindent
+This higher order operator @emph{reduces} a list of values to a single value by
+successively applying a function to each of the elements. 
+
+The result of each step is used as the first argument of the function call for
+the next step.  For example:
+@smallexample
+[1,2,3,4,5] \\ @var{add}
+@end smallexample
+
+@noindent
+is equivalent to the expression:
+
+@smallexample
+@var{add}(@var{add}(@var{add}(@var{add}(1,2),3),4),5)
+@end smallexample
+
+@noindent
+where @var{add}(@var{a},@var{b}) is some appropriate binary function.
+
+@emph{Hint:}
+@quotation
+The higher-order operators @code{//} and @code{\\}
+can be very convenient for constructing iterative functions in a
+high-level way. For example, the @code{fact} definition below gives an
+implementation of the factorial function without the explicit use of
+recursion or iteration:
+
+@smallexample
+fact(?N) => 1..N\\(*);
+@end smallexample
+
+@noindent
+We surround the @code{*} symbol in @code{()}'s in order to override
+its standard interpretation as an infix operator.
+@end quotation
+
+@node sort
+@subsection Sort list
+@cindex Sort list
+@findex @code{sort} @r{function}
+
+@noindent
+Function template:
+@smallexample
+sort(@var{%a}[]?@var{T}) => @var{%a}[]
+@end smallexample
+
+@noindent
+This function returns the list containing the elements of @var{T} sorted in
+ascending order. The ordering used is the standard @code{April} ordering
+(@pxref{Comparisons}).
+
+@node Pattern based operations on lists
+@section Pattern based operations on lists
+@cindex  Pattern based operations on lists
+@cindex Lists and patterns
+
+@noindent
+@code{April} has two functions where a @emph{Pattern} is
+used to select elements from lists. These functions allow lists to be
+@emph{searched} for matching elements -- i.e., they allow a form of
+database interpretation on lists.
+
+@menu
+* select elements::             Select a matching subset from a list
+* reject elements::             Select non-matching elements from a list
+@end menu
+
+@node select elements
+@subsection Select elements from a list
+@cindex Set selection
+@cindex Pattern based selection of a set
+@findex @code{^/} @r{expression}
+
+@noindent
+Function template:
+@smallexample
+@var{%a}[]?@var{T} ^/ @var{P} => @var{%a}[]
+@end smallexample
+
+@noindent
+This function returns the list containing all elements of @var{T}
+which match the pattern @var{P}.
+
+The @code{^/} function can be expressed using a @code{collect} expression:
+
+@smallexample
+@group
+collect @{
+  for X in @var{T} do
+    if @var{P} .= X then
+      elemis X
+  @}
+@end group
+@end smallexample
+
+@emph{Hint:}
+@quotation
+The set selection operator @code{^/} can be used to build a database
+search operation. Suppose that @code{X} is a database of tuples -- of
+names and addresses -- @code{X} might declared as:
+
+@smallexample
+X : [("fred","somewhere") @dots{} ("James T. Smith","Elsewhere")];
+@end smallexample
+
+@noindent
+To find the entry in this database which corresponds to the entry for
+@code{"James T. Smith"}, the expression:
+
+@smallexample
+X^/("James T. Smith",_)
+@end smallexample
+
+@noindent
+represents all the entries which have @code{"James T. Smith"} in the
+first element -- typically this will be a singleton set but it might be
+empty.
+@end quotation
+
+@node reject elements
+@subsection Remove elements from list
+@cindex Set rejection
+@cindex Remove elements from a set
+@findex @code{^\} @r{expression}
+
+@noindent
+Function template:
+@smallexample
+@var{%a}[]?@var{T} ^\ @var{P} => @var{%a}[]
+@end smallexample
+
+@noindent
+This function returns the list containing all elements of @var{T}
+which do @emph{not} match the pattern @var{P}.
+
+The @code{^\} function can be expressed in terms of the expression:
+
+@smallexample
+@group
+collect @{
+  for X in @var{T} do
+    if @var{P} != X then
+      elemis X
+  @}
+@end group
+@end smallexample
+
+@node Lists and set abstractions
+@section Lists and set abstractions
+@cindex  Lists and set abstractions
+@cindex set abstractions
+
+@noindent
+@code{April} has a higher-level way of specifying lists and sets
+based on a set-abstraction notation. These allow lists and sets to be
+specified in terms of logical conditions on the elements of the lists
+and sets, as opposed to low-level iterations on lists and sets.
+
+The general form of such an expression is:
+
+@smallexample
+@var{setof} @{ @var{Template} : @var{Generating_expression}@}
+@end smallexample
+
+@noindent
+where the @var{setof} is a specifier denoting the nature of the list
+being built, @var{Template} is an expression which denotes the `shape'
+of the elements of the list and @var{Generating expression} is a logical
+expression that governs the conditions for elements in the set.
+
+As with other list operators, the set abstraction operators denoted in
+this section are tranformed by the @code{April} compiler into iterations
+and other more basic operations.
+
+@menu
+* setof abstraction::           
+* bagof abstraction::           
+* counting abstraction::        
+* generator abstraction::       
+* element generating condition::  
+* && abstraction condition::    
+* || abstraction condition::    
+* ! abstraction condition::     
+* istrue abstraction condition::  
+* forall abstraction condition::  
+@end menu
+
+@node setof abstraction
+@subsection @code{setof} abstraction operator
+@cindex @code{setof} abstraction operator
+
+@noindent
+The @code{setof} abstraction operator indicates that a set is 
+specified. This is a variation of the standard @code{April} @code{setof}
+construct where a logical condition is used to specify the elements of
+the set rather than a statement.
+
+Note that in @code{April} a set is defined to be a list which is in
+sorted order and has duplicate elements removed.
+
+The form of a @code{setof} abstraction is:
+
+@smallexample
+setof @{ @var{T} : @var{Condition} @}
+@end smallexample
+
+@noindent
+The value of this expression is a list of @var{T} values, generated by
+means of @var{Condition}.
+
+For example, given a list of the form
+
+@smallexample
+ages = [('a,10),('b,20),('c,10),('d,20)];
+@end smallexample
+
+@noindent
+we can construct a set of age values in the range 10-15 by means of:
+
+@smallexample
+S = setof @{A : (_,A) in ages && A>=10 && A=<15 @}
+@end smallexample
+
+@noindent
+The value of @code{S} would be:
+
+@smallexample
+[10]
+@end smallexample
+
+@node bagof abstraction
+@subsection @code{bagof} abstraction operator
+@cindex @code{bagof} abstraction operator
+
+@noindent
+The @code{bagof} operator indicates that a `bag' (i.e., a list) is being
+specified. This is a variation of the standard @code{April} @code{collect}
+construct where a logical condition is used to specify the elements of
+the list rather than a statement.
+
+The form of a @code{bagof} abstraction is:
+
+@smallexample
+bagof @{ @var{T} : @var{Condition} @}
+@end smallexample
+
+@noindent
+The value of this expression is a list of @var{T} values, generated by
+means of @var{Condition}. This is similar to the @code{setof}
+abstraction, except that the result is not sorted, and there may be
+duplications.
+
+For example, given the @code{ages} list defined 
+@ifinfo
+in @ref{setof abstraction}
+@end ifinfo
+@iftex
+above,
+@end iftex
+the expression:
+
+@smallexample
+S = bagof @{A : (_,A) in ages && A>=10 && A<=15 @}
+@end smallexample
+
+@noindent
+would have the value:
+
+@smallexample
+[10,10]
+@end smallexample
+
+@node counting abstraction
+@subsection Counting abstraction operator
+@cindex @code{f} abstraction operator
+@cindex Counting abstraction
+
+@noindent
+The counting abstraction is similar to the @code{bagof} abstraction,
+except that a limit is placed on the size of the resulting list.
+
+The form of the counting abstraction is:
+
+@smallexample
+@var{C} of @{ @var{T} : @var{Cond} @}
+@end smallexample
+
+@noindent
+where @var{T} refers to the template expression for elements in the
+list, @var{Cond} is the generating condition, and @var{C} is a numeric
+expression which controls the size of the list.
+
+For example, to find at most 2 males, whose ages are greater than 10, we
+might use the expression:
+
+@smallexample
+2 of @{ M : M in male && (M,A) in ages && A>10 @}
+@end smallexample
+
+@node generator abstraction
+@subsection Lazy generation of elements
+@cindex lazy generation of elements
+@findex generator @r{abstraction operator}
+
+@noindent
+We can generate elements of a list in a `lazy' fashion -- making use of
+@code{April}'s @code{spawn} statement (@pxref{spawn}) -- to generate
+elements of the list in an incremental way. The @code{generator}
+@code{of} expression is used for this is:
+
+@smallexample
+generator of @{ @var{Template} : @var{Generating condition} @}
+@end smallexample
+
+@noindent
+The value returned by @code{generator} is not a list but a
+@code{handle}. Individual elements of the answer list are requested by
+sending the new process requests:
+
+@table @code
+@item 'next
+This requests the next answer from the generator. The reply to this will
+be one of:
+@table @code
+@item ('next_is, @var{A})
+The next available answer to the query is @var{A}. 
+
+@item 'no_more
+There were no further solutions to the query. Note that the generator
+process will no longer be active if the querier has received a
+@code{no_more} message.
+@end table
+
+@item 'quit
+If the query process no longer needs additional answers from the
+generator, then it can send a @code{'quit} message to the generator to
+ask it to terminate itself.
+@end table
+
+@noindent
+For example, to incrementally generate older males, we might use:
+
+@smallexample
+H = generator of @{ M : M in male && (M,A) in ages && A > 20 @}
+@end smallexample
+
+@noindent
+Once @code{spawn}ed, the generator can be controlled using a combination
+of @code{'next} requests and @code{'next_is} receives:
+
+@smallexample
+while @var{more to} do@{
+  'next >> H;
+  receive @{
+    ('next_is,A) ->> @dots{}    -- @r{deal with the older male}
+  | 'no_more ->> @dots{}        -- @r{no more answers}
+  @}
+@}
+@end smallexample
+
+@node element generating condition
+@subsection Element generating condition
+@cindex list generating condition
+@cindex element generating condition
+@cindex generating list elements in an abstraction expression
+@findex in @r{list element generating condition}
+
+@noindent
+The core `method' for generating elements of abstractions is the
+@code{in} test. Within a @code{setof}/@code{bagof}/@var{N} @code{of}
+abstraction, a condition of the form:
+
+@smallexample
+@var{Ptn} in @var{Exp}
+@end smallexample
+
+@noindent
+has the effect of `generating' instances of @var{Ptn} that match
+elements of the list or set @var{Exp}.
+
+For example, in the abstraction expression:
+
+@smallexample
+bagof @{A : (_,A) in ages && A>=10 && A=<15 @}
+@end smallexample
+
+@noindent
+the expression
+
+@smallexample
+(_,A) in ages 
+@end smallexample
+
+@noindent
+is a generating condition that generates potential elements of the
+list. It is possible to combine more than one generating condition in a
+single abstraction expression, as in:
+
+@smallexample
+2 of @{ M : M in male && (M,A) in ages && A>10 @}
+@end smallexample
+
+@noindent
+where there are two generating conditions involved.
+
+@node && abstraction condition
+@subsection @code{&&} abstraction condition
+@cindex Conjunctions of set generating expressions
+@findex && @r{abstraction condition}
+
+@noindent
+Within a generating expression it is possible to combine two or more
+conditions using the @code{&&} conjunction. The meaning of a generating
+expression such as:
+
+@smallexample
+@var{C1} && @var{C2}
+@end smallexample
+
+@noindent
+is simply the conjunction of @var{C1} and @var{C2}. Note that either
+@var{C1} or @var{C2} or both may be generating expressions or simply
+testing expressions. 
+
+However in a @code{setof}/@code{bagof}/@var{N} @code{of} abstraction the
+top-level generating expression should contain at least one element
+generating expression. An expression of the form:
+
+@smallexample
+setof @{ N : N < 10 @}
+@end smallexample
+
+@noindent
+may result in a compile-time error being reported (that @code{N} is not
+declared!).@footnote{If @code{N} is a variable that is in scope in the
+context of this expression, then this @code{setof} expression is legal and will
+either return @code{[N]} or @code{[]} depending on whether @code{N} is
+actually less than 10 or not.}
+
+@node || abstraction condition
+@subsection @code{||} abstraction condition
+@cindex Disjunctions of set generating expressions
+@findex || @r{abstraction condition}
+
+@noindent
+Within a generating expression the @code{||} conjunction may be used to
+specify alternatives. The meaning of a generating
+expression such as:
+
+@smallexample
+@var{C1} || @var{C2}
+@end smallexample
+
+@noindent
+is simply the disjunction of @var{C1} and @var{C2}. Note that either
+@var{C1} or @var{C2} or both may be generating expressions.
+
+For example, to list young females and old males we might use:
+
+@smallexample
+setof @{ X : X in female && (X,A) in ages && X<10 
+          || X in male && (X,A) in ages && X>70 @}
+@end smallexample
+
+@node ! abstraction condition
+@subsection @code{!} abstraction condition
+@cindex Negated set abtraction condition
+@findex ! @r{abstraction condition}
+
+@noindent
+The @code{!} negation condition may be used for negative tests within
+the generating expression. Note that a negated condition can never be
+used to @emph{generate} elements of a @code{setof}/@code{bagof}/@var{N}
+@code{of} abstraction; it can only filter out potential elements.
+
+For example, to show those males who have no children, we can
+use:
+
+@smallexample
+setof @{ X : X in male && ! (X,_) in parent @}
+@end smallexample
+
+@noindent
+Note that since @code{!} is used for two purposes in @code{April} -- as
+a negation and as a pattern operator, some care is sometimes necessary
+with parentheses.
+
+
+@node istrue abstraction condition
+@subsection @code{istrue} abstraction condition
+@cindex Testing for elements in a set abstraction
+
+@noindent
+The @code{istrue} abstraction condition is used to verify that a
+particular condition is satisfied. @code{istrue} is used within the
+@var{Condition} of a @code{setof}/@code{bagof}/@var{N} @code{of}
+abstraction when it is important that the test condition is only completed
+once.
+
+The form of the @code{istrue} condition is:
+
+@smallexample
+istrue @var{condition}
+@end smallexample
+
+@noindent
+where @var{condition} is any logical condition, including element
+generating conditions.
+
+For example, in:
+
+@smallexample
+bagof @{ M : M in male && istrue (M,A) in parent @}
+@end smallexample
+
+@noindent
+we use the @code{istrue} condition:
+
+@smallexample
+istrue (M,A) in parent
+@end smallexample
+
+@noindent
+to ensure that the @code{parent} test is only done once (@code{M} may be
+the parent of more than one child); which in turn will eliminate `false
+duplicates' in the resulting list.
+
+
+@node forall abstraction condition
+@subsection @code{forall} abstraction condition
+@cindex Testing all elements in a set abstraction
+
+@noindent
+The @code{forall} abstraction condition is used to verify that a
+particular condition is satisfied for every element of a list or set.
+
+@code{forall} is used within the
+@var{Condition} of a @code{setof}/@code{bagof}/@var{N} @code{of}
+abstraction when it is important that all the elements of a list meet
+some condition.
+
+The form of the @code{forall}  test is:
+
+@smallexample
+@var{Test} forall @var{Gen}
+@end smallexample
+
+@noindent
+where @var{Gen} is a generating expression -- such as an @code{in}
+condition or more generally the body of a
+@code{setof}/@code{bagof}/@var{N} @code{of} abstraction -- and
+@var{Test} is a predicate applied to each element generated by
+@var{Gen}.
+
+For example, to list males who have only male children, we can use the
+expression:
+
+@smallexample
+setof @{ M : M in male && C in male forall (M,C) in parent @}
+@end smallexample
+

@@ -1,0 +1,96 @@
+\input texinfo
+@c %**start of header
+@setfilename machine.info
+@settitle April Machine Specification
+@c %**end of header
+@smallbook
+@setchapternewpage odd
+
+@dircategory Programming
+@direntry
+* apmachine: (machine).		April machine description
+@end direntry
+
+@titlepage
+@title April Machine Specification
+@subtitle Version 3.0
+@author F.G. McCabe
+
+@c  The following two commands
+@c  start the copyright page.
+@page
+@vfill
+@copyright{} 1994-1997 Imperial College and F.G. McCabe
+
+All rights reserved
+     
+Permission is granted to use this work for research purposes only.
+@end titlepage
+     
+@node Top
+@top April Machine Specification
+
+This is the 
+@ifinfo
+on-line
+@end ifinfo 
+documentation for the April Machine (AM) which underlies the
+implementation of April.
+@refill
+
+@ifinfo
+@copyright{} 1994-1997 Imperial College and F.G. McCabe@*
+All rights reserved
+@end ifinfo
+
+
+@menu
+* Copying::                     Your rights and freedoms
+* Introduction::                Introduction to the April machine
+* April register model::        Registers in the @code{April} machine
+* April machine memory::        Layout of memory
+* Format of instructions::      The kind of instructions we have
+* Compiling April programs::    Compiling for the @code{April} machine
+* April processes::             How processes are handled
+* Garbage collection::          How GC is handled
+* Resource management::         How resources are managed
+* Security architecture::       How @code{April} implements secure features
+* Finale::                      Final remarks
+* Detailed instruction listing::
+* Built-in escapes::            Listing of the built-in escapes
+* Types and type signatures::   Type signature format
+* Concept index::
+* Instruction index::          Usage of instructions
+@end menu
+
+@node Copying
+@unnumbered Copying and other rights
+@cindex Intellectual property rights
+
+Permission is granted to use this work for research purposes only.
+
+@include introduction.texi
+@include registers.texi
+@include memory.texi
+@include iformats.texi
+@include compiling.texi
+@include processes.texi
+@include gc.texi
+@include resources.texi
+@include security.texi
+@include finale.texi
+@include instructions.texi
+@include escapes.texi
+@include types.texi
+
+@node Concept index
+@unnumbered Concept index
+@printindex cp
+
+@node Instruction index
+@unnumbered Machine instruction index
+@printindex fn
+
+@summarycontents
+@contents
+@bye

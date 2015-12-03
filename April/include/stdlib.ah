@@ -1,0 +1,11 @@
+/* Standard include file for version 4 of April */
+
+#include "operators.ah";
+#include "setops.ah";
+#include "sets.ah";
+#include <msg.ah>;
+#include <modules.ah>;
+#include <process.ah>;
+#include <general.ah>;
+#include <debug.ah>;
+

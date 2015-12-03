@@ -1,0 +1,133 @@
+@node Compiling April programs
+@chapter Compiling @code{April} Programs
+
+@noindent
+Before an @code{April} program can be executed, the source code must
+first be compiled into abstract machine instructions -- this is done
+using a separate compiler program.  The @code{April} compiler is called
+using the @code{apc} command as follows :
+@smallexample
+apc [-g] [-E] [-I @var{path}] [-X @var{standard}] [-x] [-o @var{out}] 
+    [-M ] [-# @var{glue}] @var{file*}
+@end smallexample
+@noindent
+where @var{file}s specify one or more @code{April} source files.  The
+options have the following meanings:
+
+@table @code
+@item -g
+Compiles extra debugging information.  When the compiled program is
+run with the `@code{-g}' option as well, messages are sent to a debugger 
+process.  A sample debugger program is being developed and will
+be made available soon for reference.
+
+@item -I @var{path}
+Changes the default `include path' -- which is the list of directories
+that are searched when handling @code{#include} directives -- from
+@code{"."} to @var{path}.
+
+@item -X @var{standard}
+Normally the compiler loads a standard header file -- @code{stdlib.ah}
+-- which defines standard macros and operators. It is as if the first line of
+every source file read:
+
+@smallexample
+#include <stdlib.ah>;
+@end smallexample
+
+The @code{-X} option is used to change this, making it effectively:
+@smallexample
+#include "standard";
+@end smallexample
+
+Note that @file{standard} is interpreted relative to any @var{include
+path} that might be established.
+
+Using the @samp{-X} option has two effects: it alters the
+compiler's default location for system include files -- to be the same
+directory that contains @var{standard} -- and it suppresses the
+definition of all the standard macros and operators.
+
+In order to `recover' the standard operators, the programmer should
+include the line:
+
+@smallexample
+#include "/opt/april/include/operators.ah";
+@end smallexample
+
+@noindent
+in the file @file{standard};
+
+@emph{Hint:}
+@quotation
+Using the @samp{-X} option, together with the @samp{-E} option, is a
+good technique for viewing the effect of user defined macros on your
+program.
+@end quotation
+
+@item -E
+Performs the macro-processing stage of the compilation only -- the
+output is copied to standard output rather than to a file. The output
+contains the preprocessed input -- i.e., after macro processing and comments
+removal has taken place.
+
+@item -# @var{string}
+This changes the `glue' string used during macro processing for
+generating new symbols to @var{string}. Normally, this is set to "@code{#}".
+
+@item -o @var{output}
+Normally, the compiled output goes to the file @code{@var{file}.aam} where 
+@smallexample
+@var{filename} = @var{file}.ap
+@end smallexample
+
+@noindent
+however, with the @code{-o} option, this can be overridden to write the
+code file to @var{output}.
+
+@item -M 
+This option can be used to automatically generate a module
+@code{interface} file when compiling a module file. 
+
+When this option is used, a file -- called @code{@var{prog}.af} where
+the module file being compiled is called @var{prog}@code{.ap} -- is
+created. 
+
+The format of the generated @var{af-file} is sufficient for another
+module to import it using a module @code{interface} reference --
+@pxref{Using interface specification files}.
+
+An important benefit of using generated @code{interface} files is that
+the type of the module is exactly as written in the @code{.af}
+file. Hand-written @code{interface} files can often be shorter but they
+are prone to error for complex cases.@footnote{This is a new feature of
+version 4.2.7.}
+
+@item -x
+This option marks the output file as a pure executable file; usually
+used in conjunction with the @code{-o} option. Thus instead of running
+the result with:
+
+@smallexample
+april file args
+@end smallexample
+
+@noindent
+we can simply use:
+
+@smallexample
+file args
+@end smallexample
+
+@noindent
+Note that this still requires @code{April} itself to be installed and on
+the current @code{PATH}.
+@end table
+
+The @var{filename} is assumed to contain @code{April} source code.  The
+standard extension for @code{April} source programs is @file{.ap}.
+
+The output of the compiler is a file with extension `@code{.aam}'. The contents
+of this file is a single code module which may embed procedures and functions
+within it.
+

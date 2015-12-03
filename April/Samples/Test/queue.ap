@@ -1,0 +1,35 @@
+/*
+ * Example object program
+ */
+
+program{
+  queue()=>theta{
+    Q:[];
+    insert(E)
+    {
+      Q := Q<>[E];
+    };
+    remove() => valof{
+      [?E,..?R] .= Q;
+      Q := R;
+      valis E
+    };
+  };
+
+  main()
+  {
+    QQ:queue();
+    QQ.insert(foo);
+    QQ.insert(bar);
+
+    writef(stdout,"Front is: %w\n",(QQ.remove()));
+    writef(stdout,"Front is: %w\n",(QQ.remove()));
+
+    PQ:queue();
+    PQ.insert(1);
+    PQ.insert(2);
+
+    writef(stdout,"Front is: %w\n",(PQ.remove()));
+    writef(stdout,"Front is: %w\n",(PQ.remove()));
+  }
+} execute main;

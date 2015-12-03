@@ -1,0 +1,73 @@
+/*
+ * Compute rule set closures and goto actions
+ * These algorithms are taken from A.Appel's book
+ */
+
+#include "apg.ah";
+
+module
+import{
+  interface "gensets.af" and 
+  interface <stdio.af>
+}
+in
+{
+  /* Extend the first sets to handle strings of symbols */
+  firstSeq = {
+    ([],_,_) => []
+  | ([X,..Y],F,N) => valof{
+      if ! X in N then{
+	if (X,FF) in F then
+	  valis FF
+	else
+	  valis []
+      }
+      else{
+	XF = { if (X,FF) in F then FF else []};
+        valis XF\/firstSeq(Y,F,N)
+      }
+    }
+  };
+
+  closure(items,rules,F,N) => valof{
+    I : items;
+    done : false;
+    modified : I;
+
+    while not done do{
+      II = I;
+      done := true;
+      next : [];
+
+      for item(No,A,B,[X,..Beta],LA) in modified do {
+	for rule(C,X,T,_,_,_) in rules do{
+
+	  if item(C,X,[],T,L) in I then{
+	    NL : L;
+	    for b in LA do
+	      NL := NL\/firstSeq(Beta<>[b],F,N);
+
+	    if extends(NL,L) then{
+	      done := false;
+	      I := [item(C,X,[],T,NL)]\/(I^\item(C,X,[],T,_));
+	      next := [item(C,X,[],T,NL)]\/(next^\item(C,X,[],T,_));
+	    }
+	  }
+	  else{
+	    L : [];
+	    for b in LA do
+	      L := firstSeq(Beta<>[b],F,N)\/L;
+
+	    I := [item(C,X,[],T,L)]\/I;
+	    next := [item(C,X,[],T,L)]\/next;
+	    done := false;
+	  }
+	}
+      };
+
+      modified := next;
+    };
+
+    valis I;
+  };
+} export (closure);

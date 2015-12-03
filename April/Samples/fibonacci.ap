@@ -1,0 +1,15 @@
+/* The fibonacci function: */
+program {
+  fib = {
+    (0) => 1 
+  | (1) => 1 
+  | (X) => fib(X-1)+fib(X-2)
+  };
+
+  main(I){
+    "fibonacci of "++I^0++" is "++fib(I)^0++"\n">>stdout;
+  }
+} execute main;
+
+
+

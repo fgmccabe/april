@@ -1,0 +1,1006 @@
+@node April syntax
+@chapter @code{April} syntax
+@cindex Syntax of programs
+
+@noindent
+@code{April}'s syntax is based on an @emph{operator precedence
+grammar}. Although they might not be aware of it, most programmers are
+quite familiar with operator precedence grammars -- it is typically the
+grammar used for arithmetic expressions. In @code{April} -- as in Prolog
+-- we extend the use of operator-style grammars to cover the whole
+language.
+
+An operator grammar allows us to write expressions like:
+
+@smallexample
+X * Y + X / Y
+@end smallexample
+
+@noindent
+and to know that this means the equivalent of:
+
+@smallexample
+(X * Y) + (X / Y)
+@end smallexample
+
+@noindent
+or more specifically:
+
+@smallexample
++(*(X, Y), /(X, Y))
+@end smallexample
+
+@noindent
+I.e., an operator grammar allows us to write operators between arguments
+instead of before them, and an operator precedence grammar allows us to
+avoid using parentheses in many common situations.
+
+It is not necessary to restrict the scope of an operator grammar to
+arithmetic expressions -- a fact used by the early originators of the
+POP-2 and Prolog programming languages. We can also use an operator grammar
+for the whole of a programming language. For example, in @code{April},
+the assignment statement is written:
+
+@smallexample
+@var{variable} := @var{expression}
+@end smallexample
+
+@noindent
+this can be interpreted -- by treating @code{:=} as an operator -- as:
+
+@smallexample
+:=(@var{variable},@var{expression})
+@end smallexample
+
+@noindent
+A somewhat more complicated example allows us to interpret a conditional
+statement in terms of operators:
+
+@smallexample
+if A<B then
+  X := A+B
+else
+  X := X-B
+@end smallexample
+
+@noindent
+
+@noindent
+which, in fully parenthesised form is:
+
+@smallexample
+else(
+  then(
+    if(<(A,B)),
+    :=(X, +(A,B))),
+  :=(X, -(A,B)))
+@end smallexample
+
+@noindent
+Here, we have assumed that @code{else}, @code{then} and @code{:=} are
+@emph{infix} operators -- in addition to the `normal' infix operators:
+@code{+} and @code{-} -- and @code{if} is a prefix unary operator.
+
+The major benefit of this sleight of hand is extensibility -- it is much
+easier to add new operators to a grammar than it is to add new syntactic
+forms. It should also be noted that there are disadvantages. The most important
+is probably that it is difficult for the compiler to generate meaningful
+errors when an incorrect program is parsed. If you are new to
+@code{April}, you may take this as an apology in advance!
+
+@menu
+* Defining an operator grammar::  
+* April grammar rules::         
+* Defining a new operator::     
+@end menu
+
+@node Defining an operator grammar
+@section Defining an operator grammar
+@cindex Defining an operator grammar
+
+@noindent
+An operator grammar can often be written down in a few simple
+rules. A grammar that allows us to parse simple arithmetic expressions
+might be:
+
+@smallexample
+@group
+@var{exp} @expansion{} @var{add-exp}
+
+@var{add-exp} @expansion{} @var{mul-exp} + @var{mul-exp}
+  | @var{mul-exp} - @var{mul-exp}
+  | - @var{mul-exp}
+  | @var{mul-exp}
+
+@var{mul-exp} @expansion{} @var{prim-exp} * @var{prim-exp}
+  | @var{prim-exp} / @var{prim-exp}
+  | @var{prim-exp}
+
+@var{prim-exp} @expansion{} @var{identifier}
+  | ( @var{exp} )
+@end group
+@end smallexample
+  
+@noindent
+While a grammar such as this allows us to handle the specific arithmetic
+operators, it does not allow extensible grammars. To do that we must use
+the concept of @emph{precedences} or @emph{priorities}. In an operator
+precedence grammar each operator has a numerical @emph{priority} which
+expresses its `dominance' over other operators. The higher a priority
+the more dominant it is and the higher in the resulting parse tree the
+operator will appear.
+@cindex operator priority
+
+Using priorities, an operator precedence grammar rule for general infix
+operators can be written:
+
+@smallexample
+@dfn{exp(priority)} @expansion{} @dfn{exp(left)} @dfn{op(L,priority,R)} @dfn{exp(right)}
+        @r{providing that @dfn{left}<=@dfn{L} and @dfn{right}<=@dfn{R}}
+@end smallexample
+
+@noindent
+I.e., an expression involving an infix operator -- @dfn{op} -- has a
+priority of @dfn{priority} providing that the left hand part has a
+priority of @dfn{left} and the right hand part has a priority of
+@dfn{right} and that the `expected' left-hand priority of @dfn{op} is at
+least equal to @dfn{left} and the `expected' right-hand priority of
+@dfn{op} is at least equal to @code{right}.
+
+This complex re-statement of the infix rule allows us to replace the
+specific grammar rules for @dfn{add-exp} and @dfn{mul-exp} with one rule
+and a table of operators and their priorities:
+
+@smallexample
++  @result{} 1, 2, 1
+-  @result{} 1, 2, 1
+*  @result{} 0, 1, 0
+/  @result{} 0, 1, 0
+@end smallexample
+
+@noindent
+together with the assumption that non-operators are given a priority of 0. 
+
+To extend the grammar with a new operator combination we add an entry to
+this table. Furthermore, by varying the pattern of numbers in each entry we can
+express left-associative operators, right-associative operators and
+non-associative operators:
+
+@smallexample
+-  @result{} 2, 2, 1                   /* - is left associative */
+<> @result{} 9,10,10                   /* <> is right associative */
+@end smallexample
+
+@noindent
+Associative operators allow us to disambiguate expressions such as:
+
+@smallexample
+A - B - C
+@end smallexample
+
+@noindent
+to be equivalent to:
+
+@smallexample
+(A - B) - C
+@end smallexample
+
+@noindent
+for left associative @code{-}.
+
+By convention, @code{April}'s priorities range from 0 for `primitive
+values' to 2000 for the highest operators. We divide this range into
+two: from 0 to 1000 for `expression level' operators, and 1001 to 2000
+for `statement level' operators. This allows ample `room' for system
+defined operators as well as operators introduced for language
+extension.
+
+@node April grammar rules
+@section @code{April} grammar rules
+@cindex @code{April} grammar rules
+
+@noindent
+The complete grammar rules for @code{April} are listed in @ref{April
+grammar}. Here we highlight the important features.
+
+@menu
+* Primitive syntax expressions::  
+* Infix expressions::           
+* Prefix expressions::          
+* Postfix expressions::         
+@end menu
+
+@node Primitive syntax expressions
+@subsection Primitive syntax expressions
+@cindex Syntax of primitive expressions
+
+@noindent
+A `term0 expression represents the base of the grammar. All
+term0 expressions have 0 priority. There are several forms of
+term0 syntactic expression:
+
+@smallexample
+@dfn{term0}  @expansion{}  @dfn{ident}
+  |  @dfn{number}
+  |  @dfn{string}                      -- @r{A single string or a string sequence}
+  |  ( )                        -- @r{Empty tuple}
+  |  [ ]                        -- @r{Empty list}
+  |  @{ @}                        -- @r{Empty statement}
+
+  |  [ @dfn{list_els} ]                  -- @r{Non-empty list}
+  |  @{ @dfn{term(2000)} @}              -- @r{Override operator precedences}
+  |  ( @dfn{term(2000)} )              -- @r{Override operator precedences}
+  |  ' @dfn{ident}                     -- @r{Escape operator and other interpretations}
+  |  @dfn{term0} @dfn{term0}                -- @r{Function application}
+
+@dfn{list_els} @expansion{} @dfn{term(999)}
+  | @dfn{term(999)} , @dfn{list_els}
+  | @dfn{term(999)} ,.. @dfn{term(999)}
+@end smallexample
+
+@menu
+* comments::                    
+* identifier syntax::           
+* number syntax::               
+* string syntax::               
+* list syntax::                 
+* tuple syntax::                
+* functional expression syntax::  
+* parenthetical expression syntax::  
+* quoted symbol::               
+@end menu
+
+@node comments
+@subsubsection Comments in programs
+
+@noindent
+There are two styles of comments in @code{April}: line comments and
+continuous comments.
+
+A line comment is introduced by a @code{--} combination, followed by a
+white-space character, and terminated by a new-line or the end-of-file.
+
+A continuous comment is introduced by the @code{/*} and terminated
+either by the end of file or the @code{*/} characters. Note that a line
+comment overrides any @code{/*} comment introduction, and conversely, if
+a continuous comment is in force then any line comments are ignored.
+
+For example:
+
+@smallexample
+/* -- */ this is not inside a comment
+-- /* This is inside a comment
+but this is not */
+@end smallexample
+
+@node identifier syntax
+@subsubsection Identifier syntax
+
+@noindent
+An identifier or symbol has priority 0 if it is not defined to be an
+operator. There are two forms of symbol -- symbols written using
+alphanumeric characters and symbols written using graphical characters.
+
+An alphanumeric symbol consists of a letter -- an ASCII character in the
+set @code{a-zA-Z} or @code{_} -- followed by zero or more letters and
+digits.
+
+A graphic symbol consists of one or more characters from the set:
+
+@smallexample
+! @@ # $ % ^ & * - = + : ~ < > . / ? \ | `
+@end smallexample
+
+@noindent
+whichever form of symbol is written, semantically alphanumeric symbols
+and graphical symbols are identical.
+
+Normally, if a symbol has no operator definition associated with it,
+then its priority when it appears in expressions is zero. With a few
+exceptions, if a symbol has an operator declaration associated with it,
+it is not permitted to appear alone unless enclosed in @code{()}'s.
+
+A special case of identifier is the type variable identifier. This is written as a leading @code{%} followed by a regular identifier:
+
+@smallexample
+% @dfn{ident}
+@end smallexample
+
+@noindent
+Type variable identifiers are mostly used in type definition statements
+but may appear wherever a type expression is allowed.
+
+@node number syntax
+@subsubsection Number syntax
+
+@noindent
+Numbers are either integral or floating point. Integers can be written
+in the usual decimal notation -- one or more digits -- or in hexadecimal
+or octal notation.
+
+An octal integer is written with a leading 0 character:
+
+@smallexample
+01 023 0100
+@end smallexample
+
+@noindent
+whereas a hexadecimal number is written as a sequence of hex digits
+prefixed by @code{0x}:
+
+@smallexample
+0x0 0x13 0x10abcdef
+@end smallexample
+
+@noindent
+Floating point numbers are written with a @code{.} and optional exponent
+value:
+
+@smallexample
+1.04 1.34e-10
+@end smallexample
+
+@noindent
+Note that, in @code{April}, numbers are not semantically distinguished
+between floating point values and integers; i.e., 1.0 @equiv{}
+1. Whenever a number is specified then either an integer or floating
+point value may be given, except that certain built-in functions require
+integral values -- for example it make no sense to ask for the 1.5th
+element of a list.
+
+@node string syntax
+@subsubsection String syntax
+
+@noindent
+A string is written as a sequence of characters enclosed in `@code{"}'
+characters:
+
+@smallexample
+"@dfn{string-chars}"
+@end smallexample
+
+@noindent
+Valid string characters are either literal printable characters or
+special characters. Special characters are introduced using a C-style
+escaping convention -- using a leading @code{\} character. The following
+table defines the special string characters:
+
+@table @code
+@item @code{\a}
+Alarm bell.
+
+@item @code{\b}
+Backspace character.
+
+@item @code{\d}
+Delete character.
+
+@item @code{\e}
+Escape character.
+
+@item @code{\f}
+Form feed character.
+
+@item @code{\n}
+New line character (@emph{as a character within the string}).
+
+@item @code{\r}
+Carriage return character.
+
+@item @code{\t}
+Tab character.
+
+@item @code{\v}
+Vertical tab character.
+  
+@item @code{\}new-line
+A backslash followed by a new-line is ignored -- it is not part of the
+quoted string.  Note that this is the only way that an individual quoted
+string is permitted to cross a line boundary, however see below for an
+alternate method.
+
+@item @code{\}0,1,2,3,4,5,6,7
+A backslash followed by 1, 2 or 3 octal characters introduces a literal
+ASCII character whose code is obtained from the octal code.
+
+A common use for this it to introduce the NULL character into a string,
+for example:
+
+@smallexample
+"\0"
+@end smallexample
+
+@noindent
+The ability of @code{April} strings to contain any ASCII character
+allows @code{April} programs to manipulate binary data as well as
+regular text.
+
+@item @code{\?}
+A @code{\} character in front of any other character, including the
+backslash character itself and the quote characters, introduces the
+character itself. I.e., @code{\\} is used to introduce the backslash
+character and @code{\"} is used to introduce the @code{"} into a string.
+@end table
+
+@code{April} supports a C-style string concatenation notation: two or more
+strings which are consecutive tokens in a program are treated as a
+single string -- which is formed by the concatenation of the component
+strings. For example, the sequence:
+
+@smallexample
+"foo" "bar" "gum"
+@end smallexample
+
+@noindent
+is interpreted as the string
+
+@smallexample
+"foobargum"
+@end smallexample
+
+@noindent
+The key point here is that @code{"foo"}, @code{"bar"} and @code{"gum"}
+above may have new-lines, comments or other white space -- but no other
+characters or tokens -- between them.
+
+@node list syntax
+@subsubsection List syntax
+@cindex list syntax
+
+@noindent
+The syntax for lists can be defined using the rules:
+
+@smallexample
+@dfn{list} @expansion{} []
+  | [@dfn{list-elements}]
+
+@dfn{list-elements} @expansion{} @dfn{exp(1000)}
+  | @dfn{exp(1000)} , @dfn{list-elements}
+  | @dfn{exp(1000)} ,.. @dfn{exp(1000)}
+@end smallexample
+
+@noindent
+Note that the expected priority of elements of the list is 1000 -- which
+reflects the fact that elements of lists are expected to be expressions
+rather than statements -- @pxref{Operator priorities}.
+
+@node tuple syntax
+@subsubsection Tuple syntax
+
+@noindent
+The syntax for tuples can be defined using the rules:
+
+@smallexample
+@dfn{tuple} @expansion{} ()
+  | ( @dfn{tuple-elements} )
+
+@dfn{tuple-elements} @expansion{} @dfn{exp(1000)} , @dfn{exp(1000)}
+  | @dfn{exp(1000)} , @dfn{tuple-elements}
+@end smallexample
+
+@noindent
+Like list elements, tuple elements have an expected priority of 1000 --
+which reflects the situation that most tuples relate to values rather
+than statements -- @pxref{Operator priorities}.
+
+Note that @code{April} does not admit a tuple of length 1: an expression
+of the form @code{(E)} is simply the same as @code{E}. The tuple comma
+operator can best be considered as a `cross-product' operator.
+
+@node functional expression syntax
+@subsubsection Syntax of functional expressions
+
+@noindent
+A functional expression is written using the rule:
+
+@smallexample
+@dfn{functional-exp} @expansion{} @dfn{primitive} @dfn{tuple}
+@end smallexample
+
+@noindent
+Note that this means that the function name of a functional expression
+may be quite complex:
+
+@smallexample
+foo(10,"bar")(three,more)(arguments)
+@end smallexample
+
+@node parenthetical expression syntax
+@subsubsection Parenthetical expressions
+
+@noindent
+There are occasions where the built-in priorities of operators does not
+directly allow the desired form of expression. For example in:
+
+@smallexample
+X + Y * Z
+@end smallexample
+
+@noindent
+the @code{+} operator is `less tight' than the @code{*}
+operator and so this expression means `multiply @code{Y} by @code{Z} and
+add to @code{X}'. If the desired intention was different, then we use
+operator overriding parentheses:
+
+@smallexample
+(X + Y) * Z
+@end smallexample
+
+@noindent
+which means `add @code{X} to @code{Y} and multiply the result by
+@code{Z}'.
+
+Notice that @code{April} has two styles of parenthetical forms; in
+addition to the classical @code{()} characters, @code{April} also uses
+@code{@{@}}'s to override operator priorities.  We generally use braces
+when the operators involved are at a statement-level rather than at an
+expression level; however this is simply a convention and is not enforced
+by the parser.
+
+The rule for a parenthetical expression is:
+
+@smallexample
+@dfn{parenthetical expression} @expansion{} @{ @dfn{term(2000)} @}
+  | ( @dfn{term(2000)} )
+@end smallexample
+
+@noindent
+I.e., any operator combination -- up to a priority of 2000 -- is
+permitted as a primitive expression when enclosed by @code{()}'s.
+
+@node quoted symbol
+@subsubsection Quoted symbol
+
+@noindent
+Quoted symbols are used to denote literals of type
+@code{symbol}. Quoting a symbol also has the effect of overriding any
+variable interpretation for the identifier.  The syntax rule
+for a quoted symbol is:
+
+@smallexample
+@dfn{quoted symbol} @expansion{} ' @dfn{ident}
+@end smallexample
+
+@noindent
+where @dfn{ident} is either a graphic symbol or an alphanumeric
+symbol. Quoted symbols can be used to override the normal operator
+interpretation of a symbol, and they also override any `semantic'
+attachment there may be. For example, the expression
+
+@smallexample
+' *
+@end smallexample
+
+@noindent
+means the @code{*}  symbol, not the @code{*} operator and not the
+@code{*} binary arithmetic function.
+
+@node Infix expressions
+@subsection Infix expressions
+@cindex Writing infix expressions
+
+@noindent
+An @emph{infix} operator is one which is written between two
+arguments. @code{April} has a number of standard infix operators, which
+are listed in @ref{Standard operators}.
+
+The grammar rule for infix operators is:
+
+@smallexample
+@dfn{infix-exp(P)} @expansion{} @dfn{exp(l)} @dfn{infix(op,L,P,R)} @dfn{exp(r)} @{ @dfn{l} <= @dfn{L} & @dfn{r} <= @dfn{R} @}
+@end smallexample
+
+@noindent
+where there is a table of operators of the form:
+
+@smallexample
+@dots{}
+infix(:=,1899,1900,1900)
+infix(*,700,700,699)
+@dots{}
+@end smallexample
+
+@noindent
+and so on. The left/right/non-associativity is encoded in the values for
+@dfn{L}, @dfn{P} and @dfn{R} stored with the operator -- see
+@ref{Defining a new operator}. For a left-associative operator,
+@dfn{L}=@dfn{P} and @dfn{R}=@dfn{P-1}; for a non-associative operator,
+both @dfn{L}=@dfn{P-1} and @dfn{R}=@dfn{P-1}.
+
+Whenever an expression is written in infix form it has an equivalent
+functional form -- the functional form is the `true' underlying form of
+the expression. The functional form of an infix expression:
+
+@smallexample
+@dfn{left} @dfn{op} @dfn{right}
+@end smallexample
+
+@noindent
+is:
+
+@smallexample
+@dfn{op}(@dfn{left},@dfn{right})
+@end smallexample
+
+@noindent
+However, once a symbol is declared as an operator, the @code{April}
+parser does not permit it to be used other than as an operator -- unless
+it is quoted:
+
+@smallexample
+'@dfn{op}(@dfn{left},@dfn{right})
+@end smallexample
+
+@node Prefix expressions
+@subsection Prefix expressions
+@cindex Writing prefix expressions
+
+@noindent
+An @emph{prefix} operator is one which is before its argument. A prefix
+expression differs from a functional expression in that it is not
+necessary to enclose the argument in parentheses. @code{April} has a
+number of standard prefix operators, which are listed in @ref{Standard
+operators}.
+
+The grammar rule for prefix operators is:
+
+@smallexample
+@dfn{prefix-exp(P)} @expansion{} @dfn{prefix(op,P,R)} @dfn{exp(r)} @{ @dfn{r} <= @dfn{R} @}
+@end smallexample
+
+@noindent
+where there is a table of operators of the form:
+
+@smallexample
+@dots{}
+prefix(while,1250,1249)
+prefix(-,300,300)
+@dots{}
+@end smallexample
+
+@noindent
+and so on. A prefix operator is either associative or not. An
+associative prefix operator -- such as @code{-} -- permits expressions
+such as:
+
+@smallexample
+- - - X
+@end smallexample
+
+@noindent
+whereas a non-associative prefix operator -- such as @code{while} --
+does not.
+ 
+@node Postfix expressions
+@subsection Postfix expressions
+@cindex Writing postfix expressions
+
+@noindent
+An @emph{postfix} operator is one which is after its argument. A postfix
+expression differs from a functional expression in that it is not
+necessary to enclose the argument in parentheses. @code{April} has a
+number of standard postfix operators, which are listed in @ref{Standard
+operators}.
+
+The grammar rule for postfix operators is:
+
+@smallexample
+@dfn{postfix-exp(P)} @expansion{} @dfn{exp(l)} @dfn{postfix(op,L,P)} @{ @dfn{l} <= @dfn{L} @}
+@end smallexample
+
+@noindent
+where there is a table of operators of the form:
+
+@smallexample
+@dots{}
+postfix(*,699,700)
+postfix(secs,599,600)
+@dots{}
+@end smallexample
+
+@noindent
+and so on. A postfix operator is either associative or not. An
+associative postfix operator would permit expressions
+such as:
+
+@smallexample
+X @dfn{op} @dfn{op} @dfn{op}
+@end smallexample
+
+@noindent
+whereas an non-associative prefix operator does not. There are not very
+many standard postfix operators in @code{April} and no associative
+postfix operators.
+ 
+@node Defining a new operator
+@section Defining a new operator
+
+@noindent
+A new operator is defined by including a @code{#op} statement in the
+source of the program. The format of an operator declaration is:
+
+@smallexample
+#op('@dfn{operator}, @dfn{style}, @dfn{priority});
+@end smallexample
+
+@noindent
+where @dfn{operator} is the operator being declared, @dfn{style}
+describes `type' of the operator and @code{priority} is the operator's
+priority. 
+
+For example, the standard @code{*} operator has an operator declaration
+that looks like:
+
+@smallexample
+#op('*,left,700);		-- Multiplication
+@end smallexample
+
+We prefix the operator symbol with a quote to ensure that
+any prior operator declarations do not cause the @code{#op} statement
+itself to be mis-read.
+
+An operator declaration such as this is equivalent to the operator
+`triple' form:
+
+@smallexample
+infix('*,700,700,699)
+@end smallexample
+
+@noindent
+I.e., when an operator is declared as a left associative infix operator,
+we are in effect stating that the expected priority of expressions on
+the left of the operator is the same as the priority of the operator
+itself. On the other hand, the expected priority of expressions on the
+right is 1 less than the priority of the operator itself. This means
+that we can allow the left argument of the operator to be another
+expression involving the same operator, but we do not allow it on the
+right.
+
+Operator declarations are only permitted at the `top-level' in a program
+source file.
+
+The style of the operator is denoted using one of the following symbols:
+
+@table @code
+@item prefix
+A prefix non-associative operator
+@item aprefix
+A prefix associative operator
+@item infix
+An infix non-associative operator
+@item left
+An infix left associative operator
+@item right
+An infix right associative operator
+@item postfix
+A postfix non-associative operator
+@item apostfix
+A postfix associative operator
+@end table
+
+It is permissable to mix operator declarations -- the same symbol can be
+declared to be infix, prefix and/or postfix in any combination; although
+only one declaration is permitted for each `form'. The priorities of the
+different forms need not be related -- for example it is possible to
+have a symbol declared as an infix operator of priority 1000 and at the
+same time a prefix operator of priority 1200 and a postfix operator of
+priority 750.
+
+@menu
+* Operator priorities::         
+* How operator declarations are interpreted::  
+* Disambiguating infix and postfix::  
+@end menu
+
+@node Operator priorities
+@subsection Operator priorities
+@cindex Operator priorities
+
+@noindent
+@code{April} has some conventions for the appropriate values to use for
+the priorities of operators -- depending on the eventual intended use
+for the operator:
+
+@table @var
+@item 0-1000
+Operators declared in the range 0-1000 are `expression level'
+priorities. Expressions involving such operators are likely to be values
+of variables, and involved in other value expressions. For example, the
+priority for the @code{+} operator is 720, and the priority for @code{*}
+is 700.
+
+@item 1001-2000
+Operators declared in the range 1001-2000 are `statement level'
+priorities. Expressions involving such operators are likely to represent
+statements rather than value expressions. For example, the priority of
+the @code{;} operator is 1900 and the priority of the @code{:=} operator
+is 1100.
+@end table
+
+A complete list of the standard operators is listed in @ref{Standard
+operators}.
+
+@node How operator declarations are interpreted
+@subsection How operator declarations are interpreted
+@cindex How operator declarations are interpreted
+
+@noindent
+An operator declaration must be mapped into the internal form where the
+expected priorities on the left and right are explicitly
+represented. How this is done depends on the form of the operator as
+given in the @code{#op} declaration.
+
+If the operator declaration is of the form:
+
+@smallexample
+#op('@var{op},left,1000);
+@end smallexample
+
+@noindent
+this means that @var{op} is being declared as a left associative
+operator, and the computed priorities become 1000, 1000 and 999 for the
+left priority, operator priority and right priority respectively. If the
+operator is a right associative operator, with declaration form:
+
+@smallexample
+#op('@var{op},right,1000);
+@end smallexample
+
+@noindent
+then the computed priorities become 999, 1000 and 1000 respectively, and
+the operator is right associative.
+
+Where the left (or right) priority of an operator is smaller than the
+operator's own priority it means that the operator itself would
+@emph{not} be permitted on the left (or right); i.e., that the sequence:
+
+@smallexample
+X @var{op} Y @var{op} Z
+@end smallexample
+
+@noindent
+must be interpreted as:
+
+@smallexample
+X @var{op} @{Y @var{op} Z@}
+@end smallexample
+
+@noindent
+for a right associative operator, or
+
+@smallexample
+@{X @var{op} Y@} @var{op} Z
+@end smallexample
+
+@noindent
+in the case of a left associative operator.
+
+@node Disambiguating infix and postfix
+@subsection Disambiguating infix and postfix
+@cindex Disambiguating infix and postfix
+
+@noindent
+There are situations where there can be several operators occurring
+together.  Sometimes this can lead to an ambiguous situation
+particularly when combining infix and postfix operators.
+
+For example, in the sequence:
+
+@smallexample
+X op1 op2 Y
+@end smallexample
+
+@noindent
+there are two potential `readings' for this:
+
+@smallexample
+op1(X,op2(Y))
+op2(op1(X),Y)
+@end smallexample
+
+@noindent
+or, in the more extreme case, we might have:
+
+@smallexample
+X op1 op2 op3 Y
+@end smallexample
+
+@noindent
+which has as potential readings:
+
+@smallexample
+op1(X,op2(op3(Y)))
+op2(op1(X),op3(Y))
+op3(op2(op1(X)),Y)
+@end smallexample
+
+@noindent
+In the case where the operators only have a single interpretation -- as
+infix, prefix or postfix -- there generally is no problem in deciding
+which interpretation to pick. However @code{April} allows operators to
+have multiple forms -- prefix, infix and postfix -- simultaneously.
+
+In order to disambiguate such combinations of operators, @code{April}
+uses two strategies: first if the operators have different priorities
+then it may be possible to disambiguate the sequence. For example, if
+@var{op2} as an infix or postfix operator dominates @var{op1} as a
+postfix or infix operator then the first combination above is not
+possible.
+
+In the final case, where an operator has both an infix and a postfix
+interpretation, and priorities cannot be used to disambiguate, the
+@code{April} parser chooses the infix interpretation over the
+postfix. Notice that this may lead to the parser reporting a parse error
+when a different interpretation might not.  In general operator
+disambiguation requires an arbitrary level lookahead -- @code{April}'s
+parser only supports a 2-level lookahead --  which can sometimes lead to
+spurious errors. However, such ambiguous combinations of operators are
+comparatively rare in practice (especially given that postfix operators
+themselves are rare).
+
+@section Syntax errors
+@cindex Syntax errors
+
+There are two main classes of syntax errors that may be generated by the
+@code{April} compiler: parsing errors and syntax errors. The first
+kind of error relates to @code{April}'s operator precedence grammar, and
+the latter kind (of which there are many more) relates to the program
+structure as parsed by the grammar. 
+
+Operator precedence grammars are extremely flexible and compact; as can
+we have seen in @ref{April grammar}. Furthermore, by allowing
+programmers to add their own operators it is very easy to extend the
+surface syntax of @code{April}.
+
+Unfortunately, this simplicity comes at a price: it is extremely
+difficult for a compiler to generate meaningful syntax errors when
+something is wrong in the input. The @code{April} compiler will report
+simple errors such as brackets being inappropriately placed, or a
+missing close quote character; but it cannot give a meaningful
+@emph{reason} for the syntax error. More normally, it will report
+something like:
+
+@smallexample
+Parse error - ';' expected - at line 27/@dots{}Samples/fact.ap near:
+@}execte main;
+  ^ - here
+@end smallexample
+
+@noindent
+when a more meaningful message might have been:
+@smallexample
+Parse error - misspelt keyword - at line 27/@dots{}Samples/fact.ap near:
+@}execte main;
+  ^ - here
+@end smallexample
+
+However, this is not possible due to the nature of operator precedence
+grammars. Operator precedence grammars are usually used for describing
+arithmetic expressions where this limitation is not very important.
+
+The second main class of error are the @emph{Syntax errors}. These relate
+to the expected legal programs that the compiler may process. These
+errors are generally more meaningful and attempt to give some idea of
+what is expected as well as what went wrong:
+
+@smallexample
+Syntax error: variable S not compatible with handle 
+@ 18/18 in @dots{}semaphore.ap
+@end smallexample
+
+@noindent
+In this case, the (deliberate) error was caused by a type error. The
+program fragment in which this occurred was:
+
+@smallexample
+p(number?S)@{
+  'p >> S;            -- @emph{problem in this line}
+  receive
+    'sync ->> @{@}
+@};
+@end smallexample
+
+@noindent
+This is a syntax error because we are not allowed to send messages to
+@code{number}s.
+

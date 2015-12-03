@@ -1,0 +1,384 @@
+@node Notes for April v4 programmers
+@appendix Notes for April v4 programmers
+
+@noindent
+The main difference between version 4 of @code{April} and version 5 relates to the @code{handle} type and the communications infrastructure of @code{April}. With version 5 @code{April} no longer uses the ICM for supporting communication between different @code{April} invocations. In fact, `off-board' communication is no longer built-in to the language.
+
+Instead, this will be provided with special communications libraries that must be loaded by the applications programmer. This approach makes it simpler to incorporate additional communications support, such as support for specific Industry standard communications protocols such as SOAP.
+
+Other changes include a change in the representation of string values, a new @code{char} data type and changes in the way that the file system is managed.
+
+@menu
+* Unicode compliance::                  April is now Unicode compliant
+* The handle data type::                The handle structure
+* Characters and strings::              The form of the string type
+* Operators::                           Changes in operator priorities
+* Macro language::                      Maros are deprecated
+* Communications infrastructure::       How April programs communicate
+* URLs and file systems::               How data streams are found
+* Any values revisited::                Any values' representation
+* Deprecated functions::                Functions no longer supported
+* Changed functions::                   Functions whose semantics are changed
+* New functions::                       New functions introduced in this release
+@end menu
+
+@node Unicode compliance
+@appendixsec Unicode compliance
+@cindex Unicode compliance
+
+@noindent
+@code{April} is now fully Unicode compliant. Source programs may be in Unicode -- either in UTF8 or in UTF16 encodings -- and all internal character data is represented in Unicode.
+
+This has had an comcomitant effect of introducing a range of new predicates aimed at testing different aspects of Unicode characters; and some older functions are no longer supported.
+
+In addition, the lexical definition of an identifier is extended to allow programs to be written in non-latin characters. @code{April}'s definition of an identifier follows the guidelines laid out in the Unicode specification.
+
+@node The handle data type
+@appendixsec The @code{handle} data type
+@cindex The handle data type
+
+@noindent
+In version 4 of @code{April} the data type for handle was defined as:
+@smallexample
+handle ::= handle(string?tgt,string?name,string?home,string[]?locs)
+@end smallexample
+
+In version 5 we have a simpler handle type definition:
+@smallexample
+handle ::= nullhandle |
+  hdl(symbol,symbol)
+@end smallexample
+
+@noindent
+The @code{nullhandle} enumerated symbol was supported in version 4 of @code{April}, however we have `legitemized' it in version 5.
+
+The @code{hdl} constructor has two arguments, both of which should be a symbol. The first element is the `thread identifier' and the second is the `agent name'. As with version 4, @code{April} supports process groups -- groups of processes which share the same name.
+
+Note that the new @code{hdl} structure does not have the equivalent of the @code{home} attribute, nor does it have the @code{locs} attribute. This is in order to remove from the language definition features that more properly are handled by the communications infrastructure.
+
+A cosmetic difference is that the @code{hdl} constructor's fields are not `labelled' the way that the @code{handle} constructor fields were. This reflects the fact that, in practice labelled fields in a constructor tend to be more annoying than supportive.
+
+Finally, we note that we changed the constructor itself in order to make it clear the distinction between version 4 @code{handle}s and version 5 @code{handle}s.
+
+@node Characters and strings
+@appendixsec Strings and Characters
+@cindex Characters
+@cindex Strings
+
+The semantics of @code{string} values is different in @code{April}; instead of being an opaque type -- as in Version 4 -- a string in Version 5 is a list of characters. We introduce a new data type -- @code{char} -- which denotes a character value and we have slightly modified the syntax of @code{April} to reflect this.
+
+A character literal is written:
+@smallexample
+''@emph{char}
+@end smallexample
+where @emph{char} is a string character -- i.e., a character that can appear in a string literal (@pxref{Strings}).
+
+Note that this notation used to refer to a single-character @code{symbol}. That interpretation is no longer supported.
+
+@node Operators
+@appendixsec Operators
+@cindex operators
+
+In order to make certain common language constructs more convenient we have slightly adjusted a few of the operators' priorities in version 5. The operators concerned are @code{case}, @code{if}, @code{then} and @code{else}; their new declarations are shown below
+@smallexample
+#op('case,prefix,1190);         -- Case statement/expression
+
+#op('else,right,1195);          -- Conditional statement/expression
+#op('then,infix,1190);
+#op('if,prefix,1150);
+@end smallexample
+This has the effect of allowing functions defined in terms of @code{case} analysis to have one fewer level of bracketing:
+@smallexample
+fact(X) => case @{
+  0 => 1
+| N => N*fact(N-1)
+@};
+@end smallexample
+and
+@smallexample
+fact(X) => if X==0 then 1 else N*fact(N-1);
+@end smallexample
+Note this change should not affect any programs that compile properly under version 4.
+
+
+@node Macro language
+@appendixsec Macro language
+@cindex macros
+
+Beginning with version 5, macros are @emph{deprecated}. I.e., @code{April} has an official @emph{presentation} syntax -- as documented in this reference manual for example -- and does not sanction the use of macros to extend the syntax.
+
+Although deprecated, the compiler does still use macros in its implementation of @code{April}. This internal macro language supports most of the macro language of version 4; with a few exceptions. The most notable being that the @code{@@} is not supported at all.
+
+
+@node Communications infrastructure
+@appendixsec Communications infrastructure
+@cindex Communications infrastructure
+
+@noindent
+Another major change in version 5 is @code{April}'s relationship to communications infrastructure. In version 4 -- and earlier -- communications was `wired-in' to the language. Unfortunately there is no one communications infrastructure that is right in all circumstances.
+
+In the case of the ICM, and of @code{April}'s old-style handles, a thread-to-thread communications model was supported. However, this leads to an unnecessary exposure of internal application's implementation -- which in turn makes it diffult to keep control of the application. There are many legitimate situations where it is unwise to expose an application's implementation structure to the point that the ICM forced one to.
+
+There were other problems also; perhaps the `ugliest' was that two handles could be different and yet refer to the same thread of computation.
+
+Therefore we have chosen to completely separate the particular communications infrastructure used in a given situation from the language itself. This has two immeadiate consequences -- @code{April}'s new @code{hdl} constructor has no `address' information in it (and two @code{handle} terms refer to the same thread iff they are identical) and in order to actually @emph{do} communications between applications a library module is required to be loaded and used.
+
+Currently we supply a simple communications system (SCS) that supports a thread-to-thread communications framework but which is not intended to be used at a large scale or across ownership or application boundaries. In the future, we plan to also offer an additional communications system -- the Agent Communication System (ACS) -- that may be used across such boundaries but which does not itself support a thread-to-thread paradigm.
+
+
+@node URLs and file systems
+@appendixsec URLs and file systems
+@cindex URLs and file systems
+@cindex How data streams are found
+
+@noindent
+The @code{April} system has moved to a URL-based method for locating files. I.e., there is no longer any automatic hierarchic directory searching for files.
+
+This is primarily reflected in the form of a file name as it may appear in a source program or as presented to the file system.
+
+The form of a file name is:
+
+@smallexample
+@emph{proto}:@emph{host}/@emph{file}
+@end smallexample
+where supported protocols currently include @code{http}, @code{file} and @code{sys}.
+
+The @code{http} protocol is used to access the contents of a file from a web server; the @code{April} system uses a very simple version of the @code{http} protocol to access the file.
+
+Currently @code{http} is only support in read-only mode; although that may change in the future.
+
+The @code{file} protocol refers to a file in the host computer's file system.
+
+The @code{sys} protocol refers to a standard @code{April} @emph{system} file. It is normally only used to load standard includes and modules. The precise location of the system `library' may either be a regular file system (i.e., @code{sys} may be mapped to a particular @code{file} directory) or it may be one of the other supported location protocols.
+
+For program sources, @code{April} implements the standard HTTP semantics for accessing relative URLs; i.e., if an @code{April} source file uses an @code{#include} of the form:
+
+@smallexample
+#include "myHeader.ah";
+@end smallexample
+and it was the case that the absolute URL for the source file containing this was:
+@smallexample
+file:///Users/me/SuperProject/main.ap
+@end smallexample
+then the URL computed for the header file is:
+@smallexample
+file:///Users/me/SuperProject/myHeader.ah
+@end smallexample
+This applies both to included files and any code modules: the latters' URLs being resolved at load-time rather than compile-time.
+
+@node Any values revisited
+@appendixsec The representation of @code{any} values
+@cindex @code{any} type
+
+@noindent
+In version 4 an @code{any} value was represented internally as a pair: the value itself and a string which encoded the value's type. In version 5 this is changed, in that the type is no longer encoded in a string value but is represented using normal @code{April} data structures.
+
+For example, the any value:
+@smallexample
+any("foo")
+@end smallexample
+was represented as though it were the constructor term:
+@smallexample
+??("foo","S")
+@end smallexample
+where @code{"S"} encoded the fact that the type is a string. In version 5 this is changed to:
+@smallexample
+??("foo",'#list('#char))
+@end smallexample
+For the most part this change should have no visible effect on @code{April} programs. This change is one of the many changes that make interoperation between @code{April} and @code{Go!} possible.
+
+@node Deprecated functions
+@appendixsec Deprecated functions
+@cindex Deprecated functions
+@cindex Functions no longer supported
+
+@noindent
+A number of built-in functions represent obsolete facilities that have been replaced by more advanced functions. The functions that have been removed from @code{April} are listed here.
+
+@table @asis
+@item @code{ascii}
+This function is based on @code{April}'s prior assumption about characters and symbols of length 1. This function is no longer valid, use @code{charCode} instead to access the Unicode value of a character (@pxref{charCode}).
+
+@item @code{charof}
+This function is based on @code{April}'s prior assumption about characters and symbols of length 1. This function is no longer valid, use @code{charOf} instead to map a Unicode value into a character (@pxref{charOf}).
+
+@item @code{nthchar}
+This function is based on @code{April}'s prior assumption about strings. @code{April} @code{string}s are now simply lists of @code{char}acters; so this function is obsolete. Use @code{#} (@pxref{#}) instead to access the nth element of a list.
+
+@item @code{nthascii} (removed)
+This function is based on @code{April}'s prior assumption about strings. @code{April} @code{string}s are now simply lists of @code{char}acters; so this function is obsolete. Use @code{#} (@pxref{#}) instead to access the nth element of a list.
+
+@item @code{ascii2sym} (removed)
+This function is based on @code{April}'s prior assumption about characters and symbols. This function is no longer valid. To map a list of Unicode characters into a symbol one can use:
+
+@smallexample
+implode(@emph{Exp}//((X)=>charOf(X)))
+@end smallexample
+where @pxref{implode} converts a list of characters into a @code{symbol}.
+
+@item @code{sym2ascii} (removed)
+This function is based on @code{April}'s prior assumption about characters and symbols. This function is no longer valid. To map a symbol into a list of Unicode characters one can use:
+
+@smallexample
+explode(@emph{Exp})//((X)=>charCode(X)))
+@end smallexample
+where @pxref{explode} converts a @code{symbol} into a list of characters.
+
+@item @code{strlen} (removed)
+This function is based on @code{April}'s prior assumption about strings. @code{April} @code{string}s are now simply lists of @code{char}acters; so this function is obsolete. Use @code{listlen} (@pxref{listlen}) instead to compute the length of a list.
+
+@item @code{sprintf}
+This function is obsolete. In most cases formatting can be achieved with the string formatting operators @code{^} and @code{~}. Other special cases can be handled using the @code{num2str} function.
+
+@item @code{hdl2str}
+This function is obsolete. Handle formatting can be achieved with the string formatting operators @code{^} and @code{~}.
+
+@item @code{any2str}
+This function is obsolete.
+
+@item @code{_any2str}
+This function is obsolete.
+
+@item @code{_sig2str}
+This function is obsolete.
+
+@item @code{location}
+This function is obsolete as @code{April} no longer has a language-level binding to a communications infrastructure. The standard function @code{hostname} (@pxref{host}) has very similar functionality.
+
+@item @code{_agent_alias}
+This function is obsolete as the notion of a `agent handle' is obsolete.
+
+@item @code{_analyse_handle}
+This function is obsolete as the format of the @code{handle} is now a regular @code{April} constructor term.
+
+@item @code{commserver}
+This function is obsolete as @code{April} no longer has a language-level binding to a communications infrastructure. 
+
+@item @code{,+}
+This function and pattern is deprecated since @code{April}'s string notation is now based on lists of @code{char}acters. Use the regular list cons operator; i.e., use:
+
+@smallexample
+[X,..L]
+@end smallexample
+instead of
+@smallexample
+X,+L
+@end smallexample
+However, these patterns and expressions are still supported by the compiler as synonyms for the list processing equivalent.
+
+@item @code{++}
+This function and pattern is deprecated since @code{April}'s string notation is now based on lists of @code{char}acters. Use the regular list append operator; i.e., use:
+
+@smallexample
+X<>Y
+@end smallexample
+instead of
+@smallexample
+X++Y
+@end smallexample
+However, @code{++} patterns and expressions are still supported by the compiler as synonyms for the list processing equivalent.
+
+@item @code{fseek}
+This function is obsolete.
+
+@item @code{_debugname}
+This function is obsolete. If it is required to use a non-standard debugger handle, this can be done at the command line.
+
+@item @code{.!}
+This function is no longer supported.
+
+@end table
+
+@node Changed functions
+@appendixsec Changed functions
+@cindex Changed functions
+@cindex Functions with changed semantics
+
+A few functions have had their semantics changed, either to enhance the original or to reflect changes in @code{April} itself.
+
+@table @asis
+@item @code{strof}
+@item @code{num2str}
+@item @code{isLetter}
+This function's argument type has been changed from @code{symbol} to @code{char} reflecting the new character data type.
+@end table
+
+@node New functions
+@appendixsec New functions
+@cindex New functions
+
+There are a number of new functions in @code{April}, most of them referring to the Unicode classification of characters.
+
+@table @asis
+
+@item @code{isCcChar}
+This predicate is true of the `Other, control char' class of Unicode characters.
+@item @code{isCfChar}
+This predicate is true of the `Other, format char' class of Unicode characters.
+@item @code{isCnChar}
+This predicate is true of the `Other, unassigned char' class of Unicode characters.
+@item @code{isCoChar}
+This predicate is true of the `Other, private char' class of Unicode characters.
+@item @code{isCsChar}
+This predicate is true of the `Other, surrogate char' class of Unicode characters.
+@item @code{isLlChar}
+This predicate is true of the `Letter, lowercase char' class of Unicode characters.
+@item @code{isLmChar}
+This predicate is true of the `Letter, modifier char' class of Unicode characters.
+@item @code{isLoChar}
+This predicate is true of the `Letter, other char' class of Unicode characters.
+@item @code{isLtChar}
+This predicate is true of the `Letter, title char' class of Unicode characters.
+@item @code{isLuChar}
+This predicate is true of the `Letter, uppercase char' class of Unicode characters.
+@item @code{isMcChar}
+This predicate is true of the `Mark, spacing char' class of Unicode characters.
+@item @code{isMeChar}
+This predicate is true of the `Mark, enclosing char' class of Unicode characters.
+@item @code{isMnChar}
+This predicate is true of the `Mark, nonspacing char' class of Unicode characters.
+@item @code{isNdChar}
+This predicate is true of the `Number, decimal digit' class of Unicode characters.
+@item @code{isNlChar}
+This predicate is true of the `Number, letter char' class of Unicode characters.
+@item @code{isNoChar}
+This predicate is true of the `Number, other char' class of Unicode characters.
+@item @code{isPcChar}
+This predicate is true of the `Punctuation, connector' class of Unicode characters.
+@item @code{isPdChar}
+This predicate is true of the `Punctuation, dash char' class of Unicode characters.
+@item @code{isPeChar}
+This predicate is true of the `Punctuation, close char' class of Unicode characters.
+@item @code{isPfChar}
+This predicate is true of the `Punctuation, final quote' class of Unicode characters.
+@item @code{isPiChar}
+This predicate is true of the `Punctuation, initial quote' class of Unicode characters.
+@item @code{isPoChar}
+This predicate is true of the `Punctuation, other char' class of Unicode characters.
+@item @code{isPsChar}
+This predicate is true of the `Punctuation, open char' class of Unicode characters.
+@item @code{isScChar}
+This predicate is true of the `Symbol, currency char' class of Unicode characters.
+@item @code{isSkChar}
+This predicate is true of the `Symbol, modifier char' class of Unicode characters.
+@item @code{isSmChar}
+This predicate is true of the `Symbol, math char' class of Unicode characters.
+@item @code{isSoChar}
+This predicate is true of the `Symbol, other char' class of Unicode characters.
+@item @code{isZlChar}
+This predicate is true of the `Separator, line char' class of Unicode characters.
+@item @code{isZpChar}
+This predicate is true of the `Separator, para char' class of Unicode characters.
+@item @code{isZsChar}
+This predicate is true of the `Separator, space char' class of Unicode characters. This includes the ASCII space character itself.
+@item @code{digitCode}
+The Unicode 3.1 standard has 248 digit characters in it -- characters that represent a numeric value -- as well as many other kinds of numeric characters.
+
+The @code{digitCode} function returns the numeric value associated with these characters.
+@item @code{charOf}
+This function convert a numeric Unicode value into its equivalent @code{char} value.
+@item @code{charCode}
+This function returns the Unicode value associated with a @code{char}.
+@end table
+
+

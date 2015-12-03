@@ -1,0 +1,17 @@
+program
+{
+  main(limit)
+  {
+    k = collect {
+        for i in 1..limit do
+          elemis irand(limit);
+      };
+
+    "Please sort: "++k^2++"\n">>stdout;
+    s = sort(k);
+    "sorted is "++s^2++", length="++listlen(s)^0++"\n">>stdout;
+    ss = _setof(s);
+    "set is "++ss^2++", length="++listlen(ss)^0++"\n">>stdout
+  }
+} execute main;
+

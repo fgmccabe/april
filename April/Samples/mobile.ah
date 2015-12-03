@@ -1,0 +1,8 @@
+/*
+ * Protocol for simple mobile agents
+ */
+mobile_protocol ::=
+    takeThisAgent((){}?Code,string?name) 
+  | querySkills(string)
+  | skillsAre(string,handle)
+  | Done;

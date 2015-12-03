@@ -1,0 +1,26 @@
+@node Introduction
+@chapter Introduction
+
+@noindent
+This report documents the April Machine (@code{AM}) which underlies the
+implementation of April.
+
+The @code{AM} is a RISC-style architecture which is tailored for
+implementation as an interpreter on conventional computers. The design
+does not preclude a `hard' implementation directly on silicon but nor
+does it encourage it.
+
+The @code{AM} supports multiple processes, symbolic recursive data structures
+(with automatic garbage collection) and message passing between
+processes.
+
+In this document, we will proceed in a more-or-less `bottom up'
+fashion, starting from the basic machine register set and simple
+instructions and progressing with support for processes, garbage
+collection and multiple execution spaces.
+
+In presenting the @code{AM}, especially in @ref{Compiling April
+programs}, we focus on using the @code{AM} instruction set to compile
+April programs -- a detailed listing of the instructions is given in
+@ref{Detailed instruction listing}.
+

@@ -1,0 +1,87 @@
+This is the April 4.4.x system
+
+April is a programming system for developing distributed applications
+in a high-level way; in particular for developing agent applications.
+
+The complete system consists of April, DialoX and AdB.  Currently, we
+are not able to release DialoX or AdB for general release, however, we
+hope to do so soon.
+
+April is made available under GPL 2.0 public licence. Please see the
+file COPYING for the details.
+
+If April has not been installed on your system, see INSTALL for
+how to install April. Note that in order to compile and install April,
+it is first necessary to build and install the ICM (Interagent
+Communications Model) system.
+
+The reference manual for April is included with the distribution. It
+is called april.info, or april.html depending on how
+you want to browse it. In addition, the April web site has a very
+handy pocket guide to April.
+
+In order to run April programs, you should run the communications
+server on each machine that is going to use April. This version of
+April uses the ICM as its communications system. ICM is documented
+separately in the files icm.[ps, info, html]. To invoke the
+communications server, just run icm:
+
+% icm
+
+This starts the commserver going. 
+
+By default, the icm will immediately `detach itself' as a daemon, and
+the icm command will return. Normally, it will not write any output to the
+standard output, nor will it try to read any input. Any logging messages that
+it generates are written to the file "/var/log/icm.log". Of course, this
+reuires that you are root or have permission on the log file. To re-route the
+log to another file, use:
+
+% icm -L<file>
+
+If you would like to see what it is doing, then try:
+
+% icm -L-
+
+this will dump the output from the communications onto stdout. When logging to
+the console in this way, the icm will NOT detach itself as a daemon.
+
+It is possible to arrange for logging output from the icm to go to the
+standard logging handler -- as determined by syslogd. This is achieved by
+running the icm with:
+
+% icm -L+
+
+Note that icm tends to generate a large amount of logging information, and you
+may not wish to clog up the log in this way. In addition, you need to be root
+to execute icm in this way.
+
+The installation process creates the following programs in
+/opt/april/bin:
+
+	1) april
+		The april run time system.  The options for this
+		command are detailed in the Reference Manual.
+	2) apc
+		The april compiler.  This takes a filename to compile.
+		Using the '-g' option compiles additional debugging
+		information.
+	3) apdebugger
+		A very simple debugger server. Use it as an example of how to
+		write a debugger rather than as a definitive debugger.
+
+There is On-line documentation in /opt/april/info -- it is in the
+form of a info file. This can be accessed using the info command:
+
+% info -f /opt/april/info/april.info
+
+to get on-line documentation for april. In Emacs (which is somewhat
+better, especially within Emacs-19), use: ^U^Hi followed by the
+appropriate file name.
+
+If you have any queries, brickbats or comments, please e-mail me at:
+
+fgm@fla.fujitsu.com
+
+
+

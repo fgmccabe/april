@@ -1,0 +1,20 @@
+program{
+  main(T)
+  {
+    Z : spawn plip();
+
+    repeat{
+      timeout 0.6 secs ->> {"      plop\n" >> stdout; fflush(stdout)}
+    } until alarm T mins;
+
+    'stop >> Z;
+  };
+
+  plip()
+  {
+    repeat{
+      timeout 0.5 secs ->> {"plip\n" >> stdout; fflush(stdout)}
+    } until stop;
+  };
+}execute main;
+

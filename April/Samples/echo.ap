@@ -1,0 +1,21 @@
+program
+{
+  echoer()
+  {
+    repeat{
+      any?M :: hdl(t,n).=replyto ->> {
+        "Message: "++M^3++" from "++replyto^1++"\n">>stdout;
+	fflush(stdout);
+        ('echo,M) >> replyto
+      }
+    } until 'quit;
+  };
+
+  main(name)
+  {
+     who = hdl('echo,name);
+     who public_spawn echoer();
+    waitfor(who);
+  }
+} execute main;
+

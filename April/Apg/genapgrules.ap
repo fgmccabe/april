@@ -1,0 +1,159 @@
+/*
+ * The rules that describe an apg file
+ * This program generates the parser for apg files
+ * See the file apg.apg for the rule set
+ */
+
+
+#include "apg.ah";
+
+program
+import {
+  interface "gensets.af" and
+  interface "lr0.af" and
+  interface "lalr.af" and
+  interface "genparser.af"
+}
+in {
+
+  rules = [
+    rule(1,'apg,['preamble,'MARK,'rules,'MARK],[],
+      "$$ = APGRULESET($1,$3) ;",(nonA,0)),
+    rule(2,'preamble,['definition],[],
+      "$$ = $1;",(nonA,0)),
+    rule(3,'preamble,['preamble,'definition],[],
+      "$$ = SEQ($1,$2);",(nonA,0)),
+    rule(4,'definition,['tokendef],[],
+      "$$=$1;",(nonA,0)),
+    rule(5,'definition,['includedef],[],
+      "$$=$1;",(nonA,0)),
+    rule(6,'definition,['startdef],[],
+      "$$=$1;",(nonA,0)),
+    rule(7,'definition,['expectdef],[],
+      "$$=$1;",(nonA,0)),
+    rule(8,'definition,['typedef],[],
+      "$$=$1;",(nonA,0)),
+    rule(9,'tokendef,['TOKEN,'tokenspecs],[],
+      "$$=TOKENSPEC($2);",(nonA,0)),
+    rule(10,'tokendef,['LEFT,'tokenspecs],[],
+      "$$=OPERATORSPEC($2,leftA);",(nonA,0)),
+    rule(11,'tokendef,['RIGHT,'tokenspecs],[],
+      "$$=OPERATORSPEC($2,rightA);",(nonA,0)),
+    rule(12,'tokendef,['NONASSOC,'tokenspecs],[],
+      "$$=OPERATORSPEC($2,nonA);",(nonA,0)),
+    rule(13,'tokenspecs,['tokenspec],[],
+      "$$=$1;",(nonA,0)),
+    rule(14,'tokenspecs,['tokenspecs,'tokenspec],[],
+      "$$=SEQ($1,$2);",(nonA,0)),
+    rule(15,'tokenspec,['ID],[],
+      "$$=I($1);",(nonA,0)),
+    rule(16,'tokenspec,['ID,'BRACE],[],
+      "$$=APPLY($1,$2);",(nonA,0)),
+    rule(17,'tokenspec,['ID,'CENTBRACE],[],
+      "$$=APPLY($1,$2);",(nonA,0)),
+    rule(18,'includedef,['CENTBRACE],[],
+      "$$=I($1);",(nonA,0)),
+    rule(19,'typedef,['TYPE,'CENTBRACE],[],
+      "$$=TYPESPEC($2);",(nonA,0)),
+    rule(20,'startdef,['START,'ID],[],
+      "$$=STARTSPEC($2);",(nonA,0)),
+    rule(21,'expectdef,['EXPECT,'NUM],[],
+      "$$=EXPECTSPEC($2);",(nonA,0)),
+    rule(22,'rules,['rule],[],
+      "$$=$1;",(nonA,0)),
+    rule(23,'rules,['rules,'rule],[],
+      "$$=SEQ($1,$2);",(nonA,0)),
+    rule(24,'rule,['ID,'COLON,'ruleset,'SEMI],[],
+      "$$=RULESET($1,$3);",(nonA,0)),
+    rule(25,'ruleset,['ruleset,'BAR,'production],[],
+      "$$=CHOICE($1,$3);",(nonA,0)),
+    rule(26,'ruleset,['production],[],
+      "$$=$1;",(nonA,0)),
+    rule(27,'production,['rhs,'action],[],
+      "$$=RULE($1,$2,EMPTY);",(nonA,0)),
+    rule(28,'production,['rhs,'PREC,'ID,'action],[],
+      "$$=RULE($1,$4,I($3));",(nonA,0)),
+    rule(29,'rhs,['ID],[],
+      "$$=I($1);",(nonA,0)),
+    rule(30,'rhs,['rhs,'ID],[],
+      "$$=SEQ($1,I($2));",(nonA,0)),
+    rule(31,'rhs,[],[],
+      "$$=EMPTY;",(nonA,0)),
+    rule(32,'action,['BRACE],[],
+      "$$=I($1);",(nonA,0)),
+    rule(33,'action,[],[],
+      "$$=EMPTY;",(nonA,0))
+  ];
+
+  terms = ['CENTBRACE,'TOKEN,'LEFT,'RIGHT,'NONASSOC,'START,'EXPECT,'TYPE,
+    'MARK,'COLON,'BAR,'SEMI,'ID,'NUM,'BRACE,'PREC,'$,'#];
+  precs = [('ID,nonA,0),
+    ('NUM,nonA,0),
+    ('TOKEN,nonA,0),
+    ('LEFT,nonA,0),
+    ('RIGHT,nonA,0),
+    ('NONASSOC,nonA,0),
+    ('PREC,nonA,0),
+    ('EXPECT,nonA,0),
+    ('TYPE,nonA,0),
+    ('BRACE,nonA,0),
+    ('CENTBRACE,nonA,0),
+    ('COLON,nonA,0),
+    ('BAR,nonA,0),
+    ('SEMI,nonA,0),
+    ('MARK,nonA,0),
+    ('$,nonA,0),
+    ('#,nonA,0)];
+  tokendata = [('ID,"ID($$)"),
+    ('NUM,"NUM($$)"),
+    ('TOKEN,"TOKEN"),
+    ('LEFT,"LEFT"),
+    ('RIGHT,"RIGHT"),
+    ('PREC,"PREC"),
+    ('NONASSOC,"NONASSOC"),
+    ('TYPE,"TYPE"),
+    ('CENTBRACE,"CENTBRACE($$)"),
+    ('BRACE,"BRACE($$)"),
+    ('START,"START"),
+    ('EXPECT,"EXPECT"),
+    ('COLON,"COLON"),
+    ('MARK,"MARK"),
+    ('SEMI,"SEMI"),
+    ('BAR,"BAR"),
+    ('$,"EOF")];
+
+  nonterms = ['apg,'preamble,'definition,'tokendef,'tokenspecs,'tokenspec,
+    'includedef,'startdef,'expectdef,'typedef,'rules,'rule,'ruleset,
+    'production,'rhs,'action];
+
+  start = 'apg;
+
+  main()
+  {
+    N = nullable(nonterms,rules);
+
+    F = first(terms,nonterms,rules,N);
+
+    (T,G).=lr0states(rules,start);
+
+    XX = lookAheadK(T,G,rules,F,N);
+
+    A = actions(XX,G,nonterms,['error,..terms],precs,rules,F,N);
+    listing = fopen("apg.output",_create_write);
+    displayStates(XX,G,A,nonterms,listing);
+    fclose(listing);
+
+    out = fopen("rules.ap",_create_write);
+    post = "max = {\n"
+    "  ([],M) => M\n"
+    "| ([NN,..L],M) :: NN>M => max(L,NN)\n"
+    "| ([_,..L],M) => max(L,M)\n"
+    "};\n";
+    genParser(false,"#include \"lextok.ah\";\n",post,"apglex.aam","apgrule",
+      A,G,[rule(0,'?,[start],[],[],(nonA,0)),..rules],terms,nonterms,
+      tokendata,["yyFile","yyLine"])
+     ++"\n">>out;
+    fclose(out);
+  };
+
+} execute main;

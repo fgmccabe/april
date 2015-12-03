@@ -1,0 +1,1133 @@
+@node Functions and procedures
+@chapter Functions and procedures
+@cindex Functions and procedures
+
+In @code{April}, functions and procedures are `first class values'. That
+means that a function or procedure can not only be used -- as in applied
+to arguments -- but it can also be stored as the value of the variable
+or even sent in a message to another process. This last capability gives
+rise to many powerful applications -- including mobile agents, automatic
+configuration over a network and so on.
+
+Functions and procedures can be defined in one of two fundamental
+contexts: within a theta expression and as a normal value-related
+expression. Functions and procedures defined as fields in a theta
+expression may be mutually recursive, whereas other functions or
+procedures are not.
+
+@menu
+* Function::                    The form and semantics of functions
+* Procedure::                   The form and semantics of procedures
+* programs and theta expressions::  
+@end menu
+
+@node Function
+@section Functions
+@cindex The form of a function
+
+@noindent
+@code{April} uses equations to define functions, where equations are
+expressed as a pattern/ex@-pres@-sion pair. Unlike most programming
+languages, functions in @code{April} are properly considered to be
+@emph{partial} functions rather than @emph{total}: that is, it is
+possible for a function not to apply to a given set of
+arguments.@footnote{Technically all @code{April} functions and
+procedures have one argument -- which is normally a tuple of
+values. However, the @code{April} compiler places an additional
+restriction on functions and procedures: that their single argument is
+always a tuple.}  This property of functions is important because it
+allows us to @emph{combine} them using a function union operator.
+
+In general, a function is either an equation or a union of functions.
+
+@menu
+* Equations::                   
+* Function union::              
+* Function application::        How functions are applied to arguments
+* Case expression as a function call::  
+* Function expressions::        Functions as values
+* The voidfun function::        The do-nothing function
+@end menu
+
+@node Equations
+@subsection Function equations
+@cindex Function equation
+@cindex Define function with equations
+@findex => @r{function equation operator}
+
+@noindent
+An equation is a rewrite rule for reducing function application
+expressions to simpler expressions:
+
+@smallexample
+@var{Ptn} => @var{Exp}
+@end smallexample
+
+where @var{Ptn} is a pattern (@pxref{Patterns}) and @var{Exp} is an
+expression (@pxref{Expressions}).
+
+When a function is applied, the @var{Ptn} is matched against the actual
+argument of the function@footnote{A function that has several arguments
+really only has one -- the arguments are all encoded as a tuple which
+forms the single argument of the function.}, and if the match is
+successful, then the function application expression is reduced to
+@var{Exp}.
+
+Note that the @var{Ptn} may have the full form of @code{April} patterns
+-- including semantic guards (@pxref{Guarded pattern}) on the form and
+values of the actual parameters. In addition, since the @var{Ptn} can
+declare variables -- whose scope extends to @var{Exp} -- the body of the
+function can access the actual values as bindings of variables.
+
+The equation body @var{Exp} may refer to other variables than those
+declared in @var{Ptn} -- these variables are @emph{free} in the
+function. All free variables are ultimately bound by some outer
+scope that the function is embedded within. The most common free
+variables in function bodies are actually references to other functions.
+
+Note that although a function may contain references to free variables,
+it may not modify their values.@footnote{With the major exception of
+so-called @code{theta variables} (@pxref{theta variables}).}
+The compiler detects such violations and reports an error.
+
+@cindex variable, read-only
+@cindex formal parameters of functions
+Note also that the variables that are declared in the equation pattern
+-- which are effectively the formal parameters of the function -- are
+single assignment or read-only variables. This implies that such
+variables may not be re-assigned to in the body of the equation.
+
+@node Function union
+@subsection Function union
+@cindex Function union
+@cindex Union of functions
+@findex | @r{function union operator}
+
+@noindent
+A function union is the union of two functions, written with a @code{|}
+operator:
+
+@smallexample
+@var{F} | @var{G}
+@end smallexample
+
+@noindent
+where @var{F} and @var{G} are functions -- of compatible type. The
+meaning of such a function is analogous to the mathematical union of the
+two partial functions @var{F} and @var{G}.@footnote{Where the patterns
+for the two component functions overlap, the first function takes
+precedence over the second. A mathematical function union would require
+that where the patterns overlap, the values of the component functions
+must be the same.} Pragmatically, this means that when a function union
+@code{@{F|G@}} is applied, if the function @var{F} fails to apply then
+the function @var{G} is attempted. If @var{G} also fails to apply then
+the function union fails -- which may lead to the application itself failing.
+
+@node Function application
+@subsection Function application
+@cindex Function application
+
+@noindent
+A function application expression is of the form:
+
+@smallexample
+@var{Fun} @var{Argument}
+@end smallexample
+
+@noindent
+where @var{Fun} is a function valued expression of compatible type with
+@var{Argument}. Typically the argument of a function is a tuple of the form
+ @code{(@var{A1},@dots{},@var{Ak})}; but where the function is
+single-arity then 
+
+@smallexample
+@var{Fun} @var{Arg}
+@end smallexample
+
+@noindent
+is entirely equivalent to:
+
+@smallexample
+@var{Fun}(@var{Arg})
+@end smallexample
+
+@noindent
+@code{April} is a strict call-by-value programming language -- arguments
+to functions are evaluated before entering the function body.
+
+All of @var{Fun}, @var{A1},@dots{},@var{Ak} are evaluated
+prior to the @var{Fun} body itself. However, the precise order of
+evaluation of @var{Fun}, @var{A1},@dots{},@var{Ak} is
+not defined and programmers should not rely on a particular order of
+evaluation of function parameters.
+
+All the parameters to a function are @emph{input} --
+a function only returns a single value.  If it is desired that a function
+returns more than one value then arrange to return a tuple or record of values:
+
+@smallexample
+fun = @{ (@var{P1},@dots{},@var{Pk}) => (@var{Exp1},@dots{},@var{Expj})@}
+@end smallexample
+
+@noindent
+@code{April} allows multiple variables to be assigned simultaneously as
+a tuple; so the results of such a function could be `unpacked' using an
+assignment of the form:
+
+@smallexample
+(@var{V1},@dots{},@var{Vj}) := fun(@var{E1},@dots{},@var{Ek})
+@end smallexample
+
+@noindent
+Since @code{April} functions are defined to be partial, there remains
+the possibility that none of the equations that define a function apply
+to a given set of arguments. If that happens, then the expression
+@emph{fails}, which is not permissable in @code{April}. If an expression
+fails in this way, then an error exception is raised -- the @code{fail}
+exception. Such failures can be trapped and handled using the
+@code{onerror} statement (@pxref{onerror statement}):
+
+@smallexample
+@group
+try@{
+  @dots{} foo(A1,@dots{},Ak) @dots{}
+@} onerror @{
+  failed -> @dots{}               /* @r{Handle failure of @code{foo}} */
+@}
+@end group
+@end smallexample
+
+@node Case expression as a function call
+@subsection @code{case} expression as a function call
+@cindex @code{case} expression as a function call
+
+@noindent
+The @code{case} expression allows the value of an expression to be
+determined by cases in the value of a governing expression.
+
+Although @code{case} expressions are normally expressed in terms of a
+disjunction of alternative cases, the underlying form of the @code{case}
+expression is better expressed in terms of functions:
+
+@smallexample
+case @var{exp} where @var{function}
+@end smallexample
+
+@noindent
+where @var{function} is a function whose argument type is compatible
+with @var{exp}. The conventional @code{case} expression amounts to the
+@var{function} being given explicitly as a series of equations:
+
+@smallexample
+case (A,B) where @{
+  ([],?X) => X
+| ([?E,..?R],?X) => [E,..append(R,X)]
+@}
+@end smallexample
+
+@noindent
+The @code{case} expression can really be understood as a form of
+syntactic sugar for function application. The form:
+
+@smallexample
+case (@var{A1},@dots{},@var{Ak}) where @var{Fun}
+@end smallexample
+
+@noindent
+is equivalent to:
+
+@smallexample
+@var{Fun}(@var{A1},@dots{},@var{Ak})
+@end smallexample
+
+@noindent
+This implies, that instead of the @code{case} expression above, we could
+have written:
+
+@smallexample
+@group
+@{
+  ([],?X) => X
+| ([?E,..?R],?X) => [E,..append(R,X)]
+@}(A,B)
+@end group
+@end smallexample
+
+@noindent
+This conversion is performed automatically by the @code{April} compiler.
+However, given the probable intention of the @code{case} expression
+compared to a function application expression, this way of writing a
+@code{case} expression would be obscure in practice.
+
+@node Function expressions
+@subsection Function expressions
+@cindex Function expressions
+
+@noindent
+As noted above, a function is a first class value in @code{April}. This
+implies that a function -- defined using a combination of equations and
+function union operators -- can used as a value in an expression.
+
+The compiler determines by context the situation where a function is
+being used as a value -- for example, in the expression:
+
+@smallexample
+X : 1..N // @{I=>I*I@}
+@end smallexample
+
+@noindent
+the sub-expression @code{@{I=>I*I@}} is a function value.@footnote{The
+variable @code{X} here is bound to a list of numbers of the form
+@code{[1,2,@dots{}]}.}
+
+The type of a function:
+
+@smallexample
+@var{Ptn} => @var{Exp}
+@end smallexample
+
+@noindent
+is an expression of the form:
+
+@smallexample
+@var{Tp} => @var{Te}
+@end smallexample
+
+@noindent
+where @var{Tp} is the type of @var{Ptn} and @var{Te} is the type of
+@var{Exp}. Where a function is defined using the union operator, the
+type is found by unifying the types associated with the two arms of the
+function union.
+
+It is worth noting again that functions and procedures may be sent in
+messages to other processes, including to processes on different
+computers. In this case, the @code{April} message system will ensure
+that both the function itself @emph{and} the values of any free
+variables referred to in the function will also be sent.
+
+@node The voidfun function
+@subsection The @code{voidfun} function
+@cindex The @code{voidfun} function
+
+@noindent
+The @code{voidfun} function is a special built-in function that is
+defined not to have any applying clauses. The type of @code{voidfun} is:
+
+@smallexample
+%A => %B
+@end smallexample
+
+@noindent
+i.e., it makes no assumptions about its arguments; which means
+that it can be used as the `fail' case of a function value. If
+@code{void} is ever evaluated, it will cause the @code{failed} exception
+to be raised.
+
+@node Procedure
+@section Procedure
+@cindex The form of a procedure
+
+@noindent
+@code{April} uses @emph{clauses} to define procedures, where a clause is
+a pattern/action pair -- analogous to the pattern/expression
+pair for equations. Like functions, @code{April} procedures have a
+semantics based on the success or failure of the application of a
+pattern to a set of arguments: this means that @code{April} procedures
+also have a form of partial semantics.
+
+In general, a procedure is either a clause or a union of procedures.
+
+@menu
+* Procedure clause::            
+* Procedure union::             
+* Procedure application::       How procedures are applied to arguments
+* Case statement as a procedure call::  
+* Procedure expressions::       Procedures as values
+* Procedures and free variables::  
+* The fail procedure::          The always failing procedure
+@end menu
+
+@node Procedure clause
+@subsection Procedure clause
+@cindex Procedure clause
+@cindex Clausal form of procedures
+
+@noindent
+A clause is a rewrite rule for reducing procedure application
+statements to simpler statements:
+
+@smallexample
+@var{Ptn}-> @var{Stmt}
+@end smallexample
+
+@noindent
+where @var{Ptn} is a pattern (@pxref{Patterns}) and @var{Stmt} is a
+statement (@pxref{Statements}). 
+
+When a procedure is applied, the @var{Ptn} is matched against the actual
+arguments of the procedure, and if the match is successful, then the
+procedure application statement is reduced to @var{Stmt}. 
+
+Note that the @var{Ptn} may have the full form of @code{April} patterns
+-- including semantic guards (@pxref{Guarded pattern}) on the form and
+values of the actual parameters. In addition, since the @var{Ptn} can
+declare variables -- whose scope extend to @var{Stmt} -- the body of the
+procedure can access the actual values as bindings of variables.
+
+The procedure body @var{Stmt} may refer to other variables than those
+declared in @var{Ptn} -- these variables are @emph{free} in the
+procedure. All free variables are ultimately bound by some outer
+scope that the procedure is embedded within. 
+
+Although a procedure may contain references to free variables,
+it may not modify their values -- apart from so-called
+theta-variables that are in the same scope. This has the effect
+of preventing procedures from side-effecting their environment in other
+than strictly controlled ways -- one common way is by sending messages
+between processes.
+
+@cindex variable, read-only
+@cindex formal parameters of procedures
+The variables that are declared in the equation pattern
+-- which are effectively the formal parameters of the procedure -- are
+single assignment or read-only variables. This implies that such
+variables may not be re-assigned to in the body of the procedure clause.
+
+@node Procedure union
+@subsection Procedure union
+@cindex Procedure union
+@cindex Union of procedures
+@findex | @r{procedure union operator}
+
+@noindent
+A procedure union is the union of two procedures, written with a
+@code{|} operator:
+
+@smallexample
+@var{P} | @var{Q}
+@end smallexample
+
+@noindent
+where @var{P} and @var{Q} are procedures -- of compatible type.  The
+union of two procedures is defined in terms of the success or failure of
+the procedures to apply. Pragmatically, this means that when this
+procedure is applied, if the procedure @var{P} fails to apply then the
+procedure @var{Q} is attempted. If @var{Q} also fails to apply then the
+procedure union fails, which may cause the procedure call statement
+itself to fail.
+
+Note that the component procedures @var{P} and @var{Q} need not be
+explicitly written as clauses. We can use the @code{|} operator to
+compose existing procedures together, and we can use procedure values
+directly in the definition of a procedure.
+
+One example of the latter may be within a message @code{receive}
+statement, where a default case is to be handled by a procedure:
+
+@smallexample
+@group
+receive @{
+  @var{Ptn1} ->> @var{A1}
+| @var{Ptn2} ->> @var{A2}
+| @dots{}
+| defaultProc
+@}
+@end group
+@end smallexample
+
+@noindent
+where @code{defaultProc} is a procedure -- of type
+@smallexample
+@code{(handle,handle,msgAttr[],any)@{@}}
+@end smallexample
+@noindent
+that will be applied to the message if all
+of @var{Ptni} fail to apply.
+
+@node Procedure application
+@subsection Procedure application
+@cindex Procedure application
+
+@noindent
+A procedure application statement is of the form:
+
+@smallexample
+@var{Proc} @var{Argument}
+@end smallexample
+
+@noindent
+where @var{Proc} is a procedure valued expression of compatible type
+to the type of @var{Argument}. Of course, the procedure will typically have
+several arguments, in which case these are encoded in a tuple as
+@code{(@var{A1},@dots{},@var{Ak})}. 
+
+As with function applications, arguments to procedures are evaluated
+before entering the procedure body.  All of @var{Proc},
+@var{A1},@dots{},@var{Ak} are evaluated prior to the @var{Proc} body
+itself. However, the precise order of evaluation of @var{Proc},
+@var{A1},@dots{},@var{Ak} is not defined and programmers should not rely
+on a particular order of evaluation of procedure parameters.
+
+All the parameters to a procedure are @emph{input} -- procedures do not
+return any values.  If it is desired that a procedure return a value
+then use a function.  On the other hand, procedures can and often do
+send messages to other processes.
+
+As with functions, @code{April} procedures are partial; in which case
+there is the possibility that none of the clauses that define a
+procedure apply to a given set of arguments. If a call fails in this
+way, then an error exception is raised -- the @code{fail}
+exception. Such failures can be trapped and handled using the
+@code{onerror} statement (@pxref{onerror statement}):
+
+@smallexample
+@group
+try@{
+  @dots{} bar(A1,@dots{},Ak); @dots{}
+@} onerror @{
+  failed -> @dots{}               /* @r{Handle failure of @code{bar}} */
+@}
+@end group
+@end smallexample
+
+@node Case statement as a procedure call
+@subsection @code{case} statement as a procedure call
+@cindex @code{case} statement as a procedure call
+@findex case @r{statement operator}
+
+@noindent
+The @code{case} statement allows the choice of which statement to
+execute to be determined by cases in the value of a governing
+expression.
+
+Although @code{case} statements are normally expressed in terms of a
+disjunction of alternative cases, the underlying form of the @code{case}
+statement is better expressed as:
+
+@smallexample
+case @var{exp} where @var{procedure}
+@end smallexample
+
+@noindent
+where @var{procedure} is a procedure whose argument type is compatible
+with @var{exp}. In most cases, the @var{procedure} is given explicitly
+as a series of clauses:
+
+@smallexample
+case (A,B) where @{
+  ([],?X) -> valis X
+| ([?E,..?R],?X) -> valis [E,..append(R,X)]
+@}
+@end smallexample
+
+Note that a @code{case} statement is a form of syntactic sugar for
+procedure application. The form: 
+
+@smallexample
+case (@var{Exp}) where @var{Proc}
+@end smallexample
+
+@noindent
+is equivalent to:
+
+@smallexample
+@var{Proc}(@var{Exp})
+@end smallexample
+
+@noindent
+This implies, that instead of the @code{case} statement above, we could
+have written:
+
+@smallexample
+@group
+@{
+  ([],?X)-> valis X
+| ([?E,..?R],?X)-> valis [E,..append(R,X)]
+@}(A,B)
+@end group
+@end smallexample
+
+@noindent
+Normally, this way of writing a @code{case} statement would be obscure in
+practice; however it is regularly used by the @code{April} compiler when
+translating higher-level language features such as message receive.
+
+@node Procedure expressions
+@subsection Procedure expressions
+@cindex Procedure expressions
+
+@noindent
+Like functions, a procedure is a first class value in @code{April}. This
+implies that a procedure -- defined using a combination of clauses and
+procedure union operators -- can used as a value in an expression.
+
+The compiler determines by context the situation where a procedure is
+being used as a value -- for example, in the statement:
+
+@smallexample
+('doMe, @{()->"Hello world\n">>stdout@}) >> execServer
+@end smallexample
+
+@noindent
+the expression @code{@{()->"Hello world\n">>stdout@}} is a procedure
+value.@footnote{If executed, the message @code{Hello world} should
+appear on the @emph{sender}'s console rather than the console associated
+with @code{execServer}. This is because @code{stdout} is a free
+variable which is bound to the sender's standard output file process.}
+
+The type of a procedure value
+
+@smallexample
+@var{Ptn} -> @var{Stmt}
+@end smallexample
+
+@noindent
+is an expression of the form:
+
+@smallexample
+@var{Tp}@{@}
+@end smallexample
+
+@noindent
+where @var{Tp} is the type of @var{Ptn}. Where a procedure is defined
+using the union operator, the type is found by unifying the types
+associated with the two arms of the procedure union.
+
+@node Procedures and free variables
+@subsection Procedures and free variables
+@cindex Free variables
+@cindex Procedures and free variables
+
+@noindent
+As noted above, a free variable is a variable that occurs in a procedure
+or function that is not bound by that procedure or function. While
+`normal' variables in @code{April} procedures and functions are
+read-write -- i.e., they can be re-assigned a different value -- free
+variables are read-only (except for theta variables).
+
+The reason for this can be seen in the following example; suppose that
+we have the function @code{foo} which returns a procedure value:
+
+@smallexample
+foo(A) => @{(X) -> @{ A:=X @}@}
+@end smallexample
+
+@noindent
+The @code{foo} function returns a unary procedure which attempts to
+re-assign the variable @code{A} to a new value. This variable is free in
+the procedure, and is bound by the @code{foo} function itself -- its a
+parameter of @code{foo}.
+
+If we allowed this re-assignment, and the value of the @code{foo}
+function were executed, then the compiler would have the difficult
+task of assigning a new value to a variable that no longer exists!
+For this reason @code{April} does not permit free variables to be
+re-assigned.
+However, this restriction introduces its own complications. For example,
+consider the statement:
+
+@smallexample
+@var{Proc}(@var{E1},@dots{},@var{Ek})
+@end smallexample
+
+@noindent
+where @var{Proc} is defined as:
+
+@smallexample
+@var{Proc}(@var{P1},@dots{},@var{Pk})
+@{
+  @var{S1}
+@}
+@end smallexample
+
+@noindent
+We would like to be able to state that,  since we know the definition of
+@var{Proc}, the procedure call is entirely equivalent to:
+
+@smallexample
+@{(@var{P1},@dots{},@var{Pk}) -> @{
+  @var{S1}
+@}@}(@var{E1},@dots{},@var{Ek})
+@end smallexample
+
+@noindent
+which in turn should be equivalent to:
+
+@smallexample
+@{
+  (@var{P1},@dots{},@var{Pk}) = (@var{E1},@dots{},@var{Ek});
+  @var{S1}
+@}
+@end smallexample
+
+@noindent
+I.e., we can replace the procedure call of a known procedure by a pair
+of statements -- one to bind the formal parameters of the procedure to
+its actual arguments and one which represents the body of the procedure.
+
+@cindex Assigning to free variables
+However, this final replacement is not quite legal since it ignores the
+issue of free variables. If @var{Proc} contains free variables then, as
+a result of this transformation, their status switches from being
+read-only to full read-write variables.
+
+This is an important issue since this kind of transformation is implied
+by the equivalence of a @code{case} statement with a procedure call
+statement. They @emph{are} equivalent @emph{except} with respect to free
+variables. A @code{case} statement of the form:
+
+@smallexample
+case @var{E} where @{
+  @var{P1} -> @{ XX:=E @}
+| @dots{}
+@}
+@end smallexample
+
+@noindent
+is @emph{not} exactly equivalent to
+  
+@smallexample
+@{
+  (@var{P1}) -> @{ XX:=E @}
+| @dots{}
+@}(@var{E})
+@end smallexample
+
+@noindent
+precisely because in the latter the applied procedure contains a free
+variable which is illegally re-assigned by the procedure, whereas
+assignment of variables is an essential aspect of the power of a
+@code{case} statement. This can be seen more clearly if we `unpack' the
+procedure call using an intermediate procedure variable:
+
+@smallexample
+PP : @{
+  (@var{P1}) -> @{ XX:=E @}
+| @dots{}
+@};
+@dots{}
+PP(@var{E})
+@end smallexample
+
+@noindent
+Here, @code{PP} is a procedure variable bound to a procedure value,
+which now clearly attempts to re-assign a free variable.
+
+@code{April} `resolves' this matter by @emph{ipso facto} declaring that where a
+procedure is explicitly given in a procedure call -- whether a normal
+procedure call or a @code{case} statement -- then the above
+transformation is permitted. The justification being that the restriction
+on free variables is not necessary where the procedure is defined and applied 
+in a single statement.
+
+@node The fail procedure
+@subsection The @code{fail} procedure
+@cindex The @code{fail} procedure
+
+@noindent
+The @code{fail} procedure is a special built-in procedure that is
+defined not to have any applying clauses. The type of @code{fail} is:
+
+@smallexample
+%U@{@}
+@end smallexample
+
+@noindent
+which means that it can be used as the `fail' case of a procedure
+value. If @code{fail} is executed, it will cause the @code{failed}
+exception to be raised.
+
+@node programs and theta expressions
+@section Programs and theta expressions
+@cindex theta expressions
+
+@noindent
+As noted in @pxref{theta expression}, a theta expression is a
+special form of record expression that provides a syntactic
+`environment' for declaring programs. The form of an theta record
+expression is:
+
+@smallexample
+@{
+  @var{el1};
+  @dots{}
+  @var{elk}
+@}
+@end smallexample
+
+@noindent
+where @var{eli} are one of a user type declaration -- @pxref{Type
+definitions} -- a function declaration, procedure declaration or a
+variable declaration.
+
+Note that a theta record should have at least one semi-colon character
+in it. If the theta record has two or more definitions in it then this
+will not be a problem: the @code{;} is used to separate the
+definitions. However, if a theta only has a single definition within it,
+the programmer should use a @code{;} as a terminator or postfix
+operator.
+
+Semantically a theta record has two `views': internally it is a binding
+environment in which recursive programs may be declared; and externally
+it is equivalent to a record -- a record of all the program elements
+declared in it.
+
+@menu
+* Function declaration::        Function definition in an theta record
+* Procedure declaration::       Procedure definition in an theta record
+* theta variables::             
+* theta record expression type::  
+* Semantics of modules::        The meaning of modules
+@end menu
+
+@node Function declaration
+@subsection Function declaration
+@cindex Function declaration
+
+@noindent
+A function declaration in an theta record takes the form of a `labelled'
+set of equations:
+
+@smallexample
+@{
+  @dots{}
+  @var{foo} = @var{Function}
+  @dots{}
+@}
+@end smallexample
+
+@noindent
+For example, the list append function may be defined using:
+
+@smallexample
+append = @{
+  ([],?X) => X
+| ([?E,..?R],?X) => [E,..append(R,X)]
+@}
+@end smallexample
+
+@noindent
+The type of this @code{append} function is determined by the compiler to
+be:
+
+@smallexample
+(%A[],%A[])=>%A[]
+@end smallexample
+
+@noindent
+where @code{%A} is a type variable.
+
+As syntactic sugar -- for the case where a function has a single
+defining equation -- @code{April} allows a more convenient form of
+function definition within a theta expression:
+
+@smallexample
+@var{Fun}(@var{V1},@dots{},@var{Vk}) => @var{Exp}
+@end smallexample
+
+@noindent
+where @var{Vi} are all identifiers denoting fresh variables instead of
+the slightly more clumsy:
+
+@smallexample
+@var{Fun} = @{
+  (@var{V1},@dots{},@var{Vk}) => @var{Exp}
+@}
+@end smallexample
+
+@node Procedure declaration
+@subsection Procedure declaration
+@cindex Procedure declaration
+
+@noindent
+Within an theta record a procedure can be defined as a
+labelled mutually recursive set of clauses or, where there is only one
+clause, with a notation that is more reminiscent of "C".
+
+The clausal form of procedure takes the form:
+
+@smallexample
+@{
+  @dots{}
+  @var{P} = @{
+    @var{Clause1}
+  | @var{Clause2}
+  | @dots{}
+  @}
+  @dots{}
+@}
+@end smallexample
+
+@noindent
+For example, an @code{exec} server process procedure may be defined using:
+
+@smallexample
+@group
+exec = @{
+  () -> @{ repeat@{
+    ('doMe, P) ->> P()
+  @} until quit
+@}
+@end group
+@end smallexample
+
+@code{April} allows, as syntactic sugar, a procedure where there is only
+one applying clause to be written more concisely:
+
+@smallexample
+@group
+exec()
+@{
+  repeat@{
+    ('doMe, P) ->> P()
+  @} until quit
+@}
+@end group
+@end smallexample
+
+@noindent
+As with functions, the @code{April} compiler can automatically compute
+the type of a procedure. In this case, the type assigned would be:
+
+@smallexample
+()@{@}
+@end smallexample
+
+In @code{April} procedures are not allowed to directly side-effect any
+variables apart from those declared within the procedure itself and any
+theta variables (@pxref{theta variables}) that are in its
+scope. Although a procedure may refer to other free variables (variables
+in scope in the context of the enclosing theta record expression) it is
+not permitted to modify them. This restriction is enforced by the
+compiler.
+
+@node theta variables
+@subsection Theta variables
+@cindex theta variables
+
+An environment variable is a variable declaration that takes place at
+the level of other procedures and functions within an theta record
+expression. The simplest such expression might be:
+
+@smallexample
+@group
+@{
+  val:23;
+  upDate(X)@{
+    val := X;
+  @}
+@}
+@end group
+@end smallexample
+
+@noindent
+The variable @samp{val} above is a theta variable. It may be
+modified by any top-level procedure or function within the same
+theta record expression. An important restriction on theta
+variables is that they may not be modified by any functions or
+procedures which are defined `outside' the same theta record
+that the variable is declared in.
+
+The initial value of a theta variable is determined by the
+right-hand side of its declaration. However, while the initializing
+expression of a theta variable can be any expression -- possibly
+involving references to functions also defined within the same
+theta record expession -- the programmer should be careful to avoid
+circular execution problems. The order of evaluation of variable
+initializations is not defined; therefore the programmer should
+@emph{not} make any assumptions about the values of other theta
+variables -- including the variable itself -- when determining the
+initial value of a given theta variable.
+
+A theta expression containing one or more theta variables
+may be sent in a message to other processes -- either on the same host
+computer or on other host computers. However, the precise semantics of
+this differs in the two cases.
+
+In the case that a theta expression is shared by two or more
+processes within a single @code{April} invocation; each of these
+processes can potentially invoke procedures within the theta
+record that will side-affect embedded variables. This can lead to severe
+complications with respect to simultaneous access to environment
+variables by the different processes.
+
+In the case that a theta expression is sent to a process on a
+@emph{different} host computer -- or a different @code{April} invocation
+on the same computer -- then the values of theta variables
+are duplicated and become, in effect, separate variables; although they
+are still internally linked as a unified theta record on the
+remote host.
+
+@node theta record expression type
+@subsection theta record expression type
+
+@noindent
+The type of a theta record expression is a record type of all the types of
+functions, procedures and variables defined within it. The rules
+for the types of individual components of the record are as
+essentially those for function and procedure expressions etc. except
+that the generalization rules are more complex. Note that any types that
+are defined within the theta record are @emph{not} visible in the
+type of the expression as a whole: their scope is strictly within the
+decorated braces of the theta record.
+
+@node Semantics of modules
+@subsection Semantics of modules
+@cindex Semantics of modules
+@cindex Records of functions and procedures
+
+@code{April}'s module system (@pxref{April modules}) does not rely on
+@emph{names} of functions and procedures to link together exported and
+imported procedures. Instead we regard a module as a @emph{theta
+expression} which is effectively a record of procedures, functions and
+types; accessing an imported procedure is achieved by accessing the
+correct member of the record. The principal benefit of not using names
+to link procedures and functions together is that it is very
+straightforward to embed programs in messages and data structures that
+are communicated between @code{April} applications.
+
+In the program:
+@smallexample
+program
+import @{@{()=>string@}?hello@} from "hello.aam" in
+@{
+  main()@{
+    hello() ++ "\n" >> stdout;
+  @}
+@} execute main;
+@end smallexample
+
+@noindent
+the @code{hello} program is imported from another code file --
+@file{"hello.aam"}. Within this program the @samp{hello} variable
+behaves as a @emph{function variable} which is then accessed like any
+other variable value when a call to @code{hello} is made.
+
+We can see this a little more clearly if we look at the underlying
+meaning of the @code{program} structure. Program expressions such as
+this are transformed by the compiler into a more primitive form using 
+theta expressions:
+
+@smallexample
+@group
+  valof@{
+    any(@{()=>string@}?hello) = _load_code("hello.aam");
+    valis hello
+  @}.
+  @{
+    main()@{
+      hello()++"\n" >> stdout
+    @};
+  @}.main
+@end group
+@end smallexample
+
+@noindent
+This, with some simplification, is how the @code{April} compiler
+interprets the @code{world} program above.
+
+This expression has two main components to it: the import component and
+the theta component.  The import component is used to provide an
+enriched environment for constructing the programs in the theta
+component: importing a module is achieve by means of a dot expression
+with the imported module forming a record on the left hand side and the
+main program on the right:
+
+@smallexample
+@var{import-component}.@var{theta-component}
+@end smallexample
+
+@noindent
+The @var{import-component} takes the form of a call to a special
+built-in function -- called @samp{_load_code_} here -- the value of
+which is dynamically verified to be an appropriate record of imported
+functions and procedures.@footnote{This must be verified at execution
+time since the imported module code is generally compiled separately
+from the main program.}
+
+The theta component is itself a dot expression:
+
+@smallexample
+@{
+  @var{programs};
+@}.@var{entry-point}
+@end smallexample
+
+@noindent
+where the theta record expression contains the definitions of the
+procedures and functions defined at the top-level of the program and the
+@var{entry-point} -- which defines the ultimate value of the whole
+program expression -- is typically defined as a reference to a procedure
+which is defined within the main theta record expression.
+
+A module is very similar in structure to a regular main program; the
+principal difference being that a complete record of procedures and
+functions is exported instead of a single procedure entry-point. The
+module:
+
+@smallexample
+module import @{@{()=>string@}?world@} from "world_name.aam" in
+@{
+  hello() => "Hello "++ world()
+@} export hello;
+@end smallexample
+
+@noindent
+becomes the rather complex expression:
+
+@smallexample
+@group
+  valof@{
+    any(@{()=>string@}?world) = _load_code("world_name.aam");
+    valis world
+  @}.@{
+    hello() => "Hello "++ world()
+  @}.(hello=hello)
+@end group
+@end smallexample
+
+@noindent
+The rather odd construct:
+
+@smallexample
+(hello=hello)
+@end smallexample
+
+@noindent
+bears some explanation. Clearly it is a record literal -- @pxref{record
+type} -- and that is appropriate since modules are records of procedures
+and functions. This record has a single field in it -- called
+@samp{hello}. The @emph{value} associated with this field is also
+@samp{hello}: the same @samp{hello} that is defined on the left hand
+side of the dot expression within the theta expression. In short an
+expression of the form:
+
+@smallexample
+@var{R}.(f1=f1,f2=f2)
+@end smallexample
+
+@noindent
+is a way of exporting or projecting a sub-record from a record
+expression.
+
+Since @code{April} modules are based on theta expressions, they
+are actually `first class' values and as such can be assigned to
+variables and returned as values of functions. This would allow a module
+to be sent in a message for example.
+
+Notice that we do not refer to any original name of the @code{hello}
+function from within @code{hello.aam}; we have declared a local variable
+called @code{hello} and bound the imported function to it -- the
+original name of the function is neither important nor accessible. This
+feature of @code{April} modules is crucial especially in the context of
+mobile programming: the fact that programs can be sent in messages, and
+invoked, without needing their original name enables us to guarantee
+that there can never be a `name clash' between programs -- there are no
+names to clash! 
+
+This, in turn, helps us to ensure the integrity of large systems -- no
+program that is imported in a message can affect the programs that are
+already there. A program that has been loaded from a message can be
+bound to a variable and executed but it cannot `side-affect' the modules
+that already make up the executing program.
+

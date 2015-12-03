@@ -1,0 +1,40 @@
+/*
+ * A program to test dynamic procedure closures
+ */
+
+program{
+
+  extra = { (N) => (_,_,_,!N)->{"We have "++N^4++"\n">>stdout}};
+
+  dynamic()
+  {
+    proc : {(_,_,_,M)->{"Dont know "++M^4++"\n">>stdout}};
+
+    repeat{
+      ('add,X) ->> { proc := {extra(X)|proc}}
+    | proc
+    } until 'quit;
+  };
+
+  main(file)
+  {
+    D : spawn dynamic();
+    input = fopen(file,_open_read);
+
+    _break("");
+
+    try {
+      while true do {
+        X = binline(input);
+
+        "Input="++X++"\n">>stdout;
+        X >> D
+      }
+    } onerror {
+      error("end of file",_) -> {}
+    }
+  }
+} execute main;
+
+
+

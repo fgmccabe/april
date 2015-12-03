@@ -1,0 +1,129 @@
+/*
+ * Term reader in April
+ */
+
+#op({letrec},"f(*)",990);
+#macro letrec ?T in ?E -> theta{T}.E;
+
+termStrct ::= tplMark | trm(any);
+
+program{
+  rdTerm(file,tok) -> case tok in {
+    __endFile => exception (error, "end of file",`rdTerm()')
+  | __ident(?S) => ??S
+  | __string(?S) => ??S
+  | __number(?N) => ??N
+  | __lpar => valof {
+      tok := intoken(file);
+
+      valis list2tuple(collect {
+	while tok != __rpar && tok!=__endFile do{
+	  elemis rdTerm(file,tok);
+   
+	  tok := intoken(file);
+	  if tok!=__comma then {
+	    if tok!=__rpar then
+	      exception (error, "',' or ')' expected",`rdTerm()')
+          }
+	  else
+	    tok := intoken(file);
+        };
+	if tok!= __rpar then
+	  exception (error, "')' expected",`rdTerm()')
+      });
+    }
+  | __lbracket => valof {
+      tok := intoken(file);
+
+      valis ?? collect {
+	while tok != __rbracket && tok!=__endFile do{
+	  elemis rdTerm(file,tok);
+   
+	  tok := intoken(file);
+	  if tok!=__comma then {
+	    if tok!=__rbracket then
+	      exception (error, "',' or ']' expected",`rdTerm()')
+          }
+	  else
+	    tok := intoken(file);
+        };
+	if tok!= __rbracket then
+	  exception (error, "')' expected",`rdTerm()')
+      };
+    }
+  | __lbrace => valof {
+      ?T = rdTerm(file,intoken(file));
+
+      if intoken(file) =!= __rbrace then
+	exception (error, "',' or ']' expected",`rdTerm()')
+      else
+	valis T
+    }
+  };
+
+  flatTerm(file,stack,tok) -> valof {
+    while not tok in [__endFile,__semi] do {
+      case tok in {
+        __ident(?S) => stack := [trm(??S),..stack]
+      | __string(?S) => stack := [trm(??S),..stack]
+      | __number(?N) => stack := [trm(??N),..stack]
+      | __lpar => stack := [tplMark,..stack]
+      | __rpar => stack := collapseStack(stack)
+      };
+      tok := intoken(file);
+    };
+    if [trm(?T)]=stack then
+      valis T
+    else
+      exception (error, "syntax error",`read()')
+  };
+
+  collapseStack(stack) -> letrec {
+    coll(st,stack) -> case stack in {
+      [tplMark,..?S] => [trm(list2tuple(st)),..S]
+    | [trm(?E),..?S] => coll([E,..st],S)
+    | {?} => exception (error, "problem in collapseStack",`collapseStack()')
+    }
+  } in coll([],stack);
+
+  list2tuple(List)-> case List in {
+    [] => ??()
+  | [?A] => ??(A)
+  | [?A,?B,..?BB] => case BB in {
+      [] => ??(A,B)
+    | [?C] => ??(A,B,C)
+    | [?C,?D,..?DD] => case DD in {
+        [] => ??(A,B,C,D)
+      | [?E] => ??(A,B,C,D,E)
+      | [?E,?F,..?FF] => case FF in {
+          [] => ??(A,B,C,D,E,F)
+        | [?G] => ??(A,B,C,D,E,F,G)
+        | [?G,?H,..?HH] => case HH in {
+            [] => ??(A,B,C,D,E,F,G,H)
+          | [?I] => ??(A,B,C,D,E,F,G,H,I)
+          | [?I,?J,..?JJ] => case JJ in {
+	      [] => ??(A,B,C,D,E,F,G,H,I,J)
+	    | [?K] => ??(A,B,C,D,E,F,G,H,I,J,K)
+            | [?K,?L,..?LL] => case LL in {
+		[] => ??(A,B,C,D,E,F,G,H,I,J,K,L)
+              | [?M] => ??(A,B,C,D,E,F,G,H,I,J,K,L,M)
+              | {?} => exception (error, "cant convert to tuple",??List)
+	      }
+	    }
+	  }
+	}
+      }
+    }
+  };
+
+  main(name)
+  {
+    H : fopen(name,"r");
+
+    while not eof(H) do
+      writef(stdout,"Term stream is %w\n",(flatTerm(H,[],intoken(H))));
+
+    fclose(H);
+  }
+} execute main;  
+

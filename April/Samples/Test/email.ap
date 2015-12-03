@@ -1,0 +1,117 @@
+/* email-sender.ap -- April->email filter */
+
+#macro debug ==> true;
+
+#macro ICM_COMMSERVER ==> host();
+#macro ICM_COMMS_PORT ==> 4549;
+#macro IIOP_COMMS_PORT ==> 5097;
+#macro ECONNFAILED ==> "cant connect to remote host";
+
+#macro protocol ==> "email";
+
+
+node_t ::= term{string?v} | literal{symbol?v} | nterm{symbol?v}
+               | special{string?v; string?c=""}
+               | strlit{string?v} | numlit{number?v}
+               | datelit{date?v} | symlit{symbol?v}
+               | node{symbol?h; node_t[]?c};
+
+
+program
+import {{{{(string) => node_t}?acl2april;
+	  {(node_t) => string}?april2acl} from "co.aam"}
+       } in
+{
+    main ()
+    {
+	/* connect to ICM and register (by hand) */
+	(?icm_in, ?icm_out) .= tcp_connect (ICM_COMMSERVER, ICM_COMMS_PORT);
+	fencode (icm_out, (commserver(), self(), self(),
+			   (icmRegisterAgent,
+			    handle??{protocol ++ ":" ++ host ()})));
+
+	/* check call succeeded */
+	(_, _, _, ?reply) .= fdecode (icm_in);
+	(icmRegisterAgent, ?status, ?H) .= reply;
+	if not status == icmOk then
+	    writef (stdout, "ICM registration failed\n", ());
+	writef (stdout, "ICM says: %w\n", (reply));
+
+	/* wait for messages */
+	while not eof (icm_in) do {
+	    msg = fdecode (icm_in);
+
+	    case msg in {
+		(handle?dest, handle?repl, handle?sndr, string?M) --> {
+		    writef (stdout, "Received ACL message %w for %w\n",
+			    (M, repl));
+
+
+		}
+	    |
+		(handle?dest, handle?repl, handle?sndr, node_t?M) --> {
+		    writef (stdout, "Received ICM message %w for %w\n",
+			    (M, dest));
+
+		    /* unpack handle */
+		    /* comebak: is this necessary?  or just dest.tgt, etc. */
+		    (?dtgt, ?dname, ?dhome, ?dlocs) .= _analyse_handle (dest);
+
+		    /* extract address */
+		    location = dlocs[1];
+		    ?address .= {
+			case location in {
+			    {protocol ++ "://" ++ string?address1} ==>
+				address1
+			|
+			    string ==>
+				"not-email"
+			}
+		    };
+
+		    /* build destination handle minus this location */
+		    newdest = handle {
+			tgt = dtgt;
+			name = dname;
+			home = dhome;
+			locs = dlocs diff [location];
+		    };
+		    newdest = self ();
+
+		    /* send it */
+		    writef (stdout, "Sending %s message: %w\n",
+			    (protocol, string??M));
+		    send (address, newdest, M);
+
+		    /* done */
+		    break;
+		}
+	    |
+		any?M --> {
+		    /* not a properly specified message */
+		    writef (stdout, "%s: unknown ICM message %w\n",
+			    (protocol, M))
+		}
+	    }
+	}
+    };
+
+
+    send (address, newdest, M)
+    {
+	/* stringify */
+	s = april2acl (M);
+	writef (stdout, "Stringifying, result is:\n%s\n", (s));
+	writef (stdout, "Sending email...", ());
+	fflush (stdout);
+
+	/* send it */
+	cmd = "echo '" ++ s ++ "' | mail -s 'FIPA ACL message' " ++ address;
+	if shell (cmd) == 0 then
+	    writef (stdout, "ok\n", ())
+	else
+	    writef (stdout, "failed\n", ())
+     }
+} execute main;
+
+

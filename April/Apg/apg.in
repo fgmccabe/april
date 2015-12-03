@@ -1,0 +1,5 @@
+#!/bin/sh
+
+# Execute the alex lexical parser generator
+
+exec @prefix@/bin/april -h8192 file:///@prefix@/april/apg.aam $*

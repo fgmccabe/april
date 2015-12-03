@@ -1,0 +1,33 @@
+#include "ap_tok.ah";
+
+program
+  import interface "aptok.af"
+  in {
+
+  grabData(fn) => valof {
+    _file_stat(_,_,_,_,_,_,_,count.=size,_,_,_,_,_) = fstat(fn);
+    f = fopen(fn,_open_read);
+
+    t = inchars(f,count);
+    fclose(f);
+
+    valis t;
+  };
+
+  main(input)
+  {
+    data : (grabData(input),1,1,input);
+
+    while (Txt::Txt!=[],_,_,_).=data do{
+      (dta,tk(tok.=yyTok,line.=yyLine,_)) = yyNextToken(data);
+
+      tok^0++"@"++line^0++"\n">>stdout;
+      data := dta;
+    }
+    onerror {
+      E -> { "We have a problem: "++E^0++"\n">>stdout; halt; }
+    };
+    fflush(stdout);
+  }
+} execute main;
+

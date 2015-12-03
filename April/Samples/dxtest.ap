@@ -1,0 +1,46 @@
+program
+  import 
+{
+  interface <dx/dx.af> 
+} in {
+
+main(Host,Port) {
+    Me = self();
+    Dx = spawn{ dxConnect(Host,Port,Me) };
+	
+    sio_term(1,xmlNode("open",[("url","file:////Users/fgm/Projects/SourceForge/april5/April/Samples/dorian.xml")],[]))>>Dx;
+
+    exit::{
+      repeat
+	sio_term(_,XX) ->> {
+	"\nDialox says: " ++ XX^0 >>stdout;
+	if xmlNode("ok",[],[]).=XX then {
+	  -- do nothing and smile
+	} else if xmlNode("error",[],[xmlText(theError)]) .= XX then {  
+	  "\nDialoxERROR: " ++ theError ++ "\n" >>stdout;
+	} else if xmlNode("clicked",_,Con).=XX then {
+	  if [xmlText("buttonBarShapeClicked")] .= Con then {
+	    sio_term(1,xmlNode("var",
+			       [("name","BarShape")],
+--			       [xmlNode("label",[],[xmlText("MEEP")])])) >>Dx;	   
+	    
+			       [xmlNode("graph",
+					[("var","BarVar"),("border","Bars"),("width","350"),("height","100"),("background","white")],
+					[xmlNode("picture",
+						 [("key","poop")],
+						 [xmlNode("lines",
+							  [("color","blue")],
+							  [xmlNode("pt",[("x","88"),("y","88")],[]),
+							   xmlNode("pt",[("x","111"),("y","111")],[])])])])])) >> Dx;
+
+	  };
+	};
+      }
+    | M ->> {
+	"\n\n Received something that I dont want to process: \n " ++ M^0 >>stdout;
+      }
+      until sio_end;
+    }
+  };
+
+} execute main;

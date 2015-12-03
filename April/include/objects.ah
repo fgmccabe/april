@@ -1,0 +1,184 @@
+/*
+ * Declaration of system operators 
+ */
+
+/* Standard syntax `core' operators */
+
+#op('#,prefix,1500);		-- Introduce macros and includes etc
+#op('macro,prefix,1450);
+#op('==>,infix,1400);	         -- #macro Ptn ==> Replacement
+#op('./,right,860);
+#op('#,infix,650);              -- list indexing and relative macros
+#op('##,right,300);
+#op('##,prefix,300);
+#op('~,infix,795);              -- macro negation and string width specifier
+
+#op('_nodebug_,prefix,1450);
+#op('_debug_,prefix,1450);
+
+#op('include,prefix,1450);	-- Include file
+
+/* Top-level program operators */
+#op('module,prefix,890);	-- Module marker 
+#op('_module,prefix,890);	-- System module marker
+#op('program,prefix,890);	-- Program marker 
+#op('export,infix,800);         -- Indicate export list 
+#op('execute,infix,800);	-- Indicate entry point
+#op('import,prefix,800);	-- Indicate import list 
+#op('native,prefix,790);	-- Indicate native code import
+#op('from,infix,750);           -- Indicate export list 
+#op('where,infix,1000);         -- Indicate program or module body
+#op('interface,prefix,799);     -- Load interface definition file
+#op('<,prefix,748);		-- Used to mark system include files
+#op('>,postfix,749);
+#op('=>,right,1200);	     	-- Equation 
+#op('->,infix,1200);            -- Statement Clause
+#op('::=,infix,1460);	        -- Type definition
+
+#op('|,right,1250);		-- Type/function union
+
+#op(':=,infix,1100);	        -- Assignment operator
+#op(':,infix,999);		-- Multiple assignment variable declaration
+#op('=,infix,999);		-- Single assignment variable declaration
+#op('.,left,400);		-- Record selection
+
+-- #op(',,right,1000);             -- Tupling operator
+-- #op(';,right,1900);             -- Statement sequence/theta marker
+-- #op(';,postfix,1900);            -- Statement sequence/theta marker
+
+#op('do,right,1300);		-- Loop construct
+#op('for,prefix,1250);		-- Loop construct
+#op('while,prefix,1250);	-- Loop construct
+#op('case,prefix,1290);		-- Case statement/expression
+
+#op('else,right,1295);          -- Conditional statement/expression
+#op('then,infix,1290);
+#op('if,prefix,1250);
+
+#op('try,prefix,1300);		-- Error handling
+#op('onerror,infix,1299);
+#op('exception,prefix,900);	-- Raise an error
+
+#op('within,infix,1100);	-- Execute in constrained environment
+#op('within_,infix,1100);	-- Execute in constrained environment
+
+#op(':-,infix,1140);	        -- Labelled statement
+#op('leave,prefix,310);         -- exit labelled statement
+
+#op('let,prefix,500);  		-- let ... in exp form
+#op('valof,prefix,500);		-- valof/valis form
+#op('valis,prefix,1100);
+#op('collect,prefix,500);	-- collect ... elemis form
+#op('setof,prefix,500);		-- setof ... elemis form
+#op('elemis,prefix,1100);
+
+#op('%%,infix,510);		-- Type coercion
+
+/* Operators for the message receive variations */
+#op('receive,prefix,1290);      -- Message receive statement
+#op('<<,postfix,1100);          -- Message receive statement
+#op('->>,infix,1200);           -- Receive clause
+#op('repeat,prefix,1300);       -- Stream message receive
+#op('until,infix,1290);
+#op('alarm,prefix,1249);
+#op('timeout,prefix,1010);	-- Timeout clause in message receive
+#op('~~,infix,998);
+
+/* Operators for message send variations */
+#op('>>,infix,1100);            -- Message send
+#op('>>>,infix,1100);           -- Message forward
+#op('!>>,postfix,1100);          -- Send to self
+#op('>>*,infix,1100);           -- Multi-cast
+
+#op('?,infix,750);		-- Variable pattern
+#op('?,prefix,310);		-- Variable pattern
+#op('??,infix,510);		-- Type caste from type any
+#op('%,prefix,1);		-- Type variable
+#op('::,infix,940);             -- Pattern guard
+#op('!,aprefix,910);		-- Expression pattern
+#op('!!,aprefix,910);		-- Global variable update
+
+/* Process fork related operators */
+
+#op('spawn,prefix,900);
+#op('as,infix,890);
+#op('using,infix,860);
+
+-- Obsolete operators
+#op('fork,prefix,500);
+#op('public_spawn, infix, 1100);
+
+-- Arithmetic operators
+#op('+,left,720);		-- Addition
+#op('+,prefix,300);		-- Unary plus
+#op('-,left,720);		-- Subtraction
+#op('-,prefix,300);		-- Unary minus
+#op('*,left,700);		-- Multiplication
+#op('*,postfix,700);		-- String closure
+#op('/,left,700);		-- Division
+#op('quot,left,700);		-- Integer quotient
+#op('rem,left,700);		-- Integer remainder
+
+-- Set operation operators
+#op('\/,left,820);		-- Set union
+#op('/\,left,800);		-- Set intersection
+#op('<>,right,800);		-- List append
+#op('\,left,820);		-- Set difference
+#op('^/,left,840);		-- Set select
+#op('^\,left,840);		-- Set reject
+#op('//,infix,840);             -- Map a list
+#op('map,infix,840);            -- Synonym
+#op('\\,infix,840);             -- Reduce a list
+#op('reduce,infix,840);         -- Synonym
+
+#op('++,right,800);		-- String concatenation
+#op('^,infix,790);		-- Precision indicator
+#op('~,infix,795);              -- macro negation and string width specifier
+
+#op('.=,infix,900);		-- Pattern match predicate
+#op('!.=,infix,900);		-- Pattern not match predicate
+#op('==,infix,900);		-- Equality predicate
+#op('!=,infix,900);		-- Not equality predicate
+#op('<,infix,900);		-- Inequality predicate
+#op('>,infix,900);		-- Inequality predicate
+#op('<=,infix,900);		-- Inequality predicate
+#op('>=,infix,900);		-- Inequality predicate
+#op('in,infix,900);		-- Set membership predicate
+#op('.. ,infix,820);            -- Set iota
+#op('step,infix,840);           -- Step increment for set iota
+
+#op('append,right,800);          -- Synonym for <>
+#op('select,left,840);          -- Synonym for ^/
+#op('reject,left,840);          -- Synonym for ^\
+
+#op('&&,right,920);		-- Conjunction
+#op('and,right,920);		-- Conjunction
+#op('||,right,930);		-- Disjunction
+#op('or,right,930);		-- Disjunction
+#op('!,aprefix,910);		-- Negation
+#op('not,aprefix,910);		-- Negation
+
+#op('secs,postfix,600);		-- Time operators
+#op('mins,postfix,600);	
+#op('hours,postfix,600);
+#op('days,postfix,600);
+
+/* Assignment operators */
+#op('+:=,infix,1100);
+#op('*:=,infix,1100);
+#op('/:=,infix,1100);
+#op('-:=,infix,1100);
+#op('<>:=,infix,1100);
+#op('^/:=,infix,1100);
+#op('^\:=,infix,1100);
+
+/* Set abstraction operators */
+#op('forall,infix,910);
+#op('istrue,prefix,910);
+#op('bagof,prefix,500);		-- setof ... elemis form
+#op('of,infix,975);		-- set abstraction operator
+
+/* Object operators */
+#op('object,prefix,990);
+#op('!,infix,905);
+#op('record_of,prefix,900);

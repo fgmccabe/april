@@ -1,0 +1,5 @@
+/* automatically generated -- do not edit */
+/* Module interface file for genapril.aam */
+( %a-( %b-{
+    (char[],( %a,dfaE[],finalType(char[])[])[],char[],char[],char[],char[],logical, %b)=>char[]
+   })?genTokenizer) from "genapril.aam";

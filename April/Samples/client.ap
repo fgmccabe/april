@@ -1,0 +1,44 @@
+/*
+ * A sample client program
+ */
+program {
+
+  reader(inp)
+  { 
+    count : 0;
+    { while not eof(inp) do {
+        inline(inp)++"\n">>stdout;
+        count +:= 1;
+      }
+    }
+    onerror
+    { error("end of file",_) -> {
+	"Eof on connection\n">>stdout;
+      }
+    | X -> 
+	"Other message: "++X^3++"\n">>stdout
+    };
+    count^0++" lines read\n">>stdout;
+  };
+   
+  connect(host,port)
+  {
+    (inp,out) = tcp_connect(host,port);
+    "Connected to "++host++"/"++port^0++"\n">>stdout;
+
+    "test\n" >> out;
+
+    reader(inp);
+    fclose(out);
+    fclose(inp);
+  };
+
+  main(host,port,iterations)
+  {
+    for i in 1..iterations do {
+      "Try for connection "++i^0++"\n">>stdout;
+      connect(host,port);
+    }
+  }
+
+} execute main;

@@ -1,0 +1,4 @@
+@node Getting started with GoScript
+@chapter Getting started with @code{GoScript}
+@cindex Getting started with @code{GoScript}
+

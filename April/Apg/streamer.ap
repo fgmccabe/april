@@ -1,0 +1,41 @@
+module
+import
+  interface <stdio.af>
+in{
+
+  split = {
+    ([],L) => (reverse(L),[])
+  | ([''%,''%,''\n,..R],L) => (reverse(L),R)
+  | ([C,..R],L) => split(R,[C,..L])
+  };
+
+  reverse(L) => valof {
+    R : [];
+    LL : L;
+    while [X,..Y].=LL do {
+      R := [X,..R];
+      LL := Y;
+    };
+    valis R;
+  };
+
+  grabData(fn) => valof {
+    _file_stat(_,_,_,_,_,_,_,count.=size,_,_,_,_,_) = fstat(fn);
+    f = fopen(fn,_open_read);
+
+    t = inchars(f,count);
+    fclose(f);
+
+    (Pre,R) .= split(t,[]);
+    
+    if R!=[] then {
+      (T,Post) .= split(R,[]);
+      valis (Pre,T,Post);
+    }
+    else{
+      (T,Post) .= split(Pre,[]);
+      valis ([],T,Post);
+    };
+  };    
+
+} export (split,grabData,reverse);

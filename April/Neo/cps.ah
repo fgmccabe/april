@@ -1,0 +1,22 @@
+/* 
+ * The CPS style abstract syntax of April
+ * The general form of a Continuation-style function call is:
+ * APP(fun,args,vfuns)
+ * which means `apply fun to args, and apply one of vfuns to the result'
+ */
+
+cpsVal ::= var(symbol) | sym(symbol) | num(number) | str(string) | lbl(symbol) ;
+
+cpsAccess ::= OFFp(number) | SELp(number,cpsAccess);
+
+cpsExp ::= result(cpsVal) |	/* Result value */
+  record( (cpsVal,cpsAccess)[], symbol, cpsExp) |
+  field(number,cpsVal,symbol,cpsExp) |
+  tuple( cpsVal[], symbol, cpsExp) |
+  apply(cpsVal,cpsVal[]) |
+  fix((symbol,symbol[],cpsExp)[],cpsExp) |
+  bind(symbol,cpsExp,cpsExp) |
+  switch(cpsVal,(cpsVal,cpsExp)[]) |
+  primfn(symbol, cpsVal[], symbol[], cpsExp[]) |
+  primpr(symbol, cpsVal[], cpsExp[]);
+  

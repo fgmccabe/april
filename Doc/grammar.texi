@@ -1,0 +1,647 @@
+@node April grammar
+@appendix Formal @code{April} grammar
+@cindex @code{April} formal grammar
+
+@noindent
+There are several different levels of @code{April}'s syntax:
+@itemize @bullet
+@item
+The presentation or publication syntax of the language. This is the main
+subject of this manual; it includes many `convenience' features designed
+to make writing programs simpler. However, it is quite complex, and is
+difficult to construct an understandable semantics for. On the other
+hand, presentation syntax is automatically processed into the simpler
+`core' language.
+
+@item
+The core language represents that version of the language which can be
+directly understood by the compiler. It lacks many of the expected
+features of the language -- such as a @code{case} statement for example,
+or event message @code{receive}.
+
+@item
+The surface syntax -- which defines the legal syntactic expressions of
+the language and is based on an operator precedence grammar.
+
+@item
+The token syntax -- which defines the legal tokens of @code{April}.
+@end itemize
+
+In this appendix we present these in reverse order: first the formal
+syntax for legal @code{April} tokens, the formal operator
+precedence grammar, and then the core language.
+
+@menu
+* Token syntax::                Legal @code{April} symbols
+* Operator precedence grammar::  Legal syntactic forms in @code{April}
+* Core April syntax::           
+* Presentation syntax::         Full form of @code{April} syntax
+@end menu
+
+@node Token syntax
+@section Token syntax
+@cindex @code{April} token syntax
+@cindex Token syntax
+
+@noindent
+We use @emph{regular expression} notation to express our definition of
+legal tokens. This takes the form of a set of equations of the form:
+
+@smallexample
+@emph{integer} = [1-9][0-9]*
+@end smallexample
+
+@noindent
+This defines what it means to be an @var{integer}: a leading digit character
+in the range @code{1} to @code{9}, followed by any number of digit
+characters in the range @code{0} to @code{9}.
+
+The result, @var{integer}, can be `plugged' into the operator precedence
+grammar as a terminal.
+
+@menu
+* Identifier syntax::           syntax of @code{April} @var{ident}s
+* Number syntax::               syntax of @code{April} numbers
+* Strings::                     Syntax of @code{April} strings
+* Comments::                    Syntax of @code{April} comments
+@end menu
+
+@node Identifier syntax
+@subsection Syntax of @code{April} @var{ident}s
+@cindex Syntax of @code{April} identifiers
+
+@noindent
+There are two main classes of identifier, the alphanumeric identifier
+which is used typically for symbols and variables and graphic
+identifiers which are typically used for operators.
+
+@smallexample
+@var{ident} = @var{alpha} | @var{graphic}
+@var{alpha} = [a-zA-Z_][a-zA-Z_0-9]*
+@var{graphic} = [!@@#$%^&*-=+:~<>./?\|]+
+@var{single} = ''@var{quotechar}
+@end smallexample
+
+@noindent
+Note that the period character -- @code{.} -- serves in a dual role: as a
+graphic character and as the `decimal point' in floating point numbers. The
+potential ambiguity is resolved in the standard way: if a full stop character
+is surrounded by digit characters then is it part of a floating point number,
+otherwise it is interpreted as a graphic character.
+
+Note also that the semi-colon character -- @code{;} -- is reserved (i.e.,
+it cannot appear inside an identifier) even though it is an operator. In
+fact, the status of the @code{;} token depends on whether it appears
+@emph{within} an expression -- inside any @code{@{@}}'s, @code{()}'s or
+@code{[]}'s -- in which case it is treated as a regular operator -- or
+@emph{between} expressions -- in which case it is treated as an
+expression terminator.
+
+The last type of symbol -- the @emph{single character} symbol has a
+special syntax that allows a symbol to be any single character. This
+special form of symbol allows any single character to be `made' into a
+symbol. For example, the tokens:
+
+@smallexample
+''a  ''0 ''\0
+@end smallexample
+
+@noindent
+are all symbols. The first one is in fact equivalent to simply:
+
+@smallexample
+'a
+@end smallexample
+
+@noindent
+The second token refers to the ASCII character for the digit @code{0}
+(not to be confused with the number zero) and the
+last one refers to the NUL character.
+
+
+@node Number syntax
+@subsection Syntax of @code{April} numbers
+@cindex Syntax of @code{April} numbers
+
+@noindent
+There are two main types of number: @var{integer}s and @var{floating}
+point numbers, both are of type @code{number}.
+
+@smallexample
+@var{number} = @var{integer} @var{|} @var{charcode} @var{|} @var{floating}
+@end smallexample
+
+@noindent
+In the case of @var{integer} we can use decimal, octal or
+hexadecimal number representations:
+
+@smallexample
+@var{integer} = @var{decimal} | @var{octal} | @var{hex}
+@var{decimal} = [1-9][0-9]*
+@var{octal} = 0[0-7]*
+@var{hex} = 0x[0-9a-fA-F]+
+@end smallexample
+
+Note that octal numbers have a leading zero digit, whereas decimal
+numbers do not.  This convention is similar to the ``C'' language
+convention for octal and decimal numbers.
+
+A @var{charcode} is a useful way of denoting the numeric ASCII code of a
+character. The form of a @var{charcode} is:
+
+@smallexample
+@var{charcode} = 0c@var{quotechar}
+@end smallexample
+
+For example, the tokens:
+
+@smallexample
+0cA 0c\n
+@end smallexample
+
+@noindent
+denote the numeric values:
+@smallexample
+65 10
+@end smallexample
+corresponding to the ASCII values of upper case letter @code{A} and
+line-feed respectively.
+
+The regular expression for floating point numbers is:
+
+@smallexample
+@var{floating} = [0-9]+.[0-9]+([eE]-?[0-9]+)?
+@end smallexample
+
+@noindent
+Notice that negative numbers do not form single tokens -- they are
+`processed' as expressions. The @code{April} compiler does, however,
+automatically fold such expressions into a negative number.
+
+@node Strings
+@subsection Syntax of @code{April} @code{strings}
+
+@noindent
+@code{April} strings may consist of arbitrary characters. 
+The regular expression for @code{string} is:
+
+@smallexample
+@var{string} = "@var{quotechar}*"
+@end smallexample
+
+@noindent
+The @var{quotechar} production defines the legal characters that may
+appear in strings, it is also the basis of the single character symbol
+notation and the character encoding notation. 
+
+@var{quotechar} is also defined using regular expressions:
+
+@smallexample
+@var{quotechar} = [^"'\n\\]|\\@var{qchar}
+@var{qchar} = [abdefnrtv\\] | octal | hex
+@end smallexample
+
+@noindent
+i.e., a quote character is any character except new-line (or any other
+control character), double or single quote or backslash, or a backslash
+followed by a special character or by the numeric code of the character
+in octal or hexadecimal. The notation @code{\\} in the regular
+expression above means the character @code{\} -- backslash is a
+meta-character of regular expression notation.
+
+Some of the characters which may follow a backslash have a specific meaning:
+@table @asis
+@item @code{\a}
+Alarm bell.
+
+@item @code{\b}
+Backspace character.
+
+@item @code{\d}
+Delete character.
+
+@item @code{\e}
+Escape character.
+
+@item @code{\f}
+Form feed character.
+
+@item @code{\n}
+New line character (@emph{as a character within the string}).
+
+@item @code{\r}
+Carriage return character.
+
+@item @code{\t}
+Tab character.
+
+@item @code{\v}
+Vertical tab character.
+  
+@item @code{\?}
+Any other character, including the backslash character itself and the
+quote characters.
+@end table
+
+@noindent
+For convenience, string values can be split into adjacent segments: two
+or more strings separated only by `white space' are considered to
+represent a single string.
+
+@node Comments
+@subsection Syntax of @code{April} comments
+@cindex Syntax of @code{April} comments
+
+@noindent
+There are two styles of comment supported by @code{April} -- line
+comments and continuous comments. 
+
+@table @asis
+@item Line comments
+take the form of a double hyphen (@code{--}), followed by
+a non-graphic character -- usually a space -- and is terminated by the
+end-of-line character or the end-of-file marker whichever comes first.
+
+@item Continuous comments
+are the same as ``C''-style comments: they are
+started by the characters @code{/*} and terminated by the characters
+@code{*/}.
+@end table
+
+Note that if a line comment contains the @code{/*} lead characters of a
+continuous comment, they are ignored: they are not interpreted as the
+start of a continuous comment.
+
+However, a continuous comment may include a line comment, but if that
+line comment contains the @code{*/} comment trail characters, the
+continuous comment is terminated and the rest of the line is @emph{not}
+treated as a comment.
+
+@node Operator precedence grammar
+@section Operator precedence grammar
+@cindex Operator precedence grammar
+
+@cindex Definite Clause Grammars
+@cindex Grammar rules
+@noindent
+We shall use @emph{Definite Clause Grammars} (DCG) to write the grammar
+rules for the operator precedence grammar.  A DCG rule looks like:
+
+@smallexample
+@var{term0}  @expansion{}  ( @var{term0} )
+@end smallexample
+
+@noindent
+which means that a @code{term0} can be formed by taking a @code{term0} and
+enclosing it with the tokens `@code{(}' and `@code{)}'.
+
+It is permitted to include context sensitive tests in a DCG rule, these are
+denoted by predicates which are enclosed by braces, as in 
+@smallexample
+@emph{term(N)}  @expansion{}  @emph{preop(O,P,R) @{P<=N@}} @emph{term(R)}
+@end smallexample
+
+@noindent
+which builds in a test that the value @code{P} is numerically less than
+@code{N}.
+
+The full operator precedence grammar of @code{April} is essentially very
+simple:
+
+@smallexample
+@var{term} @expansion{} @emph{term(2000)} ;          -- @r{Terms are terminated by a semi-colon.}
+
+@emph{term(N)}  @expansion{}  @emph{preop(O,P,R) @{P<=N@} term(R)}
+  |  @var{term}(@var{L}) @emph{infop(O,P,L,R)} @{P<=N@} @var{term}(@var{R})
+  |  @var{term}(@var{L}) @var{postop}(@var{O},@var{P},@var{L}) @{@var{P}<=@var{N@}}
+  |  @var{term0}
+
+@var{term0}  @expansion{}  @var{ident}
+  |  @var{number}
+  |  @var{string}                    -- @r{A single string or a string sequence}
+  |  ( )                      -- @r{Empty tuple}
+  |  [ ]                      -- @r{Empty list}
+  |  @{ @}                      -- @r{Empty statement}
+
+  |  [ @var{list_els} ]                -- @r{Non-empty list}
+  |  @{ @emph{term(2000)} @}              -- @r{Override operator precedences}
+  |  ( @emph{term(2000)} )              -- @r{Override operator precedences}
+  |  ''' @var{ident}                   -- @r{Escape operator and other interpretations}
+  |  % @var{ident}                     -- @r{Type variable identifier}
+  |  @var{term0 term0}                 -- @r{Function application}
+
+@var{list_els} @expansion{} @emph{term(999)}
+  | @emph{term(999)} , @var{list_els}
+  | @emph{term(999)} ,.. @emph{term(999)}
+@end smallexample
+
+Note that @emph{preop(@var{O},@var{P},@var{R})} means that the
+identifier @var{O} is a prefix operator with priority @var{P} and an
+expected right priority of @var{R}. In the case of an associative prefix
+operator @var{P} = @var{R}; whereas in the case on a
+non-associative prefix operator @var{P} = @var{R}+1.
+
+Similarly, @code{postop} and @code{infop} refer to postfix operators and
+infix operators respectively.
+
+Note that we have two `bracketing' combinations: the @code{@{@}} pair
+and the @code{()} pair. While these are semantically equivalent, we
+normally use @code{()}'s to group expression values, and we use
+@code{@{@}}'s to group statements.
+
+@node Core April syntax
+@section Core @code{April} syntax
+@cindex Core April syntax
+
+@noindent
+The `core' @code{April} syntax refers to the core version of the
+language -- it represents the `minimal' form of @code{April}. In
+contradistinction to the `presentation' syntax, core @code{April} lacks
+many features and conveniences -- such as message sending and recieving,
+@code{case} statements and @code{repeat}@dots{}@code{until} loops.
+
+On the other hand, because core @code{April} is so minimal, it is
+considerably easier to specify and to verify its soundness -- hence the
+distinction. Presentation @code{April} is converted into core
+@code{April} mostly by means of standard macros that are automatically
+included by the @code{April} compiler.
+
+@menu
+* Core April types::            
+* Core April expressions::      
+* Core April patterns::         
+* Core April statements::       
+* Core April programs::         
+@end menu
+
+@node Core April types
+@subsection Core @code{April} types
+@cindex Core @code{April} types
+
+@noindent
+@smallexample
+@var{type} @expansion{} symbol
+  | number                      -- @r{Includes both integers and floating points}
+  | string
+  | %@var{ident}                       -- @r{type variable}
+  | @var{type}[]                       -- @r{list-type}
+  | @var{tuple-type}
+  | @var{type} => @var{type}                 -- @r{function-type}
+  | @var{type} @{@}                      -- @r{procedure-type}
+  | %@var{ident}.@var{type}                  -- @r{bound type expression}
+  | typeof(@var{exp})                 -- @r{`pick up' type of an expression}
+  | any                         -- @r{universal type}
+
+@var{tuple-type} @expansion{} @var{type} ? @var{ident}
+  | @var{type} ? @var{ident} , @var{tuple-type}
+
+@var{type-declaration} @expansion{} @var{type-name} ::= @var{type}
+  | @var{type-name} ::= @var{new-type-declaration}
+
+@var{new-type-declaration} @expansion{} @var{ident}
+  | @var{ident} @var{type}             -- @r{labelled types}
+  | @var{new-type-declaration} '|' @var{new-type-declaration}
+
+@var{type-name} @expansion{} @var{ident}
+  | @var{ident} (%@var{ident},@dots{},%@var{ident})
+@end smallexample
+
+@noindent
+Note that there are a number of `standard' types which are pre-defined
+in the @code{April} language but which are not mentioned here -- for
+example, the @code{logical} type and the @code{handle} type. Such types,
+while they are integral to the language, are defined by standard
+definitions; for example, @code{logical} is defined:
+
+@smallexample
+logical ::= false | true;
+@end smallexample
+
+@node Core April expressions
+@subsection Core @code{April} expressions
+@cindex Core @code{April} expressions
+
+@noindent
+@smallexample
+@var{exp} @expansion{} @var{ident}                 -- @r{may be a variable or a symbol}
+  | ' @var{ident}                  -- @r{a} symbol
+  | @var{number}
+  | @var{string}
+  | @var{tuple-expression}
+  | @var{ident} @var{tuple-expression}
+  | @var{list-expression}
+  | @var{expression} . @var{expression}     -- @r{Dot expression}
+  | @var{exp} @var{exp}                 -- @r{function application}
+  | @var{function}
+  | @var{procedure}
+  | @var{exp} '|' @var{exp}             -- @r{limited to functions and procedures}
+  | valof @var{statement}          -- @r{Statement should contain a @code{valis}}
+  | collect @var{statement}          -- @r{Statement should contain @code{elemis}}
+  | try @code{exp} onerror @var{function}
+  | exception @var{exp}
+
+@var{tuple-expression} @expansion{} @var{comma-tuple}
+  | @var{theta-tuple}
+  | ()                      -- @r{empty tuple}
+  | @{@}                       -- @r{empty tuple}
+
+@var{comma-tuple} @expansion{} @var{ident}=@var{exp}
+  | @var{ident}=@var{exp} , @var{comma-tuple}
+
+@var{theta-tuple} @expansion{} @var{theta-field} ;
+  | @var{theta-field} ; @var{theta-field}
+  | @var{theta-field} ; @var{theta-tuple}
+
+@var{theta-field} @expansion{} @var{ident}=@var{exp}        -- @r{constant field}
+  | @var{ident}:@var{exp}               -- @r{updateable field}
+  | @var{type-name} ::= @var{type}
+
+@var{list-expression} @expansion{} []
+  | [ @var{list-elements} ]
+
+@var{list-elements} @expansion{} @var{exp}
+  | @var{exp} ,.. @var{exp}
+  | @var{exp} , @var{list-elements}
+@end smallexample
+
+@noindent
+Note that there is significant processing for @var{tuple} expressions
+from presentation @code{April} syntax to core @code{April} syntax. In
+particular, field names may be automatically generated for `unlabelled'
+tuples and fields themselves may be generated from default values in the
+case of labelled types.
+
+Where field names must be generated automatically, they are typically
+of a form which makes them unavailable to the programmer.
+
+Note also that higher-level expressions -- such as
+@code{if}@dots{}@code{then}@dots{}@code{else} -- are typically macro-processed
+into special instances of the form:
+
+@smallexample
+@var{function} @var{exp}
+@end smallexample
+
+@noindent
+I.e., a direct application of a literal function value to an expression.
+
+@node Core April patterns
+@subsection Core @code{April} patterns
+@cindex Core @code{April} patterns
+
+@smallexample
+@var{pattern} @expansion{} @var{ident}                -- @r{new variable or pre-defined symbol}
+  | @var{type} ? @var{ident}               -- @r{introduce typed variable}
+  | ' @var{ident}
+  | @var{list-pattern}
+  | @var{tuple-pattern}
+  | @var{ident} @var{tuple-pattern}
+  | @var{string-pattern}
+  | ! @var{exp}                     -- @r{match literal expression}
+  | @var{pattern} :: @var{predicate}        -- @r{conditional pattern}
+
+@var{list-pattern} @expansion{} []
+  | [ @var{list-element-pattern} ]
+
+@var{list-element-pattern} @expansion{} @var{pattern}
+  | @var{pattern} , @var{list-element-pattern}
+  | @var{pattern} , @var{pattern}
+
+@var{tuple-pattern} @expansion{} @var{pattern}
+  | @var{pattern} , @var{tuple-pattern}
+@end smallexample
+
+@node Core April statements
+@subsection Core @code{April} statements
+@cindex Core @code{April} statements
+
+@smallexample
+@var{statement} @expansion{} @var{stmt}
+  | @var{stmt} ; @var{statement}
+
+@var{stmt} @expansion{} @var{variable-declaration}
+  | @var{ident} := @var{exp}
+  | @var{exp} @var{exp}                   -- @r{Procedure call}
+  | valis @var{exp}                 -- @r{Valid in a @code{valof} statement only}
+  | elemis @var{exp}                -- @r{Valid in a @code{collect} statement only}
+  | @var{statement}                 -- @r{Introduce new scope context}
+  | @var{pattern} .= @var{expression}      -- @r{Pattern match statement}
+  | @var{expression} . @var{statement}     -- @r{Dot statement}
+  | for @var{pattern} in @var{expression} do @var{statement}
+  | while @var{expression} do @var{statement}
+  | @var{ident} :: @var{statement}         -- @r{Labelled statement}
+  | leave @var{ident}
+  | try @code{statement} onerror @var{procedure}
+  | exception @var{exp}
+
+@var{variable-declaration} @expansion{} @var{ident} : @var{expression}
+  | @var{ident} = @var{expression}         -- @r{Read-only declaration}
+@end smallexample
+
+
+@node Core April programs
+@subsection Core @code{April} programs
+@cindex Core @code{April} programs
+
+@noindent
+April programs are composed of functions, procedures and collections of
+these, which are all first-class @code{April} expressions. One notable
+form of program expression is the `theta' tuple; a theta-tuple is a
+tuple of values which may include recursively defined functions and
+procedures and updateable fields. Updateable fields are only updateable
+by functions and procedures defined within the theta-tuple itself.
+
+@smallexample
+@var{function} @expansion{} @var{pattern} => @var{exp}
+
+@var{procedure} @expansion{} @var{pattern} -> @var{statement}
+@end smallexample
+
+@node Presentation syntax
+@section @code{April} presentation syntax
+@cindex @code{April} presentation syntax
+
+@noindent
+The presentation syntax is a strict super-set of @code{April}'s core
+syntax. It also clearly defines the expected contents of an @code{April}
+program file.
+
+@code{April} presentation syntax also includes a number of convenience
+features -- such as allowing elements of labelled types to be written
+using field names and to have default values associated with them. In
+addition, the presentation syntax defines statements such as message
+send and message receive.
+
+@smallexample
+@var{program-file} @expansion{} @var{file-element}
+  | @var{file-element} @var{program-file}
+  | @var{program-element}
+
+@var{file-element} @expansion{} @var{macro-definition}
+  | @var{type-declaration}                 -- @r{non-recursive only}
+  | @var{include statement}
+
+@var{macro-definition} @expansion{} #macro @var{macro-pattern} ==> @var{macro-replacement}
+
+@var{macro-pattern} @expansion{} @var{number}
+  | @var{string}
+  | _
+  | number
+  | symbol
+  | string
+  | list
+  | tuple
+  | @var{ident}                            -- @r{may be literal or macro var}
+  | []                                 -- empty list
+  | [@var{macro-pattern} ,..@var{macro-pattern}]
+  | @var{macro-pattern} []
+  | (@var{macro-pattern},@dots{},@var{macro-pattern})
+  | ? @var{ident}                          -- @r{define new macro var}
+  | @var{macro-pattern} ? @var{ident}
+  | @var{macro-pattern} ~ @var{macro-pattern}
+  | @var{macro-pattern} @@ @var{macro-pattern}
+  | @var{macro-pattern} ./ @var{macro-pattern}
+  | @var{macro-pattern} | @var{macro-pattern}
+  | @var{macro-pattern} @var{macro-pattern}
+  | '@var{ident}
+
+@var{macro-replacement} @expansion{} @var{number}
+  | @var{string}
+  | @var{ident}                            -- @r{may be literal or macro var}
+  | []
+  | [@var{macro-replacement} ,..@var{macro-replacement}]
+  | (@var{macro-replacement},@dots{},@var{macro-replacement})
+  | @var{macro-replacement} ## @var{macro-replacement}
+  | @var{macro-replacement} ./ @var{macro-replacement}
+  | @var{macro-replacement} @@ @var{macro-replacement}
+  | #macro @var{macro-replacement} ==> @var{macro-replacement}
+  | #echo (@var{macro-replacement},@var{macro-replacement})
+  | #error (@var{macro-replacement},@var{macro-replacement})
+  | #warning (@var{macro-replacement},@var{macro-replacement})
+  | #list @var{macro-replacement}
+  | #tuple @var{macro-replacement}
+  | @var{macro-replacement} # @{ @var{macro-definition};@dots{};@var{macro-definition}@}
+  | @var{macro-replacement} @var{macro-replacement}
+  
+@var{program-element} @expansion{} @var{program}
+  | @var{module}
+
+@var{program} @expansion{} program @var{import} in @var{body} execute @var{ident}
+
+@var{module} @expansion{} module @var{import} in @var{body} export @var{ident-sequence}
+
+@var{import} @expansion{} 
+  | import @var{import-spec}
+
+@var{import-spec} @expansion{} @var{program-spec} from @var{file} 
+  | @var{import-spec} and @var{import-spec}
+
+@var{program-spec} @expansion{} @var{type} ? @var{ident}
+
+@var{body} @expansion{} @var{var-declaration}   -- @r{may be recursive}
+  | @var{function-definition}
+  | @var{procedure-definition}
+  | @var{type-declaration}
+  | @var{body} ; @var{body}
+@end smallexample
+

@@ -1,0 +1,8 @@
+program {
+	main() {
+		{
+			for i in 1..50000 do
+				b:23;
+		} within 2;
+	};
+} execute main;

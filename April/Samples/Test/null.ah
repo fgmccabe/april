@@ -1,0 +1,8 @@
+/*
+#macro {?Op}@(?L./{{?O}@{?A}}?E,?R./E) -> valof {
+ ? ##X = E;
+ valis Op(L./ ##X, R./ ##X)
+ }
+;
+
+*/

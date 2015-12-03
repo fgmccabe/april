@@ -1,0 +1,20 @@
+/* This example sends a ping message to a named thread */
+
+program import interface <scomms.af> in
+{
+  ping(Who){
+    while true do{
+      'ping >> Who;
+
+      receive{
+        Msg ->> {
+          "We have replay:" ++Msg^0++" from "++replyto^0++"\n">>stdout;
+        }
+      }
+    }
+  };
+
+  main(Who,To){
+    scsConnectAs((()->ping(To)),hdl('ping,Who),"localhost",4545);
+  }
+} execute main;

@@ -1,0 +1,7 @@
+/*
+ * Access the IEEE to FP (in CORBA style representation) functions
+ */
+native (
+  {string=>number}?str2ieee,
+  {number=>string}?ieee2str
+) from <libieeestr.so>;

@@ -1,0 +1,10 @@
+/*
+ * Test the dns/ip functions
+ */
+program
+{
+  main(ip)
+  {
+    "Host name of "++ip++" is "++iptohost(ip)^0++"\n">>stdout;
+  }
+} execute main;

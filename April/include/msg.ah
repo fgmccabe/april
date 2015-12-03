@@ -1,0 +1,141 @@
+/*
+ * Message sending and receiving macros 
+ */
+
+msgAttr::=replyTo(handle)
+  | leaseTime(number)
+  | receiptRequest(any)
+  | auditTrail(handle[]);
+
+/*
+ * Basic message receive statements
+ */
+
+/* Convert message receive arrow */
+
+#macro ?Ptn ->> ?Act ==> { any(##X::Ptn.= ##X)->{
+      #_debug_ _debug(any(accept_debug(sender,self(),##X^0)));
+      Act}};
+#macro timeout ?T ->> ?Act ==> (_,_,_,{timeout T})-> Act;
+  
+
+#macro receive ?B ==>{
+  ##Seq : -10000;		-- Message number 
+  receive_msg(##M,##Seq,##inner,
+	       get_timeout(B,null),
+	       rem_timeout(B,{(_)->{
+		 __replacemsg(##M,sender,options,##Seq);
+		 leave ##inner}}))
+};
+
+#macro rem_timeout(?Only,?Cont) ==> {Only|Cont};
+#macro rem_timeout({?F| ?R},?Cont) ==> rem_timeout(F,rem_timeout(R,Cont));
+#macro rem_timeout({(_,_,_,{timeout ?TT})-> {_}},?Cont) ==> Cont;
+
+#macro get_timeout(?Only,?Cont) ==> Cont;
+#macro get_timeout({?F| ?R},?Cont) ==> get_timeout(F,get_timeout(R,Cont));
+#macro get_timeout({(_,_,_,{timeout ?TT})-> {?Act}},?Cont) ==> (TT,Act);
+
+#macro receive_msg(?M,?Sq,?inner,null,?B) ==> {
+  ##outer:-{
+    while (any? M,handle?sender,handle?replyto,msgAttr[]?options,##NM) .= __nextmsg(Sq) do {
+      inner :- {
+        Sq := ##NM;
+        case M in B;
+        leave ##outer;
+      };
+    }
+  }
+}; 
+
+#macro receive_msg(?M,?Sq,?inner,(?E,?Act),?B) ==> {
+  ##outer:-{
+    try {
+      ##End = now()+E;
+
+      while (any? M,handle?sender,handle?replyto,msgAttr[]?options,##NM) .= __waitmsg(Sq,##End) do {
+	inner :- {
+	  Sq := ##NM;
+	  case M in B;
+	  leave ##outer;
+	};
+      }
+    } onerror {
+        timedout->Act
+      | ?EE->exception EE
+      }
+  }
+}; 
+
+#macro (?B)<< ==> _receive(_tupleOf(_extVars(B,[])),B) # {
+
+  #macro _receive(?B,?P) ==> B = valof {receive P ->> valis B };
+
+  #macro _extVars(?A,?L) ==> _extVars({#list(A)},L);
+  #macro _extVars(number?A,?L) ==> L;
+  #macro _extVars(char?A,?L) ==> L;
+  #macro _extVars(string?A,?L) ==> L;
+  #macro _extVars(symbol?A,?L) ==> [A,..L];
+  #macro _extVars(symbol?A,?L./A) ==> L;
+  #macro _extVars(`(_),?L) ==> L;
+  #macro _extVars((`(?))(_,?N),?L) ==> [N,..L];
+  #macro _extVars(quote?X,?L) ==> L;
+  #macro _extVars(?P :: ?G,?L) ==> _extGVars(G,_extVars(P,L));
+  #macro _extVars(tuple?A,?L) ==> _extVars({#list(A)},L);
+  #macro _extVars([],?L) ==> L;
+  #macro _extVars([?A,..?B],?L) ==> _extVars(B,_extVars(A,L));
+
+  #macro _extGVars(?A,?L) ==> L;
+  #macro _extGVars(?A && ?B ,?L) ==> _extGVars(B,_extGVars(A,L));
+  #macro _extGVars(?A .= ?E,?L) ==> _extVars(A,L);
+  #macro _extGVars(?P in ?E,?L) ==> _extVars(P,L);
+
+  #macro _tupleOf(?A) ==> {#tuple(A)};
+  #macro _tupleOf([?A]) ==> A;
+};
+
+
+
+/* These implement the repeat until loop variations */
+
+#macro repeat ?B until ?Q ==> ##exit:-{while true do receive{ Q ->> leave ##exit | B } };
+
+#macro repeat ?B until alarm ?T ==>
+	{ ##A : spawn {
+		 delay(T); 'wakeup >> creator()
+                };
+          ##exit:- { while true do 
+          receive {
+            'wakeup :: replyto == ##A ->> leave ##exit
+          | B
+          }}
+        };
+
+
+#macro {?M !>> } ==> { {};
+  {#_nodebug_ ##X = any(M)};
+  #_debug_ _debug(any(front_debug(self(),self(),##X^0)));
+  {#_nodebug_ _front_msg(##X,[],self())}
+};
+
+
+#macro {?M ~~ ?F !>> } ==> {{};
+  {#_nodebug_ ##X = any(M)};
+  #_debug_ _debug(any(front_debug(self(),self(),##X^0)));
+  {#_nodebug_ _front_msg(##X,F,self())}
+};
+
+#macro { ?E >>* ?T } ==> {##X = E; for ##H in T do {##X >> ##H}};
+#macro { ?E ~~ ?P >>* ?T } ==> 
+        {##X = E; ##P = P; for ##H in T do {##X ~~ ##P >> ##H}};
+
+
+#macro {?M >>> ?H } ==> _send(H,[replyTo(replyto)],any M);
+
+#macro {?M ~~ ?F >> ?H } ==> {{};
+  {#_nodebug_ ##X = any M};
+  #_debug_ _debug(any(send_debug(self(),H,##X^0)));
+  {#_nodebug_ _send(H,F,##X)}
+};
+
+

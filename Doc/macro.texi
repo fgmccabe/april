@@ -1,0 +1,1399 @@
+@node Macro processing
+@chapter Macro processing
+@cindex Macro language
+
+@noindent
+@code{April} is an extensible language; it is designed to make it
+straightforward to have @emph{syntactic} extensions. The full @code{April}
+language is really a sequence of @emph{language layers} built on top of
+the core language.
+
+There are two components to the strategy for achieving this: an operator
+precedence grammar (@pxref{April syntax}) and a powerful built-in macro
+processor.
+
+The operator precedence grammar allows new operators to be defined; and
+thus allows new syntactic forms to be incorporated into a program. The
+@code{April} compiler itself uses this feature heavily; for example the
+standard message processing statement @code{repeat}@dots{}@code{until}
+is actually a combination of operators:
+
+@smallexample
+#op('repeat,prefix,1300);
+#op('until,infix,1250);
+@end smallexample
+
+@noindent
+Using these declarations, the parser is able to parse a fragment such
+as:
+
+@smallexample
+@group
+repeat @{
+  hello ->> @{@}
+@} until quit
+@end group
+@end smallexample
+
+@noindent
+(assuming a declaration for the @code{->>} operator also) as though it
+were the equivalent of:
+
+@smallexample
+repeat(until(->>(hello,@{@}),quit))
+@end smallexample
+
+@noindent
+The @emph{semantics} for new operators is typically introduced via
+macro definitions. A macro definition is a rewrite rule that describes
+how a program fragment can be rewritten -- ultimately into core language
+features. @code{April} macros can be very powerful: it is possible to
+construct a macro definition that performs common sub-expression
+elimination for example.
+
+The macro rewrite rule notation is based on @code{April} patterns with
+some particular extensions. For example, a possible macro to interpret the
+@code{repeat}@dots{}@code{until} feature is:
+
+@smallexample
+@group
+#macro repeat ?B until ?Q ==> 
+  L0 :- while true do 
+    receive @{
+      Q ->> leave L0
+    | B
+    @}
+@end group
+@end smallexample
+
+@noindent
+This macro rule expresses the semantics of the
+@code{repeat}@dots{}@code{until} construct very straightforwardly -- a
+@code{repeat} message stream is a @code{while} loop that continues to
+receive messages until a terminating message is received.
+
+In general, a macro definition has the form:
+
+@smallexample
+#macro @var{pattern} ==> @var{replacement}
+@end smallexample
+
+@noindent
+where the allowable @var{pattern}s and @code{replacement}s are described
+below. Since macros may take advantage of the operator precedence
+grammar, the @var{pattern} and @var{replacement} portions of a macro
+often look like fragments of a program.
+
+@menu
+* Macro patterns::              
+* Replacement macro templates::  
+* Order of evaluation of macros::  
+* Displaying the result of macro processing::  
+@end menu
+
+@node Macro patterns
+@section Macro patterns
+@cindex Macro patterns
+
+@noindent
+Macro patterns are used to determine under which circumstances a macro
+should be applied. For the most part, macro patterns are directly
+analogous to regular run-time patterns and @code{April} types; however,
+there are a number of specific patterns that only apply to macro
+definitions.
+
+One important point to note is that macro patterns are applied to
+@emph{program text} not to program data; furthermore macro rewrite rules
+can have no information about the true @emph{type} of particular
+expressions. Thus although it is possible to have a macro that triggers
+on literal numbers, it is not possible for a macro to trigger on a
+numeric expression in general.
+@cindex macros and type inference
+@cindex types and macros
+
+@menu
+* numeric macro pattern::       
+* number macro pattern::        
+* symbol macro pattern::        
+* literal string macro pattern::  
+* string macro pattern::        
+* macro variables::             
+* _ macro pattern::             
+* other symbol macro patterns::  
+* list macro patterns::         
+* tuple macro patterns::        
+* functional macro patterns::   
+* sub macro patterns::          
+* negated macro pattern::       
+* apply macro pattern::         
+* quoted macro patterns::       
+* Anti-quoted macro pattern::   
+@end menu
+
+@node numeric macro pattern
+@subsection Numeric macro pattern
+@cindex numeric macro pattern
+
+@noindent
+When a macro pattern refers to a specific number, the macro can
+only be applied if there that number occurs in the text of the program. Note
+that this does not mean a number-valued expression but the exact number.
+
+For example, the macro:
+
+@smallexample
+#macro foo(23) ==> @dots{}
+@end smallexample
+
+@noindent
+will `fire' for occurrences such as:
+
+@smallexample
+foo(23)
+@end smallexample
+
+@noindent
+in the program, but will not fire for occurrences such as:
+
+@smallexample
+foo(22+1)
+@end smallexample
+
+@noindent
+Note that numeric patterns are not permitted at the top level
+of a macro definition; i.e., macros of the form:
+
+@smallexample
+#macro 23 ==> @dots{}
+@end smallexample
+
+@noindent
+are not permitted.
+
+@node number macro pattern
+@subsection @code{number} macro pattern
+@cindex @code{number} macro pattern
+@findex number @r{macro pattern}
+
+@noindent
+The @code{number} pattern matches any literal number in the text of the
+program. Note that this does not mean a number-valued expression but a
+number.
+
+For example, the macro:
+
+@smallexample
+#macro foo(number) ==> @dots{}
+@end smallexample
+
+@noindent
+will `fire' for occurrences such as:
+
+@smallexample
+foo(23)
+@end smallexample
+
+@noindent
+in the program, but will not fire for occurrences such as:
+
+@smallexample
+foo(X)
+@end smallexample
+
+@noindent
+Note that the @code{number} pattern is not permitted at the top level
+of a macro definition; i.e., macros of the form:
+
+@smallexample
+#macro number ==> @dots{}
+@end smallexample
+
+@noindent
+are not permitted.
+
+@node symbol macro pattern
+@subsection symbol macro pattern
+@cindex symbol macro pattern
+
+@noindent
+When a macro pattern includes the @code{symbol} pattern, the macro can
+only be applied if there is a symbol or identifier in the text of the
+program. Note that this does not mean a symbol-valued expression but a
+literal symbol.
+
+For example, the macro:
+
+@smallexample
+#macro foo(symbol?X) ==> @dots{}
+@end smallexample
+
+@noindent
+will `fire' for occurrences such as:
+
+@smallexample
+foo(X)
+@end smallexample
+
+@noindent
+in the program, but will not fire for occurrences such as:
+
+@smallexample
+foo(23)
+@end smallexample
+
+@noindent
+Note that the @code{symbol} pattern is not permitted at the top level
+of a macro definition; i.e., macros of the form:
+
+@smallexample
+#macro symbol ==> @dots{}
+@end smallexample
+
+@noindent
+are not permitted.
+
+@node literal string macro pattern
+@subsection Literal string macro pattern
+@cindex literal string macro pattern
+
+@noindent
+When a macro pattern refers to a specific string, the macro can
+only be applied if that string occurs in the text of the program. Note
+that this does not mean a string-valued expression but the exact string.
+
+For example, the macro:
+
+@smallexample
+#macro foo("bar") ==> @dots{}
+@end smallexample
+
+@noindent
+will `fire' for occurrences such as:
+
+@smallexample
+foo("bar")
+@end smallexample
+
+@noindent
+in the program, but will not fire for occurrences such as:
+
+@smallexample
+foo("b"++"ar")
+@end smallexample
+
+@noindent
+Note that literal string patterns are not permitted at the top level
+of a macro definition; i.e., macros of the form:
+
+@smallexample
+#macro "foo bar" ==> @dots{}
+@end smallexample
+
+@noindent
+are not permitted.
+
+@node string macro pattern
+@subsection @code{string} macro pattern
+@cindex string macro pattern
+@findex string @r{macro pattern}
+
+@noindent
+When a macro pattern refers to the @code{string} pattern, the macro is
+applied if there is any string in the text of the program. Note
+that this does not mean a string-valued expression but a literal string.
+
+For example, the macro:
+
+@smallexample
+#macro foo(string) ==> @dots{}
+@end smallexample
+
+@noindent
+will `fire' for occurrences such as:
+
+@smallexample
+foo("foo bar")
+@end smallexample
+
+@noindent
+in the program, but will not fire for occurrences such as:
+
+@smallexample
+foo("foo"++"bar")
+@end smallexample
+
+@noindent
+Note that the @code{string} pattern is not permitted at the top level
+of a macro definition; i.e., macros of the form:
+
+@smallexample
+#macro string ==> @dots{}
+@end smallexample
+
+@noindent
+are not permitted.
+
+@node macro variables
+@subsection Macro variables
+@cindex Macro variables
+
+@noindent
+A macro variable is a macro-time variable -- not a program variable --
+that potentially matches any fragment of the program. There are two ways
+of defining a macro variable -- on its own or by combining it with
+another macro pattern.
+
+A macro variable that matches any program text is introduced using the
+form:
+
+@smallexample
+? @var{var}
+@end smallexample
+
+@noindent
+where @var{var} is a symbol. Macro variables are very useful in macro
+definitions, they allow a macro to apply to quite large-scale
+situations.
+
+For example, the macro definition:
+
+@smallexample
+#macro foo(?X) ==> @dots{}
+@end smallexample
+
+@noindent
+will apply to any occurrence of the unary @code{foo} structure.
+
+At the same time as matching any value, a macro variable also acts as a
+place holder for other parts of the macro pattern or the macro
+replacement.
+
+A symbol which has been declared as a macro variable in a macro
+definition may occur again in the macro pattern. In this context, the
+subsequent occurrence will only match the same fragment of the program
+text that the first defining occurrence of the macro variable was bound
+to.
+
+For example, the macro pattern:
+
+@smallexample
+#macro foo(?X,X) ==> @dots{}
+@end smallexample
+
+@noindent
+matches program fragments such as:
+
+@smallexample
+foo(23,23)
+@end smallexample
+
+@noindent
+but not program fragments such as:
+
+@smallexample
+foo(23,22+1)
+@end smallexample
+
+@noindent
+The second way that a macro variable can be defined is by combining the
+declaration with a more specific macro pattern:
+
+@smallexample
+#macro foo(number?X) ==> @dots{}
+@end smallexample
+
+@noindent
+matches program fragments such as:
+@smallexample
+foo(23)
+@end smallexample
+@noindent
+and binds @code{X} to the number that was found in the text --
+@code{23}.
+
+@node _ macro pattern
+@subsection @code{_} macro pattern
+@cindex @code{_} macro pattern
+@findex _ @r{macro pattern}
+
+@noindent
+The @code{_} macro pattern matches any program fragment, and does not
+assign it to any macro variable -- i.e., the input program fragment is
+ignored. This form of macro pattern is useful when selecting components
+of the input:
+
+@smallexample
+#macro foo(?X,_) ==> @dots{}
+@end smallexample
+
+@noindent
+For obvious reasons, the @code{_} pattern is not permitted as the
+top-level of a macro definition.
+
+@node other symbol macro patterns
+@subsection Other symbol macro patterns
+@cindex other symbol macro patterns
+
+@noindent
+When a macro pattern refers to a symbol which is not a macro variable,
+or one of the type symbols mentioned elsewhere, the macro can
+only be applied if the same symbol occurs in the text of the program. 
+
+For example, the macro:
+
+@smallexample
+#macro foo ==> @dots{}
+@end smallexample
+
+@noindent
+will `fire' for occurrences such as:
+
+@smallexample
+foo
+@end smallexample
+
+@noindent
+in the program. Note that this macro will apply wherever the @code{foo}
+symbol applies, in situations such as
+
+@smallexample
+foo(22+1)
+@end smallexample
+
+@noindent
+Note that symbol patterns @emph{are} permitted at the top level
+of a macro definition.
+
+@node list macro patterns
+@subsection @code{list} macro patterns
+@cindex list macro patterns
+
+@noindent
+A literal list macro pattern is written using the normal list notation:
+
+@smallexample
+#macro foo([?E,..?L]) ==> @dots{}
+@end smallexample
+
+@noindent
+List macro patterns match literal lists occurring in the program text --
+not list-valued expressions. An arbitrary list in the program text can
+be matched -- without necessarily matching the elements of the list --
+by using the @code{list} keyword in a macro pattern:
+
+@smallexample
+#macro foo(list?X) ==> @dots{}
+@end smallexample
+
+@noindent
+This is particularly useful in combination with the @code{#tuple} macro
+replacement operator (@pxref{convert list to tuple}).
+
+@node tuple macro patterns
+@subsection @code{tuple} macro patterns
+@cindex tuple macro patterns
+
+@noindent
+A literal tuple pattern is written using the normal tuple notation:
+
+@smallexample
+#macro foo((?E,?L)) ==> @dots{}
+@end smallexample
+
+@noindent
+Tuple macro patterns match literal tuple occurring in the program text,
+including argument tuples of functional expressions. For that reason,
+they should be used sparingly to avoid difficult to debug macro errors.
+
+A general tuple in the program text can be matched -- without knowing
+the arity of the tuple or matching its elements -- by using the
+@code{tuple} macro pattern:
+
+@smallexample
+#macro foo(tuple?T) ==> @dots{}
+@end smallexample
+
+@noindent
+This is particularly useful in combination with the @code{#list} macro
+replacement operator (@pxref{convert tuple to list}).
+
+@node functional macro patterns
+@subsection Functional macro patterns
+@cindex Functional macro patterns
+
+@noindent
+A functional macro pattern is simply a functional expression:
+
+@smallexample
+#macro foo(@dots{}) ==> @dots{}
+@end smallexample
+
+@noindent
+Functional macro patterns may be written using operator syntax if the
+function symbol has been declared as an operator. For example, if
+@code{foo} were declared as an infix operator, then we may have a macro
+pattern of the form:
+
+@smallexample
+#macro ?X foo ?Y ==> @dots{}
+@end smallexample
+
+@noindent
+Care should be taken to ensure that the priority of @code{foo} and the
+priority of other macro operators -- such as @code{?} -- do not
+conflict. In this case, @code{?} is declared with a priority of 510; so,
+provided that the priority of @code{foo} is greater than 510 the above
+macro definition will parse correctly. However, if the priority of
+@code{foo} were 510 or less, then the macro pattern should be written:
+
+@smallexample
+#macro @{?X@} foo @{?Y@} ==> @dots{}
+@end smallexample
+
+@node sub macro patterns
+@subsection Sub macro patterns
+@cindex Sub macro patterns
+@cindex contained sub-expression macro patterns
+@findex ./ @r{macro operator}
+
+@noindent
+A contained or sub-macro pattern looks for a sub-pattern within
+another. The form of the sub-pattern is:
+
+@smallexample
+@var{pt1}./@var{ptn2}
+@end smallexample
+
+@noindent
+which matches program fragments that match @var{ptn1} @emph{provided}
+that there is a sub-fragment which also matches @var{ptn2}. Sub-patterns
+are a powerful way of expressing context dependent macros; for example,
+the macro pattern:
+
+@smallexample
+#macro foo(?X ./ bar(?Y)) ==> @dots{}
+@end smallexample
+
+@noindent
+matches unary @code{foo} fragments within the program provided that they
+also mention a unary @code{bar} expression within them. For example,
+this would match:
+
+@smallexample
+foo(bar("alpha"))
+@end smallexample
+
+@noindent
+but would not match:
+
+@smallexample
+foo(john)
+@end smallexample
+
+@noindent
+As is indicated in @ref{sub-pattern macro replacement} the sub-pattern
+also has a role when specifying the replacement part of a macro
+definition.
+
+@node negated macro pattern
+@subsection Negated macro pattern
+@cindex negated macro pattern
+
+@noindent
+A negated macro pattern is useful when it is important that a particular
+program fragment @emph{does not} trigger a macro. The form of a negated
+macro pattern is:
+
+@smallexample
+@var{ptn1} ~ @var{ptn2}
+@end smallexample
+
+@noindent
+this pattern matches any program fragment that matches @var{ptn1} but
+which does @emph{not} match @var{ptn2}. For example, the macro pattern:
+
+@smallexample
+#macro foo(integer ~ 23) ==> @dots{}
+@end smallexample
+
+@noindent
+matches structures of the form:
+
+@smallexample
+foo(12)
+@end smallexample
+
+@noindent
+but does not match:
+
+@smallexample
+foo(23)
+@end smallexample
+
+@node apply macro pattern
+@subsection Apply macro pattern
+@cindex apply macro pattern
+@findex @@ @r{macro pattern}
+
+@noindent
+The @code{@@} macro pattern is used in contexts where the function and
+the arguments in a functional expression must be handled separately. The
+form of the @code{@@} pattern is:
+
+@smallexample
+@var{ptn1}@@@var{ptn2}
+@end smallexample
+
+@noindent
+this matches functional expression program fragments of the form
+@emph{F(t1,@dots{},tk)} provided that @var{ptn1} matches @var{F} and
+@var{ptn2} matches the tuple @emph{(t1,@dots{},tk)}.
+
+A common use for this is to process calls to programs where it is not
+possible to determine at macro-time how many arguments the calls might
+have. For example, the macro pattern:
+
+@smallexample
+#macro foo @@ @{?A@} ==> @dots{}
+@end smallexample
+
+@noindent
+matches any call to @code{foo} and binds the macro variable @code{A} to
+the tuple of its arguments.
+
+@node quoted macro patterns
+@subsection Quoted macro patterns
+@cindex quoted macro patterns
+
+@noindent
+A quoted macro pattern is used to override the normal macro pattern
+interpretation of symbols and operators. A quoted macro pattern is
+written:
+
+@smallexample
+#macro `@var{structure} ==> @dots{}
+@end smallexample
+
+@noindent
+For example, to have a macro pattern that matches the @code{?} symbol
+itself, use:
+
+@smallexample
+#macro `('?) ==> @dots{}
+@end smallexample
+
+@noindent
+The reason for both the @code{`} and the @code{'} quote in this example
+is necessary because @code{?} is both a special macro operator and an
+infix operator.
+
+The quoted text of a quoted pattern may by quite complex, involving
+operators and other quoted structures.
+
+@node Anti-quoted macro pattern
+@subsection Anti-quoted macro pattern
+@cindex anti-quoted macro pattern
+@findex & @r{anti-quote operator}
+
+@noindent
+An anti-quoted macro pattern `undoes' the effect of a macro quote
+pattern. It is written as a @code{&} operator followed by a macro pattern:
+
+@smallexample
+#macro `(@dots{} &@var{ptn} @dots{}) ==> @dots{}
+@end smallexample
+
+@noindent
+The pattern introduced by the @code{&} operator has the normal
+interpretation of macro patterns. I.e., @code{&@var{ptn}} means the same
+as @var{ptn} where the whole pattern is contained in a quoted structure.
+
+The anti-quote operator only has effect if it is embedded inside a
+quoted structure, and it undoes the effect of the @emph{outermost}
+quoted structure it is embedded in.
+
+A common use for anti-quoting is to introduce macro-variables into a
+literal structure.  For example, the following macro pattern matches
+occurrences of the @code{?} variable declaration:
+
+@smallexample
+#macro `('?(&@{?X@},&@{?Y@})) ==> @dots{}
+@end smallexample
+
+@noindent
+This will match program fragments such as:
+
+@smallexample
+number?I
+@end smallexample
+
+@noindent
+and bind macro variable @code{X} to the symbol @code{number} and macro
+variable @code{Y} to the symbol @code{I}.
+
+Note that the priority of @code{&} is very low -- 1 -- which makes it
+easy to anti-quote individual symbols but forces us to insert enclosing
+@code{()}'s or @code{@{@}}'s around more complex anti-quoted fragments
+-- as in @code{&(?X)}.
+
+@node Replacement macro templates
+@section Replacement macro templates
+@cindex Replacement macro templates
+
+@noindent
+The macro replacement is a template for the text that will replace the
+program fragment that was matched by a macro pattern. Generally, the
+replacement template consists of literal program fragments mixed with
+macro variables -- whose values have been bound as part of the macro
+pattern match -- and special macro replacement operators.
+
+@menu
+* literal macro replacement::   
+* Macro variables in replacement templates::  
+* sub-pattern macro replacement::  
+* apply replacement::           
+* macro-time generated symbols::  
+* macro-time concatenation::    
+* macro generating macros::     
+* echo text to user::           display text during macro processing
+* raise error message::         report a syntax error
+* raise warning message::       
+* convert list to tuple::       
+* convert tuple to list::       
+* relative macros::             
+* quoted macro replacement::    
+* anti-quoted macro replacement::  
+@end menu
+
+@node literal macro replacement
+@subsection Literal macro replacement
+@cindex literal macro replacement
+
+@noindent
+Where a macro replacement mentions a literal value, such as a literal
+number, string, symbol, or functional expression, then the program
+fragment is replaced by that literal value.
+
+For example, the macro definition:
+
+@smallexample
+#macro foo(?X) ==> bar("A string")
+@end smallexample
+
+@noindent
+replaces occurrences of unary @code{foo} by the literal expression
+
+@smallexample
+bar("A string")
+@end smallexample
+
+@node Macro variables in replacement templates
+@subsection Macro variables in replacement templates
+@cindex Macro variables in replacement templates
+
+@noindent
+Where a macro variable occurs in a replacement template, the replacement
+text consists of that portion of the original program that was bound to
+the macro variable.
+
+For example, the macro definition:
+@smallexample
+#macro foo(?X) ==> bar(X)
+@end smallexample
+
+@noindent
+replaces occurrences of unary @code{foo} by unary @code{bar} expressions
+-- keeping the unary argument the same.
+
+@node sub-pattern macro replacement
+@subsection Sub-pattern macro replacement
+@cindex sub-pattern macro replacement
+@findex ./ @r{macro replacement function}
+
+@noindent
+Where a macro @emph{variable} pattern has a sub-pattern associated
+with it, the replacement text may also refer to a sub-pattern. 
+
+The text bound by a sub-pattern operator -- where it appears in a macro
+replacement -- is the portion of the input which was matched by the
+sub-pattern in the original pattern.
+
+For example, in the macro definition:
+
+@smallexample
+#macro foo(?X ./ bar(?Y)) ==> foo(X ./ jones(Y));
+@end smallexample
+
+@noindent
+the replacement pattern:
+
+@smallexample
+X ./ jones(Y)
+@end smallexample
+
+@noindent
+refers to the sub-pattern that was matched by:
+
+@smallexample
+?X ./ bar(?Y)
+@end smallexample
+
+@noindent
+Furthermore, value of the replacement is @code{X} with the portion
+matched by @code{bar(?Y)} replaced by @code{jones(Y)}.  For example, if
+the program has the fragment:
+
+@smallexample
+foo([not_me,bar("Yes")])
+@end smallexample
+
+@noindent
+then this will be replaced by:
+
+@smallexample
+foo([not_me,jones("Yes")])
+@end smallexample
+
+@noindent
+It is possible to specify repeated sub-patterns in the replacement
+portion of a macro -- replacing the sub-fragments with different
+replacement texts each time.
+
+@node apply replacement
+@subsection Apply replacement
+@cindex Application macro replacement
+@findex @@ @r{macro replacement function}
+
+@noindent
+The @code{@@} replacement function is analogous to its use as a pattern
+operator (@pxref{apply macro pattern}). A replacement expression of the
+form:
+
+@smallexample
+@dots{} -> U @@ V
+@end smallexample
+
+@noindent
+allows a replacement function application to be constructed explicitly
+from the function and the argument tuple separately. If @code{V} were a
+macro variable bound to the tuple:
+
+@smallexample
+(t1,@dots{},tk)
+@end smallexample
+
+@noindent
+then @code{U @@ V} would be replaced by:
+
+@smallexample
+U(t1,@dots{},tk)
+@end smallexample
+
+@noindent
+Due to the nature of @code{April}'s grammar, explicit use of the
+@code{@@} operator is only necessary where the argument tuple of a
+functional expression cannot be written down in the macro -- typically it is
+the value of a macro variable.
+
+@node macro-time generated symbols
+@subsection Macro-generated symbols
+@cindex Macro-generated symbols
+@findex ## @r{macro replacement function}
+
+@noindent
+There are occasions when it is convenient to be able to generate new
+symbols at macro-time. One classic application of this is when a macro
+replacement involves new variables -- using macro-generated names for
+macros eliminates potential variable naming conflicts.
+
+A macro replacement expression of the form:
+
+@smallexample
+## @var{symbol}
+@end smallexample
+
+@noindent
+is replaced at macro time by a symbol that is guaranteed to be unique
+for any given compilation of a program. All occurrences of
+@code{##@var{X}} within a given macro replacement are replaced by the
+same unique symbol, and occurrences of @code{##@var{Y}} in the same
+macro are replaced by a different unique symbol within the macro
+replacement.
+
+The standard @code{April} macro for @code{repeat}@dots{}@code{until}
+uses a macro-generated symbol to generate a new label for the labelled
+statement:
+
+@smallexample
+@group
+#macro repeat ?B until ?Q ==> 
+  ##L :- while true do 
+  receive@{
+    Q ->> leave ##L
+  | B
+  @}
+@end group
+@end smallexample
+
+@noindent
+Using this macro, the program fragment:
+
+@smallexample
+@group
+repeat @{
+  hello ->> @{@}
+@} until quit
+@end group
+@end smallexample
+
+@noindent
+will be translated to something equivalent to:
+
+@smallexample
+@group
+L#45 :- while true do 
+  receive@{
+    quit ->> leave L#45
+  | hello ->> @{@}
+  @}
+@end group
+@end smallexample
+
+@noindent
+Using macro generated labels permits nested @code{repeat} loops to be
+used without fear of conflicting occurrences of the macro-introduced label. 
+
+Note that the symbol @code{L#45} which is used for the labelled
+statement cannot be entered as a symbol in a normal @code{April}
+program. If a programmer were to use this the @code{April} tokeniser
+would interpret @code{L#45} as three tokens: @code{L}, @code{#} and
+@code{45}. However, the specific `glue' used to generate macro-generated
+symbols can be configured -- when the compiler is invoked with a
+@code{-# @var{glue}} command-line option, @var{glue} is used instead of
+@code{#} (@pxref{Compiling April programs}).
+
+@node macro-time concatenation
+@subsection Macro concatenation
+@cindex macro-time concatenation
+@findex ## @r{macro replacement function}
+
+@noindent
+The @code{##} macro @emph{concatenation} function provides a powerful
+method for concatenation symbols, lists and tuples at macro-time. The
+form of the concatenation operation is:
+
+@smallexample
+@var{rep1} ## @var{rep2}
+@end smallexample
+
+@noindent
+where @var{rep1} and @var{rep2} are either symbols, strings, lists or
+tuples. In the case of symbol and string concatenation, a new symbol (or
+string) is formed by joining the characters of @var{rep1} and
+@var{rep2}:
+
+@smallexample
+#macro foo(symbol?X,symbol?Y) ==> X ## Y;
+@end smallexample
+
+@noindent
+would replace @code{foo(john,peter)} by the new symbol
+@code{johnpeter}. Where @var{rep1} is a symbol, @var{rep2} may be either
+a symbol or integer.
+
+In the case that @var{rep1} and @var{rep2} are lists, a new list is
+formed by concatenating the elements of the two. Similarly, in the case
+of tuples, a new tuple is formed by joining the two component tuples.
+
+The tuple case of macro concatenation is particularly useful for
+`strong' macro replacements. For example, we can use this macro to add
+an extra argument to all calls to @code{foo} that occur inside
+@code{add} statements:
+
+@smallexample
+#macro add(?X./@{foo @@ @{?A@}@},?N) ==> X./@{foo@@ @{A ## (N)@}@};
+@end smallexample
+
+@noindent
+This macro would have the effect of adding a new @var{N} argument to
+calls to @code{foo}:
+
+@smallexample
+add( @{ S1 ; foo(A1,@dots{},Ak) @}, N)
+@end smallexample
+
+@noindent
+would be rewritten to:
+
+@smallexample
+@{ S1 ; foo(A1,@dots{},Ak,N) @}
+@end smallexample
+
+@node macro generating macros
+@subsection Macro generating macros
+@cindex macro generating macro
+
+@noindent
+If the replacement text of a macro is itself in the form of a macro, or
+of a sequence of macros separated by the @code{;} operator, then the
+`replacement macro' is defined as a new macro, and the replacement text
+is the symbol @code{void}.
+
+While very powerful, the effect of macro-generating macros is often
+difficult to predict and its use is not really recommended. Instead
+relative macros @pxref{relative macros} are much easier to understand
+and almost as powerful.
+
+Note that macro generating macros require that the @emph{top-level} of a
+macro replacement is a macro definition.
+
+@node echo text to user
+@subsection Echo text to user
+@cindex echo text to user at macro time
+@findex #echo @r{macro replacement function}
+
+@noindent
+The @code{#echo} macro replacement function echoes its input to the
+standard output @emph{during} macro replacement.
+
+The form of @code{#echo} is:
+
+@smallexample
+@dots{} @{#echo(@var{exp})@}
+@end smallexample
+
+@noindent
+The @var{exp} is displayed on the standard output in normal @code{April}
+form, and the replacement value of @code{#echo} is @var{exp} itself.
+
+@code{#echo} is useful for reporting version status and messages to the
+user of a package of macros.
+
+@node raise error message
+@subsection Raise error in a macro
+@cindex Raise syntax error in a macro
+@findex #error @r{macro replacement function}
+
+@noindent
+The @code{#error} macro replacement function reports a syntax error in
+the user's program. Occasionally, especially when there is a complex
+package of macros, a macro is able to `detect' that a user's program is
+not correct. Using the @code{#error} macro function, a designer of a
+macro package can report syntax errors to the user using language that
+is more appropriate to the macro package.
+
+The form of @code{#error} is:
+
+@smallexample
+@dots{} @{#error(@var{string},@var{value})@}
+@end smallexample
+
+@noindent
+The replacement value of the @code{#error} is @var{value} --
+its second parameter -- but the real value of @code{#error} lies in the
+message it generates for the user:
+
+@smallexample
+Syntax error: @var{string} @ @var{line} in @var{file}
+@end smallexample
+
+@noindent
+where the @var{line}/@var{file} refer to the location in the source
+program of @var{value}.
+
+Any program which causes a macro to raise an error in this will 
+@emph{not} be passed to the semantic phase of the compiler.
+
+@node raise warning message
+@subsection Raise a warning in a macro
+@cindex Raise a warning in a macro
+@findex #warning @r{macro replacement function}
+
+@noindent
+The @code{#warning} macro replacement function reports a syntax warning in
+the user's program. Occasionally, especially when there is a complex
+package of macros, a macro is able to `detect' that a user's program is
+not correct. Using the @code{#warning} macro function, a designer of a
+macro package can report syntax warnings to the user using language that
+is more appropriate to the macro package.
+
+The form of @code{#warning} is:
+
+@smallexample
+@dots{} @{#warning(@var{string},@var{value})@}
+@end smallexample
+
+@noindent
+The replacement value of the @code{#warning} is @var{value} --
+its second parameter -- but the real value of @code{#warning} lies in the
+message it generates for the user:
+
+@smallexample
+Warning: @var{string} @ @var{line} in @var{file}
+@end smallexample
+
+@noindent
+where the @var{line}/@var{file} refer to the location in the source
+program of @var{value}.
+
+Any program which causes a macro to raise a warning 
+@emph{is} passed to the semantic phase of the compiler; however, it may
+represent an error and may also reflect in other actual error messages.
+
+@node convert list to tuple
+@subsection Convert list to tuple
+@cindex convert list to tuple at macro time
+@findex #tuple
+
+@noindent
+The @code{#tuple} macro replacement function converts a list into a
+tuple. The form of this is:
+
+@smallexample
+@{#tuple(@var{list})@}
+@end smallexample
+
+@noindent
+Each of the elements of the @var{list} are used to form successive
+elements of the result tuple. For example,
+
+@smallexample
+#tuple([alpha,12,beta])
+@end smallexample
+
+@noindent
+gives rise to the tuple:
+
+@smallexample
+(alpha,12,beta)
+@end smallexample
+
+@noindent
+Note that @code{April} does not have a 1-arity tuple. An expression of
+the form: @code{(E)} is equivalent to just @code{E}.
+
+@node convert tuple to list
+@subsection Convert tuple to list
+@cindex convert tuple to list at macro time
+@findex #list @r{macro replacement function}
+
+@noindent
+The @code{#list} macro replacement function converts a tuple into a
+list. This is useful for complex processing of arguments to a functional
+expression -- the tuple of arguments may be first converted into a list,
+processed with a recursive macro, and then converted back into a tuple
+of arguments of a new functional expression.
+
+The form of this function is:
+
+@smallexample
+#tuple(@var{tuple})
+@end smallexample
+
+@noindent
+From @var{tuple} a list is generated with successive elements of the
+tuple:
+
+@smallexample
+#tuple((why,not,"now"))
+@end smallexample
+
+@noindent
+gives:
+
+@smallexample
+[why,not,"now"]
+@end smallexample
+
+@noindent
+Note that often such a `maneuver' results in a structure that will
+raise a type error -- since elements of a list should be of the same
+type whereas elements of a tuple do not need to be of the same
+type. However, a principal motivation for the @code{#list} macro
+function is to facilitate general macro processing of tuple elements.
+
+@node relative macros
+@subsection Relative macro definition
+@cindex relative macro definition
+@findex # @r{macro replacement function}
+
+@noindent
+A relative macro is a macro whose scope is contained within the
+replacement text of another macro. The form of a relative macro
+expression is:
+
+@smallexample
+@var{rep} # @{ @var{macro-defs} @}
+@end smallexample
+
+@noindent
+where @var{macro-defs} is one or more macro definitions separated by the
+@code{;} operator. The value of this replacement text is @var{rep}
+@emph{after} the macros defined in @var{macro-defs} have been applied.
+
+The benefit of using a relative macro expression is greater control over
+the scope of particular macros -- @var{macro-defs} are only in scope
+during the macro replacement of @var{rep}. This makes it easier to
+construct large macro suites -- and to avoid unintentional clashes
+between macro suites -- and has the additional benefit of improving the
+overall efficiency of the macro replacement process.
+
+Note that other macros which are in scope at the point that @var{rep} is
+being macro-replaced may also be applied. The effect is of a temporary
+extension to the set of macros that can apply to @var{rep} to include
+the set of macros in @var{macro-defs}.
+
+Note also that @var{macro-defs} may have @emph{free macro variables}
+embedded in them -- macro variables which are defined in an outer macro
+definition. This allows relative macros to be further specialized in
+their scope and replacement -- based on the context that they appear in.
+
+@node quoted macro replacement
+@subsection Quoted macro replacement
+@cindex quoted macro replacement
+
+@noindent
+The use of quoted expressions in a macro replacement suppresses the
+meaning of any macro-replacement operators within the quoted expression.
+
+The @code{`} operator is used within the replacement text as well as
+within the pattern text.
+
+@node anti-quoted macro replacement
+@subsection Anti-quoted macro replacement
+@cindex anti-quoted macro replacement
+@findex & @r{macro replacement operator}
+
+@noindent
+The @code{&} anti-quote operator removes the effect of quoting within a
+quoted macro replacement. The @code{&} anti-quote operator undoes the
+effect of the outermost quotes that it is embedded in.
+
+@node Order of evaluation of macros
+@section Order of evaluation of macros
+@cindex Order of evaluation of macros
+
+@noindent
+Since macro patterns may be complex, and their trigger patterns may
+overlap, it is important to define clearly the order of application of
+macros.
+
+Macros are applied in an inner-outer-last-first order. That is, inner
+expressions are matched for macro replacement before outer expressions;
+and macros are applied in the reverse order to which they are defined.
+
+@menu
+* Inner-outer macro evaluation::  
+* Reverse order macro application::  
+@end menu
+
+@node Inner-outer macro evaluation
+@subsection Inner-outer macro evaluation
+@cindex Inner-outer macro evaluation
+@cindex Order of macro evaluation
+
+@noindent
+The inner-outer rule for macro evaluation refers to the program text that
+the macro definitions are operating over. Given a program fragment of the form:
+
+@smallexample
+f(@var{E1},@dots{},@var{Ek})
+@end smallexample
+
+@noindent
+the arguments to @code{f} -- and @code{f} itself -- are completely
+macro-processed before any macro-rule is applied to the @code{f}
+structure as a whole. 
+
+Of course this may mean that where it appeared that a macro should apply
+to a program fragment it might not because a more specific macro is
+applied and as a result the text is re-written so that the macro no
+longer applied. This is true even if the `inner' macro would have
+applied later than the `outer' macro due to their relative ordering in
+the source file. For example, in the case of:
+
+@smallexample
+#macro inner ==> bar;
+
+#macro outer(?X./inner) ==> foo(X,X);
+@end smallexample
+
+@noindent
+the result of macro processing a term such as
+
+@smallexample
+outer(inner)
+@end smallexample
+
+@noindent
+is
+
+@smallexample
+outer(bar)
+@end smallexample
+
+@noindent
+not
+
+@smallexample
+foo(bar,bar)
+@end smallexample
+
+@noindent
+as might have been expected. This is because the first macro rewrites
+the expression @code{outer(inner)} to @code{outer(bar)} before the
+second macro is fired. As a result of the transformation, the second
+macro no longer applies (as there is no longer an occurrence of
+@code{inner} within the arguments to @code{outer}).
+
+Once a macro has been applied successfully to a program fragment, the
+macro evaluator attempts to further process the replaced text -- until
+no more macros can be applied; at which point consideration returns to
+the context in which the program fragment occurs.
+
+@node Reverse order macro application
+@subsection Reverse order macro application
+@cindex Reverse order macro application
+@cindex order of macro application
+
+@noindent
+Macros are applied to program fragments in the @emph{reverse} order of
+their appearance in the program. This has two major implications: it is
+possible to to override system macros simply by defining an overlapping
+macro after it; and when writing a series of macros to deal with a
+particular situation the @emph{most specific} macros should be written
+last.
+
+Once a macro `fires' on a program fragment, then other macros will not
+be considered for the same program fragment; unless the replacement text
+triggers other macros. This means that it is possible to construct
+recursive sets of macros that handle more complex transformations. The
+macro recursion is over the program text of course, not the data that
+the program will manipulate.
+@cindex macro recursion
+
+
+@node Displaying the result of macro processing
+@section Displaying the result of macro processing
+@cindex displaying the result of macro processing
+
+@noindent
+Particularly in the case of complex macro processing, it is often
+desireable to be able to view the output of the @code{April} compiler
+after macro processing has taken place.
+
+The @code{April} compiler offers two features that assist in the process
+of debugging macros. The @code{-E} command line option displays on the
+standard output the @code{April} program after macro processing has
+taken place. This is useful for seeing the effect of a sequence of
+macros.
+
+Also, the @code{-X @var{file}} command line option @emph{replaces} the standard
+@code{April} include file with @var{file}. This has the effect of
+suppressing @code{April}'s standard macros and only processing the
+macros in @var{file} and the program itself. By using an empty
+@var{file} only the macros defined in the program will be applied.
+
+If the @code{-E} and @code{-X @var{file}} options are combined, the
+resulting output can often be further processed and compiled later under
+more normal conditions.

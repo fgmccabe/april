@@ -1,0 +1,294 @@
+@node Notes for April v2 programmers
+@appendix Notes for April v2 programmers
+
+@noindent
+While the @emph{syntax} of version 4 of @code{April} is quite different
+in many ways to @code{April} v2 (hereafter known as @code{April}-2, we
+have maintained where possible @emph{interoperability} between the
+@code{April}-2 and @code{April}-4 systems.
+
+In order for a @code{April}-2 program to work with this version, it is
+necessary to re-compile the program using the -v2 option on the
+compiler:
+
+@smallexample
+ac -v2 prog.ap
+@end smallexample
+
+@noindent
+Apart from recompiling programs, there should be few problems using
+@code{April}-2 programs in the @code{April}-4 system. This appendix
+addresses those areas where problems might arise.
+
+@menu
+* April-2 and April-4 interoperability::  
+* Data representation issues::  
+* Specific restrictions::       
+@end menu
+
+@node April-2 and April-4 interoperability
+@appendixsec April-2 and April-4 interoperability
+@cindex April-2 and April-4 interoperability
+
+@noindent
+The interoperability features supported are:
+
+@table @asis
+@item modules
+Provided that a module does not export procedures or functions that use
+@code{April}4 specific features -- such as labelled records -- an
+@code{April}-2 program can import @code{April}-4 modules; and conversely
+an @code{April}-4 program can import @code{April}-2 modules.
+
+@item messages
+Processes executing @code{April}-2 programs can send messages to
+processes executing @code{April}-4 programs and vice-versa; providing
+that the messages are restricted to tuples, symbols, strings and
+lists. The main restriction relates to the use of records -- labelled or
+unlabelled.
+@end table
+
+
+@node Data representation issues
+@appendixsec Data representation issues
+@cindex Data representation issues
+
+@noindent
+Under certrain circumstances, it is necessary to be aware of the way
+that @code{April}-4 programs represent certain structures; and how they
+are different to the way that @code{April}-2 programs represent analogous
+values.
+
+@menu
+* theta tuples::                
+* April-2 records::             
+* April-2 and April-4 handles::  
+* April-2 time values::         
+@end menu
+
+@node theta tuples
+@appendixsubsec @code{theta} tuples
+
+@noindent
+In earlier versions of @code{April}-2, a @code{theta} expression was
+internally represented as a tuple of the functions and procedures in the
+@code{theta} expression, followed by a special marker:
+
+@smallexample
+(prog1,prog2,@dots{},progk,<tclosure>)
+@end smallexample
+
+@noindent
+where @code{<tclosure>} is a special symbol accessible to the
+@code{April} compiler only.
+
+In @code{April}-4, including in the @code{April}-2 compiler that is part
+of @code{April}-4, a @code{theta} record is represented using the tuple:
+
+@smallexample
+(@{@},prog1,prog2,@dots{},progk)
+@end smallexample
+
+@noindent
+where @code{@{@}} is a symbol used by @code{April}-4 to signal a record
+value. This change was necessary to allow @code{April}-2 programs and
+modules to refer to @code{April}-4 modules, and vice-versa.
+
+@node April-2 records
+@appendixsubsec @code{April}-2 records
+@cindex @code{April}-2 records
+
+@noindent
+In @code{April}-2, a record type is written:
+
+@smallexample
+(@var{type1}?@var{var1},@dots{},@var{typek}?@var{vark})
+@end smallexample
+
+@noindent
+The representation of such a record tuple is directly equivalent to an
+`anonymous' tuple:
+
+@smallexample
+(@var{type1},@dots{},@var{typek})
+@end smallexample
+
+@noindent
+While the @code{April}-2 supports both forms of tuple, the programmer
+should be aware that neither form is directly analogous to a
+@code{April}-4 record. An @code{April}-4 record is represented using a
+symbolic marker at the front of the tuple; for example, the record:
+
+@smallexample
+@{foo = 34; bar="a name"@}
+@end smallexample
+
+@noindent
+is represented in a manner which is equivalent to the @code{April}-2
+tuple:
+
+@smallexample
+(@{@},34,"a name")
+@end smallexample
+
+@noindent
+Similarly, the labelled record:
+
+@smallexample
+person@{foo = 34; bar="a name"@}
+@end smallexample
+
+@noindent
+is represented in a manner which is equivalent to the @code{April}-2
+tuple:
+
+@smallexample
+(person,34,"a name")
+@end smallexample
+
+@noindent
+This issue becomes important when @code{April}-4 programs interact with
+@code{April}-2 programs.
+
+@node April-2 and April-4 handles
+@appendixsubsec @code{April}-2 and @code{April}-2 handles
+@cindex @code{April}-2 handles
+
+@noindent
+Under @code{April}-4, the representation of @code{handle} type values
+has undergone a major internal change. In @code{April}-2, @code{handle}
+values were represented internally using the @code{symbol} data
+type. This had a number of problems, not the least of which was that
+@code{handle} values were one of the few dynamically created
+objects@footnote{Whenever a new process is spawned, a new @code{handle}
+must be created.} that were not garbage collected.
+
+In @code{April}-4, @code{handle} values are represented internally as a
+labelled record. While this should cause few problems to well
+behaved applications, some that relied on this basic representation will
+break.
+
+Especially in the area of writing @code{handle} values using
+@code{writef} and the @samp{%s} format conversion character -- this will
+no longer work. @code{April}-4 introduces two new character conversion
+characters which specifically print @code{handle} values: @samp{%h} and
+@samp{%H} (see @pxref{handle output conversions}).
+
+@node April-2 time values
+@appendixsubsec @code{April}-2 time values
+@cindex @code{April}-2 time values
+
+@noindent
+@code{April}-4 changes the underlying  interpretation of @code{April}
+time values. In @code{April}-2, a time value was an integer which
+denoted the number of seconds since @code{April} EPOCH (which was
+actually Jan 1st, 2003).
+
+In @code{April}-4, time values are fractional -- with a typical
+accuracy of 1 millisecond. In addition, @code{April} EPOCH has been
+adjusted to be compatible with UNIX EPOCH -- i.e., an @code{April}-4
+time value is the number of seconds since Jan 1st, 1970.
+
+
+@node Specific restrictions
+@appendixsec Specific restrictions on @code{April}-2 programs
+@cindex Specific restrictions on @code{April}-2 programs
+
+@noindent
+There are a number of features of @code{April}-2 which are not
+supported, or require programmer modification, within the new
+@code{April}-4 system:
+
+@menu
+* tau expressions::             
+* fstat record::                
+* time2date::                   
+* time2gmt obsolete::           
+* date2time obsolete::          
+* tcp_server modified::         
+* popen modified::              
+@end menu
+
+@node tau expressions
+@appendixsubsec @code{tau} expressions
+@cindex @code{tau} expressions
+
+@noindent
+@code{tau} expressions are not supported in the @code{April}-4 system,
+therefore the @code{April}-2 compatibility mode of the compiler cannot
+support them. The same applies to `pattern programs'.
+
+@node fstat record
+@appendixsubsec @code{fstat} record
+@cindex @code{fstat} record
+
+@noindent
+In @code{April}-2, the value returned by @code{fstat} is effectively a
+tuple of 13 integers. In @code{April}-4, @code{fstat} returns a record
+with 13 fields in it. In order to access the fields returned by
+@code{fstat} from within an @code{April}-2 program, the programmer
+should assume that @code{fstat} returns a tuple of 14 elements, the
+first element being a symbol and the remainder are the same as before.
+
+@node time2date
+@appendixsubsec @code{time2date} function
+@cindex @code{time2date} function
+
+@noindent
+The @code{time2date} function in version 2 returns an @code{April}-2 style
+record; in @code{April}-4, @code{time2date} is replaced by a new
+function @code{timetodate} (@pxref{timetodate}) which returns a
+@code{date} record.
+
+Note that @code{time2date} is currently still supported by
+@code{April}-4; but is now obsolete.
+
+@node time2gmt obsolete
+@appendixsubsec @code{time2gmt} function is obsolete
+@cindex @code{time2gmt} function
+
+@noindent
+The @code{time2gmt} function in version 2 returns an @code{April}-2 style
+record; in @code{April}-4, @code{time2gmt} is replaced by a new
+function @code{timetogmt} (@pxref{timetogmt}) which returns a @code{date} record.
+
+Note that @code{time2gmt} is currently still supported by
+@code{April}-4; but is now obsolete.
+
+@node date2time obsolete
+@appendixsubsec @code{date2time} function is obsolete
+@cindex @code{date2time} function
+
+@noindent
+The @code{date2time} function in version 2 takes as argument an
+@code{April}-2 style record -- a tuple of 6 integers; in @code{April}-4,
+@code{date2time} is replaced by a new function @code{timetodate}
+(@pxref{timetodate}) which take a @code{date} record as argument and
+returns a time value.
+
+Note that @code{date2time} is currently still supported by
+@code{April}-4; but is now obsolete.
+
+@node tcp_server modified
+@appendixsubsec @code{tcp_server} function
+@cindex @code{tcp_server} function
+
+@noindent
+For security reasons, the meaning of the string passed into the `server'
+procedure when a new connection is accepted has changed: it is now a
+string giving the IP address of the remote connection -- expressed as a
+standard IP quartet.
+
+The programmer can use the new @code{iptohost} (@pxref{iptohost}) function
+to find out the host name of the remote machine.
+
+@node popen modified
+@appendixsubsec @code{popen} function
+@cindex @code{popen} function
+@findex popen @r{file function}
+
+@noindent
+The argument to @code{popen} has been re-specified to require a list of
+@code{string}s rather than a single @code{string} value. The first
+element of the list is the command name, and the remaining elements are
+the arguments to the command. 

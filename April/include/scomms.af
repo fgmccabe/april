@@ -1,0 +1,3 @@
+/* automatically generated -- do not edit */
+/* Module interface file for scomms.aam */
+(((){}, char[], number){}?scsConnect,((){}, handle, char[], number){}?scsConnectAs) from "scomms.aam";

@@ -1,0 +1,390 @@
+/*
+ * File handling module for April run-time system
+ */
+#include "files.ah";
+
+/* Special local macros to support modules without interference wrt i/o */
+
+_module {		/* We dont want definitions of stdio here */
+  /* A file reader object - must be invoked after file is opened */
+  reader(F) => {
+
+    inchar() => __inchars(F,1);		-- read one character - into string
+
+    inascii() => __inascii(F);		-- read one ASCII byte
+
+    inline() => __inline(F);		-- read a line of text
+
+    binline() => __binline(F);		-- read a balanced line
+
+    inbytes(K) => __inbytes(F,K);	-- read a block of bytes
+
+    inchars(K) => __inchars(F,K);	-- read a block string
+
+    read() => __read(F);		-- read a general term
+
+    decode() => __decode(F);		-- read encoded data
+
+    eof() => __eof(F);			-- test for end of file
+
+    ready() => __ready(F);		-- test for file being ready
+
+    tell() => __tell(F);		-- report current file position
+
+    seek(pos,mode){			-- set the file pointer
+      __seek(F,pos,mode);
+    };
+
+    close(){				-- close the file
+      __close(F);
+    };
+  };
+
+  /* A file writer object */
+  writer(F) => {
+    outchar(S){				-- write some text
+      __outchar(F,S)
+    };
+
+    encode(A){				-- encode a value
+      __encode(F,A)
+    };
+
+    flush(){				-- flush the buffers
+      __flush(F);
+    };
+
+    ready() => __ready(F);		-- File ready test
+
+    tell() => __tell(F);		-- determine current file position
+
+    seek(pos,mode){			-- set new file position
+      __seek(F,pos,mode);
+    };
+
+    close(){				-- close the file
+      __close(F);
+    }
+  };
+
+
+  /* Establish a server on a port,
+     Main argument is a procedure to execute for each new connection */
+  _server(number?port, (string,number,handle,handle){}?P, handle?client)
+  {
+    try {			/* a lot of things can fail here */
+       L = _listen(port);
+      _new_server_(self())~~[replyTo(creator())] >> client;
+
+      while true do {
+        (fIn,fOut) = _accept(L);
+
+	try {
+	  (hostName,clPort) = _peerip(fIn);
+
+	  inP = spawn{ try {
+            reader(fIn);
+          } onerror
+            Error -> Error >> creator()
+          };
+
+          outP = spawn { try {
+            writer(fOut);
+          } onerror 
+            Error -> Error~~[replyTo(creator())]>>client
+          };
+
+          new_connection(
+	    __fork_("",client,file_manager(),_mailer(),true,
+		{()->{
+		      P(hostName,clPort,inP,outP);
+		      _close_ >> inP; _close_>>outP
+	      }})) >> client
+        } onerror
+          Error -> Error~~[replyTo(creator())]>>client
+      }
+    } onerror 
+        error(C, _) -> 
+          error(C,any('_server_, port, P))~~[replyTo(creator())] >> client
+  };
+
+  /* A basic directory manager process */
+  dir_manager(root,path,permissions)
+  {
+    _set_file_manager(self());		/* We are our own file manager */
+
+    std_in = spawn {
+	  'in_ok>>creator();
+          reader(__stdfile(0))
+        };
+
+    std_out = spawn {
+	  'out_ok>>creator();
+          writer(__stdfile(1))
+	};
+    std_err = spawn {
+	  'err_ok>>creator();
+	  writer(__stdfile(2))
+	};
+
+    receive{				/* pick up the synchronizations */
+      'in_ok ->>
+        {
+	  receive{
+	  'out_ok ->> {
+            receive{
+	      'err_ok ->> {}
+	    }
+	  }
+	}
+      }
+    };
+
+    sub_manager(root,path,permissions,std_in,std_out,std_err)
+  };
+
+  sub_manager(root,cwd,permissions,handle?std_in,handle?std_out,handle?std_err){
+    path : cwd;
+    repeat {
+      'stdin ->> {
+	std_in >> replyto
+      }
+    | 'stdout ->> {
+	std_out >> replyto
+      }
+    | 'stderr ->> {
+       std_err >> replyto
+      }
+    | _open_(fn,_open_read) ->> {
+	if _allow_read in permissions then {		/* May we read ? */
+	  fname = root++__filename(root,path,fn);	/* Compute full name */
+          if __ffile(fname) then {			/* File exists */
+	    spawn reader(__open(fname,_open_read))
+                 >> replyto
+          }
+          else
+            error("file not found",any('_open_, fname,_open_read)) >> replyto
+        }
+        else
+          error("permission denied",any('_open_,fn,_open_read)) >> replyto
+      }
+
+    | _open_(fn,_open_write) ->> {
+	if _allow_write in permissions then {		/* May we write ? */
+	  fname = root++__filename(root,path,fn);	/* Compute full name */
+          if __ffile(fname) then {			/* File exists */
+	    spawn reader(__open(fname,_open_write))
+              >> replyto
+          }
+          else
+            error("file not found",any('_open_, fname,_open_write))>> replyto
+        }
+        else
+          error("permission denied",any('_open_,fn,_open_write)) >> replyto
+      }
+
+    | _open_(fn,_open_read_write)  ->> {
+	if _allow_read in permissions && _allow_write in permissions then {
+	  fname = root++__filename(root,path,fn);	/* Compute full name */
+          if __ffile(fname) then {			/* File exists */
+            spawn {
+	     fd = __open(fname,_open_read_write);
+	     reader_writer(fd,spawn reader(fd))
+	    } >> replyto
+          }
+          else
+            error("file not found",any('_open_, fname,_open_read_write))
+              >> replyto
+        }
+        else
+         error("permission denied",any('_open_,fn,_open_read_write))>>replyto
+      }
+
+    | _open_(fn,_create_write)  ->> {
+        if _allow_write in permissions then {		/* May we write ? */
+	  fname = root++__filename(root,path,fn);	/* Compute full name */
+          spawn writer(__open(fname,_create_write)) >> replyto
+        }
+        else
+          error("permission denied",any('_open_,fn,_create_write)) >> replyto
+      }
+
+    | _open_(fn,_open_append)  ->> {
+        if _allow_write in permissions then {		/* May we write ? */
+	  fname = root++__filename(root,path,fn);	/* Compute full name */
+          spawn writer(__open(fname,_open_append)) >> replyto
+        }
+        else
+          error("permission denied",any('_open_,fn,_open_append)) >> replyto
+      }
+
+    | _open_(fn,_create_append)  ->> {
+        if _allow_write in permissions then {		/* May we write ? */
+	  fname = root++__filename(root,path,fn);	/* Compute full name */
+          spawn writer(__open(fname,_create_append)) >> replyto
+        }
+        else
+          error("permission denied",any('_open_,fn,_create_append))>>replyto
+      }
+
+    | _popen_(cmd, args, env) ->> {	/* Open pipe */
+        if _allow_pipe in permissions then {	/* Not always permitted */
+          try {
+            (inPipe,outPipe) .= __popen(cmd,args,env);
+
+	    _pipe_( spawn reader(inPipe), spawn writer(outPipe)) >> replyto
+ 	  }
+          onerror
+          { error(M,_) -> error(M,any('_popen_,cmd)) >> replyto}
+        }
+        else
+          error("permission denied",any('_popen_,cmd)) >> replyto 
+      }
+         
+    | _open_dir_(dir,modes)  ->> {
+	try{
+	  fn = root++__filename(root,path,dir);
+          if __ffile(fn) then 			/* Directory exists */
+            spawn {sub_manager(fn++"/","",modes/\permissions,std_in,std_out,std_err)}
+		>> replyto
+          else
+            error("directory not found",any('_open_dir_,dir,modes)) >> replyto
+        }
+	onerror {
+          _ -> error("could not open directory",any('_open_dir_,dir,modes)) >> replyto
+        }
+      }
+
+    | _filename_(nm)  ->> {
+	  root++__filename(root,path,nm) >> replyto
+	onerror
+	  Error -> Error >> replyto 	/* report an error */
+      }
+    | _file_(nm)  ->> {
+	  __ffile(root++__filename(root,path,nm)) >> replyto
+	onerror
+	  Error -> Error >> replyto	/* report an error */
+      }
+
+    | _stat_(nm)  ->> {
+          __stat(root++__filename(root,path,nm)) >> replyto
+	onerror
+	  Error -> Error >> replyto	/* report an error */
+      }
+
+    | _rm_(nm)  ->> {
+	  __rm(root++__filename(root,path,nm)); 'rm_ok >> replyto
+	onerror
+	  ?Error -> Error >> replyto 	/* report an error */
+      }
+
+    | _cd_(nm)  ->> {			/* attempt to change wd */
+	{ pth = __filename(root,path,nm);
+	  if __file_type(root++pth)==_directory then {
+	    path:=pth; 'cd_ok >> replyto
+          }
+	  else
+            error("not a directory",any('_cd_, nm)) >> replyto
+        }
+	onerror				/* cant go above root path */
+          error(X, _) -> error(X,any('_cd_, nm)) >> replyto
+      }
+
+    | _mv_(old,new)  ->> {
+	{ __mv(root++__filename(root,path,old),
+	       root++__filename(root,path,new)); 'mv_ok >> replyto }
+	onerror				/* cant go above root path */
+          error(X, _) -> error(X,any('_mv_,old,new)) >> replyto
+      }
+
+    | _pwd_ ->>{		/* what is our working directory? */
+	  root++__filename(root,path,"") >> replyto
+        onerror
+          error(X, _) -> error(X, any'_pwd_) >> replyto
+      }
+
+    | _fmode_(name)  ->> {
+	  ('_fmode_, __fmode(root++__filename(root,path,name)))>>replyto
+	onerror				/* cant go above root path */
+          error(X,_) -> error(X,any('_fmode_, name)) >> replyto
+      }
+
+    | _chmod_(name,mode)  ->> {
+        { __chmod(root++__filename(root,path,name),mode);
+	  'chmod_ok >> replyto
+        } 
+        onerror
+	  Error -> Error >> replyto	/* report an error */
+      }
+
+    | _mkdir_(name,mode)  ->> {
+	if _allow_write in permissions then {
+          { __mkdir(root++__filename(root,path,name),mode);
+		'mkdir_ok >> replyto } 
+          onerror
+	    Error -> Error >> replyto	/* report an error */
+	}
+	else
+	  error("permission denied",any('_mkdir_, name,mode)) >> replyto
+      }
+
+    | _rmdir_(name)  ->> {
+	if _allow_write in permissions then {
+          { __rmdir(root++__filename(root,path,name)); 'rmdir_ok >> replyto } 
+          onerror
+	    Error -> Error >> replyto 	/* report an error */
+	}
+	else
+	  error("permission denied",any('_rmdir_, name)) >> replyto
+      }
+
+    | _ls_(dir)  ->> {
+	if _allow_read in permissions then {
+	  { __ls(root++__filename(root,path,dir)) >> replyto }
+	  onerror
+            error(X, _) -> error(X,any('_ls_, dir)) >> replyto
+	}
+	else
+	  error("permission denied",any('_ls_, dir)) >> replyto
+      }
+
+    | _file_type_(pth)  ->> {
+	if _allow_read in permissions then {
+	  { __file_type(root++__filename(root,path,pth)) >> replyto }
+	  onerror
+            error(X, _) -> error(X,any('_file_type_,pth)) >> replyto
+	}
+	else
+	  error("permission denied",any('_file_type_, pth)) >> replyto
+      }
+
+    | _connect_(hostName,port)  ->> {
+        if _allow_connect in permissions then {
+	  try {
+            fd = _connect(hostName,port);	/* connect to server */
+            _connection_(spawn reader(fd), spawn writer(fd)) >> replyto
+            }
+          onerror 
+            error(?M,_) -> error(M,any('_connect_, hostName,port)) >> replyto
+        }
+        else
+	   error("permission denied",any('_connect_, hostName,port))>>replyto
+      }
+
+    | _server_(port,P)  ->> {
+        if _allow_listen in permissions then
+	  _ := spawn _server(port,P,replyto)
+        else
+	  error("permission denied",any('_server_, port,P)) >> replyto
+      }
+
+    | _home_ ->> 			/* what is our home directory */
+        root >> replyto
+          
+    | other ->> 
+       error("Unknown command",other) >> replyto
+
+    } until '_quit_ :: sender== creator();
+  };
+
+} export (dir_manager);

@@ -1,0 +1,13 @@
+program
+ import native 
+   ({%a-((%a[])=>number)}?len,
+    {%a-((%a[],number)=> %a[])}?first) from ".libs/libdltest.dylib" in
+{
+  main(N,M)
+  {
+    _break("");
+    L = 1..N;
+    "Length of "++L^0++" is "++len(L)^0++"\n">>stdout;
+    "first "++M^0++" elements = "++first(L,M)^0++"\n">>stdout;
+  }
+} execute main;

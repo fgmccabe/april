@@ -1,0 +1,52 @@
+/* 
+  The April version of the semaphore program
+*/
+
+module 
+{
+  msg ::= req | rel | sync | readReq | writeReq | readRel | writeRel | quit;
+
+  sem(Flag){
+    F:Flag;
+    repeat{
+      req :: F>0  ->> {
+        sync >> replyto;
+         F -:=1;
+        }
+     | rel ->>  F+:=1 
+    } until quit :: sender== creator() 
+  };
+
+  -- Reader/writer semaphore (any number of readers, one writer no readers)
+  rw(Flag)
+  {
+    R:0;
+    W:Flag;				-- number of simultaneous writers allowed 
+
+    repeat{
+      readReq :: W>0 ->> {
+	sync >> replyto;
+	R := R+1;
+      }
+    | readRel ->>
+	R := R-1
+    | writeReq :: W>0 && R==0 ->> {
+        sync >> replyto;
+        W := W-1;
+      }
+    | writeRel ->>
+	W := W+1
+    } until quit::sender==creator()
+  };
+
+  p(S){
+    req >> S;
+    receive { sync :: sender == S  ->> {} }
+  };
+
+  v(S)
+  {
+    rel >> S
+  }
+}
+export (sem,p,v);

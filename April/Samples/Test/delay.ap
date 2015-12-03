@@ -1,0 +1,9 @@
+program {
+  main()
+  {
+	"Hello\n" >> stdout;
+	delay(0.5);
+	"Goodbye\n" >> stdout;
+  };
+
+} execute main;

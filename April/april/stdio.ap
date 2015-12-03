@@ -1,0 +1,361 @@
+/*
+ * File system interface macros 
+ */
+
+#include "files.ah";
+
+_module {		/* We dont want definitions of stdio here */
+  fopen(file,mode) => valof {
+    h = file_manager();
+    _open_(file, mode) >> h;
+    receive{
+      handle?fl :: replyto == h  ->> valis fl
+    | error(msg,code) :: replyto == h  ->> exception error(msg,code)
+    }
+  };
+
+  fclose(fp)
+  {
+    _close_ >> fp
+  };
+
+  popen(cmd,args,env) => valof {
+    h = file_manager();
+    _popen_(cmd,args,env) >> h;
+    receive{
+      _pipe_(i,o,e) :: replyto == h  ->> valis (i,o,e)
+    | error(msg,code) :: replyto == h  ->> exception error(msg,code)
+    }
+  };
+
+  tcp_connect(host,port) => valof {
+    h = file_manager();
+    _connect_(host,port) >> h;
+    receive{
+      _connection_(inp,out)::replyto == h  ->> valis (inp,out)
+    | error(msg,code) :: replyto==h  ->> exception error(msg,code)
+    }
+  };
+
+  tcp_server(port,proc) => valof {
+    h = file_manager();
+    _server_(port, proc) >> h;
+    receive{
+      _new_server_(fl) :: replyto ==  h  ->> valis fl
+    | error(msg,code) :: replyto ==  h  ->> exception error(msg,code)
+    }
+  };
+
+  sub_manager(dir,modes) => valof {
+    h = file_manager();
+    _open_dir_(dir,modes) >> h;
+    receive{
+      handle?fl :: replyto == h  ->> valis fl
+    | error(msg,code) :: replyto == h  ->> exception error(msg,code)
+    }
+  };
+
+  ffilename(string?fn) => valof {
+    h = file_manager();
+    _filename_(fn) >> h;
+    receive{
+      string?name :: replyto == h  ->> valis name
+    | error(msg,code) :: replyto == h  ->> exception error(msg,code)
+    }
+  };
+
+  ffile(fn) => valof {
+    h = file_manager();
+    _file_(fn) >> h;
+    receive{
+      logical?res :: replyto == h  ->> valis res
+    | error(msg,code) :: replyto == h  ->> exception error(msg,code)
+    }
+  };
+
+  fmode(fn) => valof {
+    h = file_manager();
+    _fmode_(fn) >> h;
+    receive{
+      ('_fmode_,_file_permission[]?res) :: replyto == h  ->> valis res
+    | error(msg,code) :: replyto == h  ->> exception error(msg,code)
+    }
+  };
+
+  fchmod(fn,modes){
+    h = file_manager();
+    _chmod_(fn,modes) >> h;
+    receive{
+      'chmod_ok :: replyto == h  ->> {}
+    | error(msg,code) :: replyto == h  ->> exception error(msg,code)
+    }
+  };
+    
+  fstat(string?fn) => valof {
+    h = file_manager();
+    _stat_(fn) >> h;
+    receive{
+      _file_status?stat :: replyto == h  ->> valis stat
+    | error(msg,code) :: replyto == h  ->> exception error(msg,code)
+    }
+  };
+
+  frm(fn)
+  {
+    h = file_manager();
+    _rm_(fn) >> h;
+    receive{
+      'rm_ok :: replyto == h  ->> {}
+    | error(msg,code) :: replyto == h  ->> exception error(msg,code)
+    }
+  };
+
+  frmdir(fn)
+  {
+    h = file_manager();
+    _rmdir_(fn) >> h;
+    receive{
+      'rmdir_ok :: replyto == h  ->> {}
+    | error(msg,code) :: replyto == h  ->> exception error(msg,code)
+    }
+  };
+
+  fmv(old,new)
+  {
+    h = file_manager();
+    _mv_(old,new) >> h;
+    receive{
+      'mv_ok :: replyto == h  ->> {}
+    | error(msg,code) :: replyto == h  ->> exception error(msg,code)
+    }
+  };
+
+  fcd(fn)
+  {
+    h = file_manager();
+    _cd_(fn) >> h;
+    receive{
+      'cd_ok :: replyto == h  ->> {}
+    | error(msg,code) :: replyto == h  ->> exception error(msg,code)
+    }
+  };
+
+  fpwd() => valof {
+    h = file_manager();
+    _pwd_ >> h;
+    receive{
+      string?cwd :: replyto == h  ->> valis  cwd
+    | error(msg,code) :: replyto == h  ->> exception error(msg,code)
+    }
+  };
+
+  fhome() => valof {
+    h = file_manager();
+    _home_ >> h;
+    receive{
+      string?cwd :: replyto == h  ->> valis  cwd
+    | error(msg,code) :: replyto == h  ->> exception error(msg,code)
+    }
+  };
+
+  fmkdir(dir,modes)
+  {
+    h = file_manager();
+    _mkdir_(dir,modes) >> h;
+    receive{
+      'mkdir_ok :: replyto == h  ->> {}
+    | error(msg,code) :: replyto == h  ->> exception error(msg,code)
+    }
+  };
+
+  fls(dir) => valof {
+    h = file_manager();
+    _ls_(dir) >> h;
+    receive{
+       string[]?list :: replyto == h  ->> valis  list
+    | error(msg,code) :: replyto == h  ->> exception error(msg,code)
+    }
+  };
+
+  ffiletype(nme) => valof {
+    h = file_manager();
+    _file_type_(nme) >> h;
+    receive{
+      _file_type?type :: replyto == h  ->> valis  type
+    | error(msg,code) :: replyto == h  ->> exception error(msg,code)
+    }
+  };
+
+  eof(fp) => valof {
+    h = fp;
+    _eof_ >>  h;
+    receive {
+      logical?stat :: replyto == h  ->> valis  stat
+    }
+  };
+
+  fready(fp) => valof {
+    h = fp;
+    _ready_ >> h;
+    receive {
+      logical?stat :: replyto == h  ->> valis  stat
+    }
+  };
+
+  fflush(fp)
+  {
+    _flush_ >> fp;
+    receive '_flush_ok ->> {}
+  };
+
+  ftell(fp) => valof {
+    h = fp;
+    _ftell_ >>  h;
+    receive{
+      number?offset :: replyto == h ->> valis  offset
+    | error(msg,code) :: replyto == h ->> exception error(msg,code)
+    }
+  };
+
+  fseek(fp,pos,mode)
+  {
+    h = fp;
+    _seek_(pos,mode) >>  h;
+    receive{
+      'seek_ok :: replyto == h ->> {}
+    | error(msg,code) :: replyto == h ->> exception error(msg,code)
+    }
+  };
+
+  inchar(fp) => valof {
+    h = fp;
+    _char_ >> h;
+    receive{
+      string?ch :: replyto == h ->> valis  ch
+    | error(msg,code) :: replyto == h ->> exception error(msg,code)
+    }
+  };
+
+  inbytes(fp,cnt) => valof {
+    h = fp;
+    _bytes_(cnt) >> h;
+    receive{
+      number[]?str :: replyto == h ->> valis  str
+    | error(msg,code) :: replyto == h ->> exception error(msg,code)
+    }
+  };
+
+  inchars(fp,cnt) => valof {
+    h = fp;
+    _chars_(cnt) >> h;
+    receive{
+      string?str :: replyto == h ->> valis  str
+    | error(msg,code) :: replyto == h ->> exception error(msg,code)
+    }
+  };
+
+  inascii(fp) => valof {
+    h = fp;
+    _ascii_ >> h;
+    receive{
+      number?ascii :: replyto == h ->> valis  ascii
+    | error(msg,code) :: replyto == h ->> exception error(msg,code)
+    }
+  };
+
+  inline(fp) => valof {
+    h = fp;
+    _line_ >> h;
+    receive{
+      string?line :: replyto == h ->> valis line
+    | error(msg,code) :: replyto == h ->> exception  error(msg,code)
+    }
+  };
+
+  binline(fp) => valof {
+    h = fp;
+    _bline_ >> h;
+    receive{
+      string?line :: replyto == h ->> valis line
+    | error(msg,code) :: replyto == h ->> exception  error(msg,code)
+    }
+  };
+
+  intext(fp) => valof {
+    h = fp;
+    _all_ >> h;
+    receive{
+      string?line :: replyto == h ->> valis line
+    | error(msg,code) :: replyto == h ->> exception  error(msg,code)
+    }
+  };
+
+  inlines(fp,count) => valof {
+    h = fp;
+    _lines_(count) >> h;
+    receive{
+      ('_lines_,string[]?lines,_) :: replyto == h ->> valis lines
+    | error(msg,code) :: replyto == h ->> exception  error(msg,code)
+    }
+  };
+
+  fdecode(fp) => valof {
+    h = fp;
+    _decode_ >> h;
+    receive{
+      error(msg,code) :: replyto == h ->> exception error(msg,code)
+    | any?term :: replyto == h ->> valis term
+    }
+  };
+
+  outchar(fp,data)
+  {
+    h = fp;
+    _outchar_(data) >> h;
+    receive{
+      'write_ok :: replyto == h ->> {}
+    | error(msg,code) :: replyto == h ->> exception error(msg,code)
+    }
+  };
+
+  outbytes(fp,data)
+  {
+    h = fp;
+    _outbytes_(data) >> h;
+    receive{
+      'write_ok :: replyto == h ->> {}
+    | error(msg,code) :: replyto == h ->> exception error(msg,code)
+    }
+  };
+
+  fencode(fp,data)
+  {
+    h = fp;
+    _encode_(data) >> h;
+    receive{
+      'write_ok :: replyto == h ->> {}
+    | error(msg,code) :: replyto == h ->> exception error(msg,code)
+    }
+  };
+
+  stdin=valof{
+    h = file_manager();
+    'stdin  >> h;
+    receive
+      handle?fl :: replyto == h ->> valis fl
+  };
+
+  stdout=valof{
+    h = file_manager();
+    'stdout  >> h;
+    receive
+      handle?fl :: replyto == h ->> valis fl
+  };
+  stderr=valof{
+    h = file_manager();
+    'stderr  >> h;
+    receive
+      handle?fl :: replyto == h ->> valis fl
+  };
+
+} export interface <stdio.af>;

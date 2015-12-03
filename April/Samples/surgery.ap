@@ -1,0 +1,116 @@
+/* The doctor's surgery example */
+
+protocol ::= ready(number) | IamIll | IamSick(number,number)
+        | HaveThisPill(number)
+	| see(handle,number)
+	| report
+	| details(number,number)
+        | close_down | close_up;
+
+program{
+  doctor(id,reception)
+  {
+    ready(id) >> reception;
+    "Doctor "++id^0++" is in\n" >> stdout;
+    ptnts : 0;
+
+    repeat{
+      IamSick(I,PatId) ->> {
+        ptnts+:=1;
+        delay(rand(5));
+	HaveThisPill(I) >> replyto;
+       "Doctor "++id^0++" is ready\n" >> stdout;
+	ready(id) >> reception;
+      }
+    } until report; 
+
+   "Doctor "++id^0++" has seen "++ptnts^0++" patients\n" >> stdout;
+  };
+
+  patient(id,reception)
+  {
+    symptom : rand(10);
+    illcnt : 0;
+    aveQ : 0.0;
+    finished : false;
+
+    while not finished do{
+      r : rand(10);
+      delay(r);
+      "Patient "++id^0++" sickens\n" >> stdout;
+      symptom *:=1.1;
+      IamIll >> reception;
+      start : ticks();
+      receive{
+	see(Who,DocId) ->> {
+	  aveQ := (illcnt*aveQ + (ticks()-start))/(illcnt+1);
+	  illcnt+:=1;
+
+          "Patient "++id^0++" to see "++DocId^0++"\n">>stdout;
+	  IamSick(symptom,id) >> Who;
+	  receive{
+	    HaveThisPill(P) ->>
+             "Patient "++id^0++" symptoms alleviated\n" >> stdout
+	  }
+        }
+      | report ->> {
+          "Patient "++id^0++" has been ill "++illcnt^0++
+	    " times\n" >> stdout;
+          "Average Q length "++aveQ^2++" msecs\n" >> stdout;
+	  details(id,aveQ) >> replyto;
+	  finished:=true;
+        }
+      }
+    };
+  };
+
+  receptionist(totaltime)
+  {
+    "The receptionist is in.\n">>stdout;
+     repeat {
+      IamIll ->> {
+	p = replyto;
+	receive{ ready(DocId) ->> see(replyto,DocId)>>p};
+      }
+    } until alarm totaltime secs;
+   "The receptionist is done\n" >> stdout;
+    close_up >> creator();
+    receive{ close_down  ->> {}};
+  };
+
+  main(doctors,patients,opening)
+  {
+    rec = spawn receptionist(opening);
+    docs = collect {
+      for D in 1..doctors do 
+        elemis spawn doctor(D,rec)
+    };
+
+    pts = collect{
+      for D in 1..patients do
+        elemis spawn patient(D,rec)
+    };
+
+    receive{
+      close_up  ->> {
+	report >>* docs;
+	for h in docs do
+    	  waitfor(h);
+	report >>* pts;
+	AveQ : 0.0;
+	for h in pts do{
+	  receive
+            details(_,Q) :: sender== h ->> 
+	      AveQ +:= Q
+        };
+        "Overall Q length for "++listlen(pts)^0++" patients and "++
+            listlen(docs)^0++" docs was "++AveQ^2++
+	    " msecs\n" >> stdout;
+	close_down >> rec
+      }
+    }
+  }
+} execute main;
+
+
+

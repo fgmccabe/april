@@ -1,0 +1,134 @@
+#include "ap_tok.ah";
+#include "op_tree.ah";
+#include "ops.ah";
+
+program
+  import (interface "opgrammar.af" and
+	  interface "aptok.af" and
+          interface "operators.af" and
+	  interface "macro.af" and
+	  interface "streamer.af" and
+	  interface "display.af") in
+{
+  showTerm(out,T,fl,ln){
+    case T in {
+      IDEN(F,L,N) -> {
+        string%%N>>out;
+      }
+    | NM(F,L,N) -> {
+        N^0>>out;
+      }
+    | ST(F,L,N) -> {
+        "\""++string%%N++"\"">>out;
+      }
+    | APPLY(L,R) -> {
+        showTerm(out,L,fl,ln);
+        "@">>out;
+        showTerm(out,R,fl,ln);
+      }
+    | PAIR(L,R) -> {
+        "(">>out;
+        showTerm(out,L,fl,ln);
+        ",">>out;
+        showTerm(out,R,fl,ln);
+        ")">>out;
+      }
+    | VOID -> "<<void>>">>out
+    | END -> "<<end>>">>out
+    }
+  };
+
+  rmDots = {
+    APPLY(IDEN(_,_,[''.]),PAIR(L,R)) => rmDots(L)++"."++rmDots(R)
+  | IDEN(_,_,N) => string%%N
+  };
+
+  locateFile(F,inc) => valof {
+    if ffile(F) then
+      valis F
+    else {
+      for P in inc do {
+	file = P++"/"++F;
+	if ffile(file) then
+	  valis file
+      };
+      valis F
+    };
+  };
+
+  process(f,sys,usr) => collect{
+    S : streamer(f);
+    while (NS,_,T) .= parse(S) && T!=END do{
+--      displayExp(T,0,0,stdout,false);
+--      "\n">>stdout;
+      fflush(stdout);
+      S := NS;
+      if APPLY(IDEN(_,_,[''#]),O).=T then{
+        case O in {
+	  APPLY(IDEN(_,_,[''o,''p]),
+		 PAIR(APPLY(IDEN(_,_,[''']),IDEN(_,_,op)),
+		       PAIR(IDEN(_,_,mode),
+			     NM(_,_,prior)))) -> {
+            addop(opmode%%(symbol%%(string%%mode++"O")),op,prior)
+	    onerror
+                error(E,_) -> E++"\n">>stderr;
+          }
+	| APPLY(IDEN(_,_,['i,'n,'c,'l,'u,'d,'e]),ST(_,_,f)) -> {
+	    file=locateFile(string%%f,usr);
+	    "Request to include file "++file^0++"\n">>stdout;
+	  
+	    for I in process(file,sys,usr) do
+	      elemis I;
+	  }
+	| APPLY(IDEN(_,_,['i,'n,'c,'l,'u,'d,'e]),
+		 APPLY(IDEN(_,_,[''>]),
+			APPLY(IDEN(_,_,[''<]),f))) -> {
+	    file = locateFile(rmDots(f),sys);
+	    "Request to include system file "++file^0++"\n">>stdout;
+	    for I in process(file,sys,usr) do
+	      elemis I;
+	  }
+	| APPLY(IDEN(_,_,[''m,''a,''c,''r,''o]),
+		 APPLY(IDEN(_,_,[''=,''=,''>]),PAIR(P,R))) -> {}
+
+        | C -> {
+	    "Unknown meta command ">>stderr;
+--	    showTerm(stderr,C,"",0);
+	    "\n">>stderr
+	  }
+	    
+        }
+      }
+      else
+	elemis T;
+    }
+  };
+
+  defaultSysIncludePath(inc) => valof{
+    try {
+      ap = expand(getenv("APRIL_DIR"),":");
+      valis ap<>[inc++"/include"]
+    } onerror
+      _ ->
+	valis [inc++"/include"]
+    };
+
+
+  main(f)
+  {
+    C = process(f,defaultSysIncludePath("/opt/april"),[]);
+
+    if errCount()>0 then
+      errCount()^0++" syntax errors found\n">>stderr;
+
+    for T in C do {
+      showTerm(stdout,T,"",0);
+      " ==> ">>stdout;
+      showTerm(stdout,macroReplace(T),"",0);
+      "\n">>stdout;
+    };
+
+    fflush(stderr);
+    fflush(stdout);
+  }
+} execute main;

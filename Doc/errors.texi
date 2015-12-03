@@ -1,0 +1,55 @@
+@node Standard error codes
+@appendix Standard error codes
+@cindex Standard error codes
+
+@noindent
+Nearly every built-in function and procedure may give rise to an error
+if invoked incorrectly. An error value is of the standard @code{error}
+type:
+
+@smallexample
+error ::= error(string,symbol) | failed | timedout | clickedout ;
+@end smallexample
+
+@noindent
+The @code{error} constructor has two arguments: a descriptive string
+explaining the error and a symbol denoting the classification of the error;
+In this appendix we list the standard error codes:
+
+@table @code
+@item 'matcherr
+This is raised when a match failed in a situation where it is not safe
+for it to do so.
+@item 'privileged
+This is raised when a privilege violation is flagged -- such as
+attempting to execute a privileged operation, or an invalid access to
+teh file system.
+@item 'system
+This is raised when the operation is potentially correct but the system
+could not honour it -- due to space limitation for example.
+@item 'exec
+This is raised when attempting an illegal instruction or executing
+non-valid code.
+@item 'compval
+This is raised when attempting to compare incomparible values -- such as
+two code segments.
+@item 'invalid
+This is raised when arguments have invalid values -- such as attempting
+to take the square root of a negative number.
+@item 'arith
+This is raised when an arithmetic operation raised a problem -- such as
+divide by zero.
+@item 'abort
+This is raised when the user causes the system to abort.
+@item 'fail
+This is raised when an operation fails -- such as attempting to open a
+nn-existent for reading.
+@item 'eof
+This is raised when attempting to read past the end of file.
+@item 'io
+This is raised when an I/O error is raised while reading or writing
+@item 'net
+This is raised when a network error occurs -- such as being unable to find a
+host.
+@end table
+

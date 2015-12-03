@@ -1,0 +1,244 @@
+/*
+ * Module supporting the standard operators
+ */
+
+#include "ops.ah";
+
+module{
+  infops : [				-- this is the table of infix operators
+    (";",1899,1900,1900),
+    ("::=",1459,1460,1459),	-- type definition
+    ("==>",1399,1400,1399),	-- macro replacement
+    ("do",1299,1300,1300),	-- loop
+    ("onerror",1298,1299,1298),-- error handler
+    ("else",1294,1295,1295),	-- if then else
+    ("then",1289,1290,1289),	-- if then else
+    ("until",1289,1290,1289),	-- repeat until
+    ("=>",1199,1200,1200),	-- function arrow
+    ("|",1249,1250,1250),	-- choice marker
+    ("->",1199,1200,1199),	-- clause arrow
+    ("->>",1199,1200,1199),	-- message receive arrow
+    (":-",1139,1140,1139),	-- labelled statement
+    (":=",1099,1100,1099),	-- assignment operator
+    (">>",1099,1100,1099),	-- message send
+    (">>>",1099,1100,1099),	-- message forward
+    (">>*",1099,1100,1099),	-- repeat message send
+    ("+:=",1099,1100,1099),	-- + assignment operator
+    ("-:=",1099,1100,1099),	-- - assignment operator
+    ("*:=",1099,1100,1099),	-- * assignment operator
+    ("/:=",1099,1100,1099),	-- / assignment operator
+    ("<>:=",1099,1100,1099),	-- <> assignment operator
+    ("^/:=",1099,1100,1099),	-- ^/ assignment operator
+    ("^\\:=",1099,1100,1099),	-- ^\\ assignment operator
+    ("within",1099,1100,1099),-- constrained execution
+    ("within_",1099,1100,1099),-- constrained execution
+    (",",999,1000,1000),	-- comma
+    ("where",999,1000,999),	-- let where or import where
+    (":",998,999,998),	-- variable declaration
+    ("=",998,999,998),	-- variable declaration
+    ("~~",997,998,997),	-- message options pattern
+    ("of",974,975,974),
+    ("::",939,940,939),	-- pattern guard and statement label
+    ("||",929,930,930),	-- disjunction
+    ("or",929,930,930),	-- disjunction
+    ("&&",919,920,920),	-- conjunction
+    ("and",919,920,920),	-- conjunction
+    ("forall",909,910,909),	-- set abstraction
+    ("!",904,905,904),	-- object reference
+    (".=",899,900,899),	-- match predicate
+    ("!.=",899,900,899),	-- no match predicate
+    ("==",899,900,899),	-- equality predicate
+    ("!=",899,900,899),	-- not equal predicate
+    ("<",899,900,899),	-- less than predicate
+    ("<=",899,900,899),	-- less than or equal predicate
+    (">",899,900,899),	-- greater than predicate
+    (">=",899,900,899),	-- greater than or equal predicate
+    ("in",899,900,899),	-- set membership predicate
+    ("as",889,890,889),	-- spawn as...
+    ("./",859,860,860),	-- macro pattern
+    ("^/",840,840,839),	-- set selection
+    ("select",840,840,839),	-- set selection
+    ("^\\",840,840,839),	-- set rejection
+    ("reject",840,840,839),	-- set rejection
+    ("//",839,840,839),	-- set map
+    ("map",839,840,839),	-- set map
+    ("\\\\",839,840,839),	-- set reduce
+    ("reduce",839,840,839),	-- set reduce
+    ("step",839,840,839),	-- step increment
+    ("..",819,820,819),	-- iota
+    ("\\/",820,820,819),	-- set union
+    ("\\",820,820,819),	-- set difference
+    ("/\\",800,800,799),	-- set intersection
+    ("export",799,800,799),	-- module export marker
+    ("execute",799,800,799),	-- program entry point
+    ("~",794,795,794),
+    ("from",749,750,749),
+    ("?",749,750,749),	-- variable pattern
+    ("<>",799,800,800),	-- list append
+    ("append",799,800,800),	-- list append
+    ("++",799,800,800),	-- string append
+    ("~",794,795,794),	-- width marker
+    ("^",789,790,789),	-- precision marker
+    ("+",720,720,719),
+    ("-",720,720,719),
+    ("*",700,700,699),
+    ("/",700,700,699),
+    ("quot",700,700,699),
+    ("rem",700,700,699),
+    ("#",649,650,649),
+    ("%%",509,510,509),	-- type coercion
+    (".",400,400,399),	-- record selection
+    ("##",299,300,300),
+    ("@",299,300,299)
+  ];
+
+  prefops : [				-- these are the prefix operators
+    ("#",1500,1499),
+    ("macro",1450,1449),
+    ("_nodebug_",1450,1449),
+    ("_debug_",1450,1449),
+    ("include",1450,1449),
+    ("try",1300,1299),
+    ("for",1250,1249),
+    ("while",1250,1249),
+    ("case",1290,1289),
+    ("receive",1290,1289),
+    ("repeat",1300,1299),
+    ("if",1250,1249),
+    ("alarm",1249,1248),
+    ("valis",1100,1099),
+    ("elemis",1100,1099),
+    ("timeout",1010,1009),
+    ("object",990,989),
+    ("!",910,910),
+    ("istrue",910,909),
+    ("not",910,910),
+    ("exception",900,899),
+    ("record_of",900,899),
+    ("module",890,889),
+    ("_module",890,889),
+    ("program",890,889),
+    ("import",800,799),
+    ("native",790,789),
+    ("interface",799,798),
+    ("<",700,699),
+    ("let",500,499),
+    ("valof",500,499),
+    ("setof",500,499),
+    ("bagof",500,499),
+    ("?",310,309),
+    ("##",300,299),
+    ("+",300,299),
+    ("-",300,299)
+  ];
+
+  postops : [				-- these are the postfix operators
+    (";",1899,1900),
+    ("<<",1099,1100),
+    ("!>>",1099,1100),
+    (">",700,701),
+    ("secs",599,600),
+    ("mins",599,600),
+    ("hours",599,600),
+    ("days",599,600)
+  ];
+
+  isOperator(N) => (N,_,_,_) in infops || (N,_,_) in prefops || 
+                   (N,_,_) in postops;
+
+  prefixPr(N) => {
+    if (N,O,R) in prefops then
+      (O,R)
+    else
+      (10000,10000)
+  };
+
+  postfixPr(N) => {
+    if (N,L,O) in postops then
+      (L,O)
+    else
+      (10000,10000)
+  };
+
+  infixPr(N) => {
+    if (N,L,O,R) in infops then
+      (L,O,R)
+    else
+      (10000,10000,10000)
+  };
+
+  addop(optype,N,prior) {
+    case optype in {
+      prefixO -> {
+	if (!N,P,R) in prefops then {
+	  if P!=prior || R!=prior-1 then
+	    exception error(string%%N++
+			     " already a prefix operator of priority "++P^0,
+			     'fail)
+	}
+	else
+	  prefops := [(N,prior,prior-1),..prefops]
+      }
+    | aprefixO -> {
+	if (!N,P,R) in prefops then {
+	  if P!=prior || R!=prior then
+	    exception error(string%%N++
+			     " already a prefix operator of priority "++P^0,
+			     'fail)
+	}
+	else
+	  prefops := [(N,prior,prior),..prefops]
+      }
+    | leftO -> {
+	if (!N,L,P,R) in infops then {
+	  if P!=prior || R!=prior-1 || L!=prior then
+	    exception error(string%%N++
+			     " already an infix operator of priority "++P^0,
+			     'fail)
+	}
+	else
+	  infops := [(N,prior,prior,prior-1),..infops]
+      }
+    | rightO -> {
+	if (!N,L,P,R) in infops then {
+	  if P!=prior || R!=prior || L!=prior-1 then
+	    exception error(string%%N++
+			     " already an infix operator of priority "++P^0,
+			     'fail)
+	}
+	else
+	  infops := [(N,prior-1,prior,prior),..infops]
+      }
+    | infixO -> {
+	if (!N,L,P,R) in infops then {
+	  if P!=prior || R!=prior-1 || L!=prior-1 then
+	    exception error(string%%N++
+			     " already an infix operator of priority "++P^0,
+			     'fail)
+	}
+	else
+	  infops := [(N,prior-1,prior,prior-1),..infops]
+      }
+    | postfixO -> {
+	if (!N,L,P) in postops then {
+	  if P!=prior || L!=prior-1 then
+	    exception error(string%%N++
+			     " already a postfix operator of priority "++P^0,
+			     'fail)
+	}
+	else
+	  postops := [(N,prior-1,prior),..postops]
+      }
+    | apostfixO -> {
+	if (!N,L,P) in postops then {
+	  if P!=prior || L!=prior then
+	    exception error(string%%N++
+			     " already a postfix operator of priority "++P^0,
+			     'fail)
+	}
+	else
+	  postops := [(N,prior,prior),..postops]
+      }
+    }
+  };
+} export (isOperator, prefixPr, infixPr, postfixPr, addop);

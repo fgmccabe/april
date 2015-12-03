@@ -1,0 +1,117 @@
+/* Simple debugger for tracing April programs */
+
+#op('trepeat,prefix,1300);
+#macro trepeat ?B until ?Q ==> 
+  repeat{
+    ##X :: valof {"msg "++ ##X^0++"\n">>stdout; valis false} ->> {}
+  | B
+  } until Q;
+
+program /*import interface <scomms.af> in */{
+  debugger()
+  {
+    "April debugging server - "++string%%self()++"\n">>stdout;
+    currentprocess : self();
+    stopping : true;
+
+    repeat{
+     line_debug(Pr,Fil,No) ->>  {
+        currentprocess := lookat(Pr,currentprocess);
+        "@ "++string%%Fil++":"++string%%No++"\n">>stdout;
+        if not stopping then
+	  'ok >> replyto
+	else {
+	  resp : inchar(stdin);
+          case resp in { 
+	    "q" ->  'q >> replyto 
+          | "c" ->  'cont >> replyto
+          | "t" -> { stopping := false;
+	             'ok >> replyto
+		   }
+          | _ ->  'ok >> replyto 
+          }
+	}
+      }
+    | entry_debug(Pr,F) ->> {
+        currentprocess := lookat(Pr,currentprocess);
+        "Entering procedure/function "++string%%F++"\n">>stdout;
+      }
+
+    | exit_debug(Pr,F) ->> {
+        currentprocess := lookat(Pr,currentprocess);
+        "Return from procedure/function "++string%%F++"\n">>stdout;
+      }
+
+    | scope_debug(Pr,F) ->> {
+        currentprocess := lookat(Pr,currentprocess);
+        "Scope level"++F^0++"\n">>stdout;
+      }
+
+    | assign_debug(Pr,Var,Val) ->> {
+        currentprocess := lookat(Pr,currentprocess);
+        string%%Var++" := "++Val++"\n">>stdout;
+      }
+
+    | return_debug(Pr,Fun,Val) ->> {
+        currentprocess := lookat(Pr,currentprocess);
+        string%%Fun++" = "++Val++"\n">>stdout;
+      }
+
+    | send_debug(From,To,Msg) ->> {
+        currentprocess := lookat(From,currentprocess);
+        Msg++" >> "++To^0++"\n">>stdout;
+      }
+
+    | front_debug(From,To,Msg) ->> {
+        currentprocess := lookat(From,currentprocess);
+        Msg++" >> "++To^0++"\n">>stdout;
+      }
+
+    | accept_debug(From,To,Msg) ->> {
+        currentprocess := lookat(To,currentprocess);
+        Msg++" ->> "++From^0++"\n">>stdout;
+      }
+
+    | fork_debug(Parent,Child) ->> {
+        currentprocess := lookat(Child,currentprocess);
+        " spawn "++Child^0++"\n">>stdout;
+      }
+
+    | suspend_debug(Pr) ->> {
+        "["++Pr^0++"] waiting for messages\n">>stdout;
+      }
+    | die_debug(Pr) ->> {
+        "["++Pr^0++"] dying\n">>stdout;
+        if Pr==currentprocess then
+          currentprocess := self();
+      }
+    | error_debug(Pr,error(msg,code)) ->> {
+        currentprocess := lookat(Pr,currentprocess);
+        "run-time error "++msg++", code= "++code^0++"\n">>stdout;
+      }
+    | error_debug(Pr,msg) ->> {
+        currentprocess := lookat(Pr,currentprocess);
+        "run-time error involving "++msg^3++"\n">>stdout;
+      }
+    | break_debug(Pr,Data) ->>  {
+        currentprocess := lookat(Pr,currentprocess);
+        "break "++Data++"\n">>stdout;
+
+        stopping:=true;	   -- enable stopping mode
+      }
+    |  M ->> "Other message "++M^3++"\n">>stdout
+    } until 'Quit 
+  };
+
+  lookat(new,old)=>valof{
+   if new!=old then
+     "\e[5mswitch to "++new^0++"\e[0m\n">>stdout;
+   valis new;
+  };
+
+  main(nme){
+--    scsConnectAs(debugger,hdl('debug,nme),"localhost",4545);
+    debugger();
+  }
+} execute main;
+

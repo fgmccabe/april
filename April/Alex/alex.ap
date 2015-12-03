@@ -1,0 +1,147 @@
+/*
+ * Alex -- April LEX lexical parser generator
+ */
+
+#include "regexp.ah";
+
+program
+  import {
+  interface "genregexp.af" and
+  interface "gendfa.af" and
+  interface "genapril.af"
+  } in
+{
+
+/*
+  split(Text) => valof{
+    if Pre++"%%"++Rest .= Text then
+      valis (Pre,Rest)
+    else
+      valis (Text,[])
+  };
+  
+*/
+ split(Text) => splt(Text,[]);
+ 
+  splt = {
+    ([],L) => (reverse(L),[])
+  | ([''%,''%,''\n,..R],L) => (reverse(L),R)
+  | ([C,..R],L) => splt(R,[C,..L])
+  };
+
+  reverse(L) => valof {
+    R : [];
+    LL : L;
+    while [X,..Y].=LL do {
+      R := [X,..R];
+      LL := Y;
+    };
+    valis R;
+  };
+
+  grabData(fn) => valof {
+    _file_stat(_,_,_,_,_,_,_,count.=size,_,_,_,_,_) = fstat(fn);
+    f = fopen(fn,_open_read);
+
+    t = inchars(f,count);
+    fclose(f);
+    
+    (Pre,R) .= split(t);
+
+    if R!=[] then {
+      (T,Post) .= split(R);
+      valis (Pre,T,Post);
+    }
+    else{
+      (T,Post) .= split(Pre);
+      valis ([],T,Post);
+    };
+  };
+
+  lastChop = {
+    ([],_) => []
+  | ([X,..L],X) => lChop(L,X,[X])
+  | ([E,..L],X) => [E,..lastChop(L,X)]
+  };
+
+  lChop = {
+    ([],_,X) => [''/]
+  | ([X,..L],X,Y) => reverse(Y)<>lastChop([X,..L],X)
+  | ([E,..L],X,Y) => lChop(L,X,[E,..Y])
+  };    
+
+  main()
+  {
+    args : tail(command_line(),1);	-- pick up the arguments
+    trace : false;
+    verbose : false;
+    file : "";
+    while ["+"++option,..A].=args do{
+      args := A;
+      case option in {
+        "v"++string -> verbose := true
+      | "t"++string -> trace := true
+      | _ -> "Unknown option "++option++"\n">>stderr
+      };
+    };
+
+    if args!=[] then
+      file := head(args)
+    else{
+      "Usage: apg [-v] [-t] [-llexer] file\n">>stderr;
+      fflush(stderr);
+      halt;
+    };
+
+    sigma = [''\+ffff,.."abcdefghijklmnopqrstuvwxyz"
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    "0123456789'`~!@#$%^&*()-_=+[]{};:,./<>?\\|\" \a\b\d\e\f\n\r\t\v"];
+
+    inFn = valof {
+      if H++".alx" .= file then
+        valis file
+      else
+        valis file++".alx"
+    };
+
+    outFn = valof {
+      if H++".alx" .= file then
+        valis H++".ap"
+      else
+        valis file++".ap"
+    };
+
+    if verbose then
+      "Alex 0.2: "++inFn++" --> "++outFn++"\n">>stdout;
+
+    out = fopen(outFn,_create_write);
+
+    dirPrefix = lastChop(ffilename(file),''/);
+
+    (preamble,data,postamble) .= grabData(inFn);
+        
+    extra = findExtraTokenType(preamble);
+
+    REs = parseAfile(data);
+
+    if verbose then{
+      for(State,Re) in REs do{
+        "State: "++State++":">>stdout;
+        Re^0>>stdout;
+        displayRE(Re,stdout);
+        "\n">>stdout;
+      }
+    };
+
+    dfa = genDfa(REs,sigma);
+    
+    if verbose then{
+      showDfaStates(dfa);
+    };
+
+    outchar(out,
+	    genTokenizer(inFn,dfa,sigma,preamble,postamble,extra,trace,verbose));
+  }
+
+} execute main;
+

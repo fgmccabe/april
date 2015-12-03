@@ -1,0 +1,26 @@
+/* 
+ * Assign and use functions that are embedded in list data structures
+ */
+
+program
+{
+  main(I)
+  {
+    Flist = [
+      ({(?X) => X=="one"},"alpha"),
+      ({(?X) => X=="two"},"beta"),
+      ({(?X) => X=="three"},"gamma"),
+      ({(?X) => X=="four"},"delta"),
+      ({(?X) => X=="one"},"eta"),
+      ({(?X) => X=="two"},"phi")];
+
+   "Result of looking for "++I^0++" is "++inspect(Flist,I)^0++"\n">>stdout;
+
+  };
+
+  inspect(Flist,X) => collect {
+    for (F,K) in Flist do
+      if F(X) then
+	elemis K
+  };
+} execute main;

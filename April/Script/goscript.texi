@@ -1,0 +1,96 @@
+\input texinfo
+@c %**start of header
+@setfilename goscript.info
+@settitle GoScript Reference Manual
+@c %**end of header
+@smallbook
+@setchapternewpage odd
+
+@titlepage
+@title GoScript Reference Manual
+@subtitle Version 0.0
+@author F.G. McCabe
+
+@c  The following two commands
+@c  start the copyright page.
+@page
+@vfill
+@copyright{} 1997 Fujitsu labs ltd. All rights reserved
+     
+Permission is granted to use this work for research purposes only.
+@end titlepage
+     
+@node Top
+@top GoScript Reference Manual
+
+This is the 
+@ifinfo
+on-line
+@end ifinfo 
+Reference Manual for the @code{GoScript} language, version 0.0.  
+@refill
+
+This manual offers an in-depth and complete description of the
+@code{GoScript} language and its implementation in terms of @code{April}
+macros.
+
+@ifinfo
+@copyright{} 1997 Fujitsu Labs and F.G. McCabe
+
+All rights reserved
+@end ifinfo
+
+
+@menu
+* Copying::                       Your rights and freedoms
+* Getting hard copy::             How to obtain a printed copy of this manual
+* Introduction to GoScript::      What is @code{GoScript} and what is it for?
+* Getting started with GoScript:: How to access @code{GoScript}
+* Taxis and passengers::          An example application using @code{GoScript}
+* GoScript syntax::               Rules for writing @code{GoScript} programs
+* Implementation of GoScript::    How @code{GoScript} is implemented as @code{April} macros
+* Concept index::
+* Function index::
+@end menu
+
+@node Copying
+@unnumbered Copying and other rights
+@cindex Intellectual property rights
+
+Permission is granted to use this work for research purposes only.
+
+@ifinfo
+@node Getting hard copy
+@chapter Getting hard copy
+@cindex Printing this manual
+
+In order to print a copy of this manual, you may need access to the
+source @file{.texi} files: @file{goscript.texi} and related @file{.texi}
+files. If you have them, then the following command will produce a
+@file{.dvi} file which can be printed normally:
+
+@smallexample
+% texi2dvi goscript.texi
+@end smallexample
+
+This produces a file -- @file{goscript.dvi} -- which can be printed using
+@code{dvi2ps}.
+@end ifinfo
+
+@include intro.texi
+@include start.texi
+@include syntax.texi
+@include taxi.texi
+@include implement.texi
+
+@node Concept index
+@unnumbered Concept index
+@printindex cp
+
+@node Function index
+@unnumbered Standard function index
+@printindex fn
+
+@summarycontents
+@contents
+@bye

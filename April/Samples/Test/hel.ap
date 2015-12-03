@@ -1,0 +1,5 @@
+module
+  import {llo:{()->string}} from "lo.aam" in
+{
+  hello() -> string?{"He"++llo()};
+} export (hello);

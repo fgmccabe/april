@@ -1,0 +1,9 @@
+/* automatically generated -- do not edit */
+/* Module interface file for genregexp.aam */
+({
+    (char[])=>(char[],regexp(char[]))[]
+   }?parseAfile, %a-{
+    ( %a[])=> %a[]
+   }?reverse, %b-(regexp( %b), handle){}?displayRE,{
+    (char[])=>char[]
+   }?findExtraTokenType) from "genregexp.aam";

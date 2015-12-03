@@ -1,0 +1,346 @@
+@node Using Apg
+@chapter Using @code{Apg} to construct a parser
+
+@noindent
+@code{Apg} is a parser generator -- i.e., given a grammar rule file it
+can be used to generate an @code{April} program in the form of a module
+that can be used to parse input streams. As with @code{Alex}, @code{Apg}
+generally assumes that the form of the input is in the form of a list of
+single character symbols.
+
+@menu
+* A simple programming language::  
+* Format of the UL rule file::  
+@end menu
+
+@node A simple programming language
+@section A simple programming language
+
+@noindent
+To illustrate the development of parsers using @code{Apg} we shall use
+the example of parsing a simple programming language. A program in this
+language consists of a sequence of statements, each of which is either
+an assignment or a print statement. Expressions consists of numbers,
+variables, or arithmetic combinations of expressions.
+
+For example, the sequence:
+
+@smallexample
+X = 1;
+Y = 2;
+
+Z = X*Y+(X/Y);
+
+print Z;
+halt;
+@end smallexample
+
+@noindent
+is a simple script from this unnamed programming language (UL).
+
+@menu
+* A grammar for UL::            
+@end menu
+
+@node A grammar for UL
+@subsection A grammar for UL
+
+@noindent
+There are many different types of grammar notation with different kinds
+of properties. Like most other parser generators @code{Apg} uses LALR(1)
+grammars; this is because such grammars give a good balance of
+expressive power, implementability and performance of the generated
+grammars. An LALR(1) grammar consists of a set of context-free rules of
+the form:
+
+@smallexample
+@var{nonterm} : @var{symbol} @var{symbol} @var{symbol} @var{symbol} ;
+@end smallexample
+
+@noindent
+where @var{symbol} is either a non-terminal symbol (i.e., a symbol for
+which there is one or more grammar rules) or a terminal symbol (i.e.,
+referring to an entity returned by the tokenizer.
+
+The fact that LALR(1) grammars are context-free does restrict the kind
+of grammars that can be parsed by LALR(1) parsers. For example, nearly
+every `natural language' is not parseable by such a parser. In addition,
+some programming languages use grammars which are also not expressible by
+context-free grammars. However, most conventional programming languages'
+grammars are expressible as context-free grammars.
+
+UL is (of course) such a programming language, and the grammar rules for
+UL are quite simple:@footnote{The reader should be aware that this does
+not represent the complete grammar file for UL. @ref{Listing of UL}
+gives the complete grammar file for UL.}
+
+@smallexample
+/* An Apg grammar for UL */
+program : statements ;
+
+statements : statements statement 
+ | statement
+ ;
+
+statement : assignment 
+ | print
+ | halt 
+ ;
+
+assignment : ID EQUAL exp SEMI
+ ;
+
+print : PRINT exp SEMI
+ ;
+
+halt : HALT SEMI
+ ;
+
+exp : ID            -- Variable reference
+ | NUM
+ | exp PLUS exp     -- Arithmetic combination
+ | exp MINUS exp
+ | exp TIMES exp
+ | exp SLASH exp
+ | MINUS exp        -- unary minus
+ | LBRA exp RBRA    -- Parenthesised expression
+ ;
+@end smallexample
+
+@noindent
+As with @code{April} and @code{Alex}, comments in @code{Apg} are either
+line comments which consist of a double dash terminated by a new-line,
+or a @code{/*}@dots{}@code{*/} sequence.
+
+@node Format of the UL rule file
+@section Format of the UL rule file
+
+@noindent
+A complete @code{Apg} file is split into three sections:
+
+@enumerate
+@item
+A preamble section in which the primary task is to define the terminals
+of the grammar and to define the type of the returned value from the
+parser.
+
+@item
+A rules section in which the rules which define the non-terminals in the
+grammar are declared. This is the `meat' of the grammar file.
+
+@item
+A postamble section which contains arbitrary @code{April} text. This
+text is copied verbatim into the @code{April} program that is generated
+by @code{Apg}. The primary function of this section is to allow the
+definition of necessary support functions that are referred to in the
+main section.
+@end enumerate
+
+@noindent
+The three sections are separated by lines containing only the characters
+@code{%%}. 
+
+@menu
+* The preamble section::        
+* The rule section::            
+@end menu
+
+@node The preamble section
+@subsection The preamble section
+
+@noindent
+The preamble section consists of a series of declarations. These
+declarations cover the terminals used in the grammar, the type of the
+value returned by the parser and one or two additional declarations.
+
+There are four styles of token declarations: @code{%token} which
+declares terminals, @code{%left} which declares terminals which
+represent left associative operators, @code{%right}  for right
+associative operators and @code{%nonassoc} for non-associative
+operators.
+
+The terminal declarations for UL are:
+
+@smallexample
+%token ID%@{symbol[]%@} NUM%@{number%@} SEMI EQUAL PRINT HALT LBRA RBRA
+%left PLUS MINUS
+%left STAR SLASH 
+%nonassoc UMINUS
+@end smallexample
+
+@noindent
+The terminal definitions for @code{ID} and @code{NUM} bear some
+additional explanation. The declaration:
+
+@smallexample
+%token ID%@{symbol[]%@} @dots{}
+@end smallexample
+
+@noindent
+means that @code{ID} is a terminal (i.e., a token returned by the
+tokeniser), and that the semantic value returned by the tokenizer which
+is associated with an @code{ID} is a list of @code{symbol}s -- in
+practice we expect that this will be a list of single-character symbols.
+
+Similarly, the semantic value associated with the @code{NUM} terminal is
+a @code{number}. In general, any valid @code{April} value may be
+attached as a semantic value associated with a terminal symbol. Of
+course, the tokenizer must be able to generate a semantic value of the
+appropriate type.
+
+The operator declarations serve a purpose in helping to disambiguate the
+grammar rules for @code{exp}ressions. Without such `help' @code{Apg}
+would not be able to determine how to parse sequences such as:
+
+@smallexample
+X + Y * Z
+@end smallexample
+
+@noindent
+By defining @code{+} and @code{*} (a.k.a. @code{PLUS} and @code{START}
+in the rule file) as left associative operators, and by placing the
+declaration for @code{STAR} after that for @code{PLUS}, we are giving
+enough information to the @code{Apg} parser generator to disambiguate
+the rules for arithmetic expressions:
+
+@smallexample
+exp : @dots{}
+ | exp PLUS exp
+ | exp MINUS exp
+ | exp STAR exp 
+ | exp SLASH exp
+ | MINUS exp   %prec UMINUS
+   @dots{}
+ ;
+@end smallexample
+
+@noindent
+The rule for unary minus has an explicit precedence attached to it: that
+of the token @code{UMINUS}. We dont expect that @code{UMINUS} will ever
+be returned by the tokenizer, we are using it here to allow the parser
+to disambiguate the unary minus parse rule from the normal binary minus
+rule.
+
+The other important component of the preamble section is the type
+definition for the semantic type. This determines the type of the value
+returned by the parser. In our case, we want to return a parse tree of
+the program, so our semantic type is a definition of the the type of our
+parse tree:
+
+@smallexample
+%type %@{
+ %x.@{
+   N(yyTokType)         -- leaf node
+ | SEQ(%x,%x)           -- sequence of statements
+ | EXIT                 -- exit statement
+ | PR(%x)               -- print statement
+ | ASS(yyTokType,%x)    -- assignment statement
+ | PL(%x,%x)            -- expressions
+ | MI(%x,%x)
+ | ST(%x,%x)
+ | DV(%x,%x)
+ | UM(%x)               -- unary minus
+ @}
+%@}
+@end smallexample
+
+@noindent
+This is a recursive definition using @code{April}'s dotted type notation
+to allow the recursive type to be defined directly. Since we know that
+the type will be called @code{yyType}, we equally have defined this
+using:
+
+@smallexample
+%type %@{
+   N(yyTokType)
+ | SEQ(yyType,yyType)
+ | @dots{}
+%@}
+@end smallexample
+
+@noindent
+however, this makes a somewhat unwarranted assumption of the name of the
+semantic type.
+
+@code{Apg} takes the token specifications, and the semantic type
+defined, and uses it to construct a header file that the lexical parser
+can @code{#include} and also the user of the parser also
+@code{#include}. The relevant type definitions are placed in the file
+@code{@var{file}_tok.ah} where @var{file}@code{.apg} is the name of the
+rule file.
+
+@node The rule section
+@subsection The rule section
+
+@noindent
+The main part of the UL rule file is the rules section. This consists of
+a sequence of definitions of non-terminals. For the most part, the order
+of these definitions is not important; however, by default, the first
+non-terminal definition is the `root' non-terminal.@footnote{This can be
+overridden if necessary with a @code{%start} definition in the
+preamble.}
+
+Our UL programming language is particularly simple: at the top-level a
+program is a sequence of statements. We denote that by the simple rule:
+
+@smallexample
+program : statements ;
+@end smallexample
+
+@noindent
+For the @code{program} non-terminal there is only one method of reducing
+it: to a @code{statements} non-terminal. This has the definition:
+
+@smallexample
+statements : statements statement
+ | statement
+ ;
+@end smallexample
+
+@noindent
+There are two ways of reducing a @code{statements} non-terminal: as a
+@code{statements} followed by a @code{statement}, or simply as a
+@code{statement}. This is how iteration is done in a LALR(1) grammar: this
+pair of rules uses left-recursion to denote that a @code{statements}
+non-terminal is ultimately reduced to a sequence of @code{statement}
+non-terminals. Right-recursion could equally be used for sequences of
+statements; however, pragmatically, left-recursion is more `efficient'
+than right-recursion.@footnote{Right recursive rules result in deeper
+stacks in during the parse process.}
+
+Of course, a parser is almost useless if nothing is returned as a result
+of the parse. In our case, we want to return a tree that denotes the
+parse -- i.e., the abstract syntax of the input. In @code{Apg} the
+returned value is denoted by means of actions attached to
+productions. For the @code{statements} non-terminal, we denote the
+sequence of statements by means of the @code{SEQ} labelled tuple, and
+the action is:
+
+@smallexample
+statements : statements statement @{ $$ = SEQ($1,$2) @}
+ | statement
+ ;
+@end smallexample
+
+@noindent
+The pseudo-variables @code{$1}, @code{$2} refer to the semantic values
+attached to the first and second symbols on the right hand side of the
+rule. The returned value is associated with the pseudo-variable
+@code{$$}.
+
+Where a rule has no semantic action attached to it, the default action:
+
+@smallexample
+$$ = $1
+@end smallexample
+
+@noindent
+is assumed. That is the reason that we can afford to elide the action
+for the second production for @code{statements} above, and also for the
+@code{program} rule.
+
+One important point to note is that where a production has an
+@emph{empty} right hand side, you MUST include an action. This is
+because @code{Apg} cannot give a reasonable default action for empty
+productions.
+

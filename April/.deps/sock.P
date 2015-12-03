@@ -1,0 +1,74 @@
+sock.lo sock.o : ../config.h ../Headers/local.h ../Headers/ioP.h ../Headers/io.h \
+  ../Headers/retcode.h ../Headers/integer.h ../Headers/number.h \
+  ../Headers/logical.h ../Headers/unicode.h ../Headers/formio.h \
+  ../Headers/io.h ../Headers/iostr.h ../Headers/ioTcp.h \
+  /usr/include/stdarg.h /usr/include/va-ppc.h /usr/include/sys/time.h \
+  /usr/include/sys/types.h /usr/include/sys/cdefs.h \
+  /usr/include/machine/types.h /usr/include/ppc/types.h \
+  /usr/include/machine/ansi.h /usr/include/ppc/ansi.h \
+  /usr/include/machine/endian.h /usr/include/ppc/endian.h \
+  /usr/include/time.h /usr/include/machine/limits.h \
+  /usr/include/ppc/limits.h ../Headers/hosts.h /usr/include/stdlib.h \
+  /usr/include/string.h /usr/include/assert.h /usr/include/sys/stat.h \
+  /usr/include/sys/socket.h /usr/include/netinet/in.h \
+  /usr/include/netinet6/in6.h /usr/include/sys/queue.h \
+  /usr/include/netinet/tcp.h /usr/include/netdb.h /usr/include/sys/param.h \
+  /usr/include/sys/syslimits.h /usr/include/machine/param.h \
+  /usr/include/ppc/param.h /usr/include/sys/signal.h \
+  /usr/include/machine/signal.h /usr/include/ppc/signal.h \
+  /usr/include/arpa/inet.h /usr/include/unistd.h /usr/include/limits.h \
+  /usr/include/fcntl.h /usr/include/sys/fcntl.h /usr/include/errno.h \
+  /usr/include/sys/errno.h 
+sock.o :
+../config.h :
+../Headers/local.h :
+../Headers/ioP.h :
+../Headers/io.h :
+../Headers/retcode.h :
+../Headers/integer.h :
+../Headers/number.h :
+../Headers/logical.h :
+../Headers/unicode.h :
+../Headers/formio.h :
+../Headers/io.h :
+../Headers/iostr.h :
+../Headers/ioTcp.h :
+/usr/include/stdarg.h :
+/usr/include/va-ppc.h :
+/usr/include/sys/time.h :
+/usr/include/sys/types.h :
+/usr/include/sys/cdefs.h :
+/usr/include/machine/types.h :
+/usr/include/ppc/types.h :
+/usr/include/machine/ansi.h :
+/usr/include/ppc/ansi.h :
+/usr/include/machine/endian.h :
+/usr/include/ppc/endian.h :
+/usr/include/time.h :
+/usr/include/machine/limits.h :
+/usr/include/ppc/limits.h :
+../Headers/hosts.h :
+/usr/include/stdlib.h :
+/usr/include/string.h :
+/usr/include/assert.h :
+/usr/include/sys/stat.h :
+/usr/include/sys/socket.h :
+/usr/include/netinet/in.h :
+/usr/include/netinet6/in6.h :
+/usr/include/sys/queue.h :
+/usr/include/netinet/tcp.h :
+/usr/include/netdb.h :
+/usr/include/sys/param.h :
+/usr/include/sys/syslimits.h :
+/usr/include/machine/param.h :
+/usr/include/ppc/param.h :
+/usr/include/sys/signal.h :
+/usr/include/machine/signal.h :
+/usr/include/ppc/signal.h :
+/usr/include/arpa/inet.h :
+/usr/include/unistd.h :
+/usr/include/limits.h :
+/usr/include/fcntl.h :
+/usr/include/sys/fcntl.h :
+/usr/include/errno.h :
+/usr/include/sys/errno.h :

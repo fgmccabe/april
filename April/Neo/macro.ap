@@ -1,0 +1,124 @@
+-- Automatically generated macro replacement function -- do not edit
+#include "op_tree.ah";
+
+module import interface <stdio.af> in {
+  macroReplace(Exp) => { case Exp in {
+    END => END
+  | APPLY(IDEN(_,_,"setof"),APPLY(IDEN(_,_,":"),PAIR(__T,__Conds))) =>
+        macroReplace(valof {
+    sub = {
+      macroReplace(Exp) => { case Exp in {
+        END => END
+    | IDEN(_,_,"_generator_") =>
+        macroReplace(APPLY(IDEN("file:////opt/april/include/sets.ah",10,"elemis"),__T))
+      | PAIR(L,R) => PAIR(macroReplace(L),macroReplace(R))
+      | APPLY(L,R) => APPLY(macroReplace(L),macroReplace(R))
+      | XX => XX
+      }};}.macroReplace;
+    valis macroReplace(sub(macroReplace(APPLY(IDEN("file:////opt/april/include/sets.ah",8,"setof"),APPLY(IDEN("file:////opt/april/include/sets.ah",8,"_transform_"),__Conds)))))}
+)
+  | APPLY(IDEN(_,_,"bagof"),__Set) =>
+        macroReplace(APPLY(IDEN("file:////opt/april/include/sets.ah",12,"collect"),__Set))
+  | APPLY(IDEN(_,_,"collect"),APPLY(IDEN(_,_,":"),PAIR(__T,__Conds))) =>
+        macroReplace(valof {
+    sub = {
+      macroReplace(Exp) => { case Exp in {
+        END => END
+    | IDEN(_,_,"_generator_") =>
+        macroReplace(APPLY(IDEN("file:////opt/april/include/sets.ah",17,"elemis"),__T))
+      | PAIR(L,R) => PAIR(macroReplace(L),macroReplace(R))
+      | APPLY(L,R) => APPLY(macroReplace(L),macroReplace(R))
+      | XX => XX
+      }};}.macroReplace;
+    valis macroReplace(sub(macroReplace(APPLY(APPLY(IDEN("file:////opt/april/include/sets.ah",15,"collect"),IDEN("file:////opt/april/include/sets.ah",15,"_transform_")),__Conds))))}
+)
+  | APPLY(IDEN(_,_,"of"),PAIR(__N,APPLY(IDEN(_,_,":"),PAIR(__T,__Conds)))) =>
+        macroReplace(APPLY(IDEN("file:////opt/april/include/sets.ah",20,"collect"),APPLY(IDEN("file:////opt/april/include/sets.ah",21,";"),PAIR(APPLY(IDEN("file:////opt/april/include/sets.ah",21,":"),PAIR(IDEN("file:////opt/april/include/sets.ah",21,"count__0"),NM("file:////opt/april/include/sets.ah",21,0))),APPLY(IDEN("file:////opt/april/include/sets.ah",22,":-"),PAIR(IDEN("file:////opt/april/include/sets.ah",22,"L__0"),APPLY(IDEN("file:////opt/april/include/sets.ah",22,"_N_transform_"),PAIR(__N,PAIR(__T,PAIR(__Conds,PAIR(IDEN("file:////opt/april/include/sets.ah",21,"count__0"),IDEN("file:////opt/april/include/sets.ah",22,"L__0"))))))))))))
+  | APPLY(IDEN(_,_,"_N_transform_"),PAIR(__N,PAIR(__T,PAIR(__Conds,PAIR(__count,__L))))) =>
+        macroReplace(valof {
+    sub = {
+      macroReplace(Exp) => { case Exp in {
+        END => END
+    | IDEN(_,_,"_generator_") =>
+        macroReplace(APPLY(IDEN("file:////opt/april/include/sets.ah",29,";"),PAIR(APPLY(IDEN("file:////opt/april/include/sets.ah",29,"elemis"),__T),APPLY(IDEN("file:////opt/april/include/sets.ah",30,";"),PAIR(APPLY(IDEN("file:////opt/april/include/sets.ah",30,":="),PAIR(__count,APPLY(IDEN("file:////opt/april/include/sets.ah",30,"+"),PAIR(__count,NM("file:////opt/april/include/sets.ah",30,1))))),APPLY(IDEN("file:////opt/april/include/sets.ah",31,"then"),PAIR(APPLY(IDEN("file:////opt/april/include/sets.ah",31,"if"),APPLY(IDEN("file:////opt/april/include/sets.ah",31,">="),PAIR(__count,__N))),APPLY(IDEN("file:////opt/april/include/sets.ah",31,"leave"),__L))))))))
+      | PAIR(L,R) => PAIR(macroReplace(L),macroReplace(R))
+      | APPLY(L,R) => APPLY(macroReplace(L),macroReplace(R))
+      | XX => XX
+      }};}.macroReplace;
+    valis macroReplace(sub(macroReplace(APPLY(IDEN("file:////opt/april/include/sets.ah",26,"_transform_"),__Conds))))}
+)
+  | APPLY(IDEN(_,_,"istrue"),APPLY(IDEN(_,_,"in"),PAIR(__P,__L))) =>
+        macroReplace(APPLY(IDEN("file:////opt/april/include/sets.ah",35,"_in_test_"),PAIR(__P,__L)))
+  | APPLY(IDEN(_,_,"istrue"),__Conds) =>
+        macroReplace(valof {
+    sub = {
+      macroReplace(Exp) => { case Exp in {
+        END => END
+    | IDEN(_,_,"_generator_") =>
+        macroReplace(APPLY(IDEN("file:////opt/april/include/sets.ah",39,"valis"),IDEN("file:////opt/april/include/sets.ah",39,"true")))
+      | PAIR(L,R) => PAIR(macroReplace(L),macroReplace(R))
+      | APPLY(L,R) => APPLY(macroReplace(L),macroReplace(R))
+      | XX => XX
+      }};}.macroReplace;
+    valis macroReplace(sub(macroReplace(APPLY(IDEN("file:////opt/april/include/sets.ah",37,"valof"),APPLY(IDEN("file:////opt/april/include/sets.ah",37,";"),PAIR(APPLY(IDEN("file:////opt/april/include/sets.ah",37,"_transform_"),__Conds),APPLY(IDEN("file:////opt/april/include/sets.ah",37,"valis"),IDEN("file:////opt/april/include/sets.ah",37,"false"))))))))}
+)
+  | APPLY(IDEN(_,_,"of"),PAIR(IDEN(_,_,"generator"),APPLY(IDEN(_,_,":"),PAIR(__T,__Conds)))) =>
+        macroReplace(APPLY(IDEN("file:////opt/april/include/sets.ah",42,":-"),PAIR(APPLY(IDEN("file:////opt/april/include/sets.ah",42,"##"),PAIR(IDEN("file:////opt/april/include/sets.ah",42,"spawn"),IDEN("file:////opt/april/include/sets.ah",42,"L"))),APPLY(IDEN("file:////opt/april/include/sets.ah",42,"_gen_transform_"),PAIR(__T,PAIR(__Conds,IDEN("file:////opt/april/include/sets.ah",42,"L__0")))))))
+  | APPLY(IDEN(_,_,"_gen_transform_"),PAIR(__T,PAIR(__Conds,__L))) =>
+        macroReplace(valof {
+    sub = {
+      macroReplace(Exp) => { case Exp in {
+        END => END
+    | IDEN(_,_,"_generator_") =>
+        macroReplace(APPLY(IDEN("file:////opt/april/include/sets.ah",53,"receive"),APPLY(IDEN("file:////opt/april/include/sets.ah",55,"|"),PAIR(APPLY(IDEN("file:////opt/april/include/sets.ah",54,"->>"),PAIR(APPLY(IDEN("file:////opt/april/include/sets.ah",54,"'"),IDEN("file:////opt/april/include/sets.ah",54,"next")),APPLY(IDEN("file:////opt/april/include/sets.ah",54,">>"),PAIR(PAIR(APPLY(IDEN("file:////opt/april/include/sets.ah",54,"'"),IDEN("file:////opt/april/include/sets.ah",54,"next_is")),__T),IDEN("file:////opt/april/include/sets.ah",54,"replyto"))))),APPLY(IDEN("file:////opt/april/include/sets.ah",55,"->>"),PAIR(APPLY(IDEN("file:////opt/april/include/sets.ah",55,"'"),IDEN("file:////opt/april/include/sets.ah",55,"quit")),APPLY(IDEN("file:////opt/april/include/sets.ah",55,"leave"),__L)))))))
+      | PAIR(L,R) => PAIR(macroReplace(L),macroReplace(R))
+      | APPLY(L,R) => APPLY(macroReplace(L),macroReplace(R))
+      | XX => XX
+      }};}.macroReplace;
+    valis macroReplace(sub(macroReplace(APPLY(IDEN("file:////opt/april/include/sets.ah",45,";"),PAIR(APPLY(IDEN("file:////opt/april/include/sets.ah",45,"_transform_"),__Conds),APPLY(IDEN("file:////opt/april/include/sets.ah",46,"receive"),APPLY(IDEN("file:////opt/april/include/sets.ah",48,"|"),PAIR(APPLY(IDEN("file:////opt/april/include/sets.ah",47,"->>"),PAIR(APPLY(IDEN("file:////opt/april/include/sets.ah",47,"'"),IDEN("file:////opt/april/include/sets.ah",47,"next")),APPLY(IDEN("file:////opt/april/include/sets.ah",47,">>"),PAIR(APPLY(IDEN("file:////opt/april/include/sets.ah",47,"'"),IDEN("file:////opt/april/include/sets.ah",47,"no_more")),IDEN("file:////opt/april/include/sets.ah",47,"replyto"))))),APPLY(IDEN("file:////opt/april/include/sets.ah",48,"->>"),PAIR(APPLY(IDEN("file:////opt/april/include/sets.ah",48,"'"),IDEN("file:////opt/april/include/sets.ah",48,"quit")),IDEN("file:////opt/april/include/sets.ah",48,"{}")))))))))))}
+)
+  | APPLY(IDEN(_,_,"forall"),PAIR(__C2,__C1)) =>
+        macroReplace(APPLY(IDEN("file:////opt/april/include/sets.ah",60,"not"),APPLY(IDEN("file:////opt/april/include/sets.ah",60,"istrue"),APPLY(IDEN("file:////opt/april/include/sets.ah",60,"&&"),PAIR(__C1,APPLY(IDEN("file:////opt/april/include/sets.ah",60,"!"),APPLY(IDEN("file:////opt/april/include/sets.ah",60,"istrue"),__C2)))))))
+  | APPLY(IDEN(_,_,"do"),PAIR(APPLY(IDEN(_,_,"for"),APPLY(IDEN(_,_,":"),PAIR(__T,__Conds))),__A)) =>
+        macroReplace(valof {
+    sub = {
+      macroReplace(Exp) => { case Exp in {
+        END => END
+    | IDEN(_,_,"_generator_") =>
+        macroReplace(__A)
+      | PAIR(L,R) => PAIR(macroReplace(L),macroReplace(R))
+      | APPLY(L,R) => APPLY(macroReplace(L),macroReplace(R))
+      | XX => XX
+      }};}.macroReplace;
+    valis macroReplace(sub(macroReplace(APPLY(IDEN("file:////opt/april/include/sets.ah",63,"_transform_"),__Conds))))}
+)
+  | APPLY(IDEN(_,_,"_transform_"),__C) =>
+        macroReplace(APPLY(IDEN("file:////opt/april/include/sets.ah",67,"_last_transform_"),__C))
+  | APPLY(IDEN(_,_,"_transform_"),APPLY(IDEN(_,_,"&&"),PAIR(__C,__Conds))) =>
+        macroReplace(APPLY(IDEN("file:////opt/april/include/sets.ah",70,"then"),PAIR(APPLY(IDEN("file:////opt/april/include/sets.ah",70,"if"),__C),APPLY(IDEN("file:////opt/april/include/sets.ah",70,"_transform_"),__Conds))))
+  | APPLY(IDEN(_,_,"_transform_"),APPLY(IDEN(_,_,"&&"),PAIR(APPLY(IDEN(_,_,"_in_test_"),PAIR(__P,__L)),__Conds))) =>
+        macroReplace(APPLY(IDEN("file:////opt/april/include/sets.ah",73,"then"),PAIR(APPLY(IDEN("file:////opt/april/include/sets.ah",73,"if"),APPLY(IDEN("file:////opt/april/include/sets.ah",73,"in"),PAIR(__P,__L))),APPLY(IDEN("file:////opt/april/include/sets.ah",73,"_transform_"),__Conds))))
+  | APPLY(IDEN(_,_,"_transform_"),APPLY(IDEN(_,_,"&&"),PAIR(__C,__Conds))) =>
+        macroReplace(APPLY(IDEN("file:////opt/april/include/sets.ah",76,"then"),PAIR(APPLY(IDEN("file:////opt/april/include/sets.ah",76,"if"),__C),APPLY(IDEN("file:////opt/april/include/sets.ah",76,"_transform_"),__Conds))))
+  | APPLY(IDEN(_,_,"_transform_"),APPLY(IDEN(_,_,"and"),PAIR(__C1,__C2))) =>
+        macroReplace(APPLY(IDEN("file:////opt/april/include/sets.ah",78,"_transform_"),APPLY(IDEN("file:////opt/april/include/sets.ah",78,"&&"),PAIR(__C1,__C2))))
+  | APPLY(IDEN(_,_,"_transform_"),APPLY(IDEN(_,_,"&&"),PAIR(APPLY(IDEN(_,_,"||"),PAIR(__C1,__C2)),__Conj))) =>
+        macroReplace(APPLY(IDEN("file:////opt/april/include/sets.ah",81,";"),PAIR(APPLY(IDEN("file:////opt/april/include/sets.ah",81,"_transform_"),APPLY(IDEN("file:////opt/april/include/sets.ah",81,"&&"),PAIR(__C1,__Conj))),APPLY(IDEN("file:////opt/april/include/sets.ah",82,"_transform_"),APPLY(IDEN("file:////opt/april/include/sets.ah",82,"&&"),PAIR(__C2,__Conj))))))
+  | APPLY(IDEN(_,_,"_transform_"),APPLY(IDEN(_,_,"&&"),PAIR(APPLY(IDEN(_,_,"or"),PAIR(__C1,__C2)),__Conj))) =>
+        macroReplace(APPLY(IDEN("file:////opt/april/include/sets.ah",85,";"),PAIR(APPLY(IDEN("file:////opt/april/include/sets.ah",85,"_transform_"),APPLY(IDEN("file:////opt/april/include/sets.ah",85,"&&"),PAIR(__C1,__Conj))),APPLY(IDEN("file:////opt/april/include/sets.ah",86,"_transform_"),APPLY(IDEN("file:////opt/april/include/sets.ah",86,"&&"),PAIR(__C2,__Conj))))))
+  | APPLY(IDEN(_,_,"_transform_"),APPLY(IDEN(_,_,"&&"),PAIR(APPLY(IDEN(_,_,"&&"),PAIR(__C1,__C2)),__C3))) =>
+        macroReplace(APPLY(IDEN("file:////opt/april/include/sets.ah",89,"_transform_"),APPLY(IDEN("file:////opt/april/include/sets.ah",89,"&&"),PAIR(__C1,APPLY(IDEN("file:////opt/april/include/sets.ah",89,"&&"),PAIR(__C2,__C3))))))
+  | APPLY(IDEN(_,_,"_transform_"),APPLY(IDEN(_,_,"&&"),PAIR(APPLY(IDEN(_,_,"and"),PAIR(__C1,__C2)),__C3))) =>
+        macroReplace(APPLY(IDEN("file:////opt/april/include/sets.ah",92,"_transform_"),APPLY(IDEN("file:////opt/april/include/sets.ah",92,"&&"),PAIR(__C1,APPLY(IDEN("file:////opt/april/include/sets.ah",92,"&&"),PAIR(__C2,__C3))))))
+  | APPLY(IDEN(_,_,"_transform_"),APPLY(IDEN(_,_,"&&"),PAIR(APPLY(IDEN(_,_,"in"),PAIR(__P,__S)),__Conds))) =>
+        macroReplace(APPLY(IDEN("file:////opt/april/include/sets.ah",95,"do"),PAIR(APPLY(IDEN("file:////opt/april/include/sets.ah",95,"for"),APPLY(IDEN("file:////opt/april/include/sets.ah",95,"in"),PAIR(__P,__S))),APPLY(IDEN("file:////opt/april/include/sets.ah",95,"_transform_"),__Conds))))
+  | APPLY(IDEN(_,_,"_last_transform_"),__C) =>
+        macroReplace(APPLY(IDEN("file:////opt/april/include/sets.ah",98,"then"),PAIR(APPLY(IDEN("file:////opt/april/include/sets.ah",98,"if"),__C),IDEN("file:////opt/april/include/sets.ah",98,"_generator_"))))
+  | APPLY(IDEN(_,_,"_last_transform_"),APPLY(IDEN(_,_,"in"),PAIR(__P,__S))) =>
+        macroReplace(APPLY(IDEN("file:////opt/april/include/sets.ah",100,"do"),PAIR(APPLY(IDEN("file:////opt/april/include/sets.ah",100,"for"),APPLY(IDEN("file:////opt/april/include/sets.ah",100,"in"),PAIR(__P,__S))),IDEN("file:////opt/april/include/sets.ah",100,"_generator_"))))
+  | APPLY(IDEN(_,_,"_last_transform_"),APPLY(IDEN(_,_,"_in_test_"),PAIR(__P,__S))) =>
+        macroReplace(APPLY(IDEN("file:////opt/april/include/sets.ah",101,"then"),PAIR(APPLY(IDEN("file:////opt/april/include/sets.ah",101,"if"),APPLY(IDEN("file:////opt/april/include/sets.ah",101,"in"),PAIR(__P,__S))),IDEN("file:////opt/april/include/sets.ah",101,"_generator_"))))
+  | APPLY(IDEN(_,_,"_last_transform_"),APPLY(IDEN(_,_,"||"),PAIR(__C1,__C2))) =>
+        macroReplace(APPLY(IDEN("file:////opt/april/include/sets.ah",104,";"),PAIR(APPLY(IDEN("file:////opt/april/include/sets.ah",104,"_transform_"),__C1),APPLY(IDEN("file:////opt/april/include/sets.ah",105,"_transform_"),__C2))))
+  | APPLY(IDEN(_,_,"_last_transform_"),APPLY(IDEN(_,_,"or"),PAIR(__C1,__C2))) =>
+        macroReplace(APPLY(IDEN("file:////opt/april/include/sets.ah",108,";"),PAIR(APPLY(IDEN("file:////opt/april/include/sets.ah",108,"_transform_"),__C1),APPLY(IDEN("file:////opt/april/include/sets.ah",109,"_transform_"),__C2))))

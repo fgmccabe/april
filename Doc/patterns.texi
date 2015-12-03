@@ -1,0 +1,731 @@
+@node Patterns
+@chapter Patterns and pattern matching
+@cindex  Patterns and pattern matching
+
+@noindent
+In @code{April}, patterns are ubiquitous: they are used in handling
+messages, processing lists, specifying macros and the formal parameters of
+functions and procedures. Patterns are important because the programming
+style they encourage -- pattern directed computation -- is often much
+easier to design and understand than purely `value-driven' computation.
+
+Note however that not all values in @code{April} are comparable -- in
+particular functions and procedures may not be tested for equality. It
+is posible to have a @emph{pattern} that matches a function or
+procedure; but it is not possible to verify that a given procedure or
+function is the same procedure as another.
+
+As for values, we classify patterns into primitive patterns and compound
+patterns.
+
+@menu
+* Primitive patterns::          Basic patterns
+* List and other compound patterns::  Patterns involving complex values
+* Types as patterns::           
+* String patterns::             Patterns for matching and parsing strings
+@end menu
+
+@node Primitive patterns
+@section Primitive patterns
+@cindex Primitive patterns
+
+@noindent
+The  primitive patterns correspond to the primitive data types.
+
+@menu
+* number pattern::              Match a number
+* symbol pattern::              Match a symbol
+* string pattern::              Match a string
+* Variable declaration::        
+* Anonymous variable pattern::  
+* any pattern::                 
+@end menu
+
+@node number pattern
+@subsection @code{number} pattern
+@cindex @code{number} pattern
+@cindex matching numbers
+
+@noindent
+The @code{number} pattern matches any numeric value. The type of the
+@code{number} pattern is also @code{number}. Note also that a literal
+number is also a pattern. In this case, the pattern will only match that
+particular number.
+
+@node symbol pattern
+@subsection @code{symbol} pattern
+@cindex @code{symbol} pattern
+@findex symbol @r{pattern}
+
+@noindent
+The @code{symbol} pattern matches symbolic values. The type of the
+@code{symbol} pattern is also @code{symbol}.
+
+In addition to the @code{symbol} pattern, literal symbol expressions are
+also patterns. Recall that a literal symbol is written using a quote
+prefix:
+
+@smallexample
+'foo
+@end smallexample
+
+@noindent
+Such a pattern only matches the particular identified literal @code{symbol}.
+
+@node string pattern
+@subsection @code{string} pattern
+@cindex @code{string} pattern
+@findex string @r{pattern}
+
+@noindent
+The @code{string} pattern matches strings -- of any length. The type of the
+@code{string} pattern is also @code{string}. There is a rich class of
+string patterns which are further discussed in @ref{String patterns}.
+
+@node Variable declaration
+@subsection Variable declaration pattern
+@cindex declaring variables
+@cindex variable, declaration
+
+@noindent
+A variable is declared in a pattern by its first occurrence -- there
+does not need to be any special marking identifying the variable. Note
+that subsequent occurrences of an identifier will refer to the same
+variable; including situations where the variable was first declared in
+an outer scope.
+@cindex scope of variables
+
+For example, in the function:
+
+@smallexample
+gp(X) => collect @{
+  for (X,Y) in parent do
+    for (Y,Z) in parent do
+      elemis (X,Z)
+@}
+@end smallexample
+
+@noindent
+The variable @code{X} is the same variable throughout, and refers to the
+parameter of the function. On the other hand, the variable @code{Y} is
+first declared in the pattern:
+
+@smallexample
+  for (X,Y) in parent do
+@end smallexample
+
+@noindent
+and is used again in the pattern:
+
+@smallexample
+    for (Y,Z) in parent do
+@end smallexample
+
+@noindent
+Similarly, this pattern declares a new variable @code{Z} which is
+referred to in the body of the @code{for}@dots{}@code{do} statement.
+
+In addition to variables declared automatically, they can also be
+declared explicitly in a pattern, using the form:
+
+@smallexample
+@var{type}?@var{var}
+@end smallexample
+
+@noindent
+This declares a new variable -- even if a variable of the same name
+already exists -- and also identifies its type.
+
+For example, the pattern:
+
+@smallexample
+number ? X
+@end smallexample
+
+@noindent
+declares @code{X} to be a @code{number} variable.
+
+@cindex read-only variable
+@cindex variable, read-only
+@emph{Note:}
+@quotation
+A variable that is declared in a pattern is a @emph{single-assignment}
+or @emph{read-only} variable. This means that the variable may not be
+side-affected by any statement that is `controlled' by the pattern --
+for example within the right hand side of a message @code{receive} clause.
+
+This includes formal parameters of functions and procedures, since 
+semantically the formal parameters of a function equation or procedure
+clause are derived by means of patterns.
+@end quotation
+
+@node Anonymous variable pattern
+@subsection Anonymous variable pattern
+@cindex _ pattern
+@cindex Anonymous variable pattern
+@findex _ @r{pattern}
+
+@noindent
+A @code{_} symbol occurring on its own in a pattern signifies a `wild
+card' or anonymous variable pattern. @code{_} will match any value --
+and the value is ignored. @code{_} patterns are useful as
+placeholders in more complex patterns where only part of the structure
+needs to be matched against.
+
+@node any pattern
+@subsection Encapsulated value patterns
+@cindex @code{any} pattern
+@cindex Encapsulate value pattern
+
+@noindent
+The @code{any} pattern allows the value embedded inside an encapsulated
+@code{any} value to be `extracted'. The form of the @code{any} pattern
+is:
+
+@smallexample
+any(@var{Ptn})
+@end smallexample
+
+@noindent
+Such a pattern will match an encapsulated value, such as produced using
+the @code{any} expression (@pxref{any type}), providing that the actual
+type of the encapsulated value is the same as the type of
+@var{Ptn}.@footnote{This is new in version 4.2.7.}
+
+This type comparison must typically be done at run-time rather than at
+compile time since it is often not known what the type of the embedded
+value is until then. This dynamic aspect of @code{any} values is one of
+their most important attributes; it allows programs to manipulate
+arbitrary values in a type-consistent manner.
+
+@node List and other compound patterns
+@section List and other compound patterns
+@cindex List and other compound patterns
+
+@menu
+* List pattern::                Match a list of elements
+* Append pattern::              
+* Tuple pattern::               Match a tuple of elements
+* record pattern::              
+* labelled type pattern::       
+* handle pattern::              Match a handle
+* Guarded pattern::             Attach a test to a pattern
+@end menu
+
+@node List pattern
+@subsection List pattern
+@cindex list pattern
+
+@noindent
+A list pattern mimics the from of the list expression; the empty list --
+@code{[]} -- matches the empty list, and the list pattern:
+
+@smallexample
+[@var{head},..@var{tail}]
+@end smallexample
+
+@noindent
+matches a non-empty list provided that the head of that list matches
+@var{head} and the remainder of the list matches @var{tail}.
+
+For example, the list pattern in:
+
+@smallexample
+case X in @{
+  [?H,..?T] => @dots{}
+@dots{}
+@}
+@end smallexample
+
+@noindent
+matches a non-empty list, and binds the variable @code{H} to the first
+element of the list, and @code{T} to the tail of the list. The type
+associated with @code{H} is the `element type' of @code{X} and the type
+associated with @code{T} is the same as the type of @code{X}.
+
+@node Append pattern
+@subsection Append pattern
+@cindex List pattern
+@cindex List append pattern
+
+@noindent
+A list pattern may also take the form of two or more list fragments
+appended together -- using the @code{<>} operator.  The
+pattern
+
+@smallexample
+L1 <> L2 
+@end smallexample
+
+@noindent
+will nondeterministically split a list into two partitions: L1 and L2 --
+which may have further constraints on them. For example, the pattern in
+the condition:
+
+@smallexample
+if ['head] <> L1 <> ['middle] <> L2 <> ['end] .= List then
+@end smallexample
+
+@noindent
+will `parse' the @code{List} into 5 sections:
+@enumerate
+@item
+The head of the list must be the symbol @code{'head}
+@item
+Then there is a fragment of the list which may contain anything. This
+fragment is bound to the variable @code{L1}
+@item
+Then there is a symbol @code{middle} in the middle of the list.
+@item
+Then there is another fragment of the list -- which is bound to the
+variable @code{L2}
+@item
+The end of the list is marked with the symbol @code{'end}.
+@end enumerate
+
+@noindent
+Note that using list append patterns may be quite expensive since the
+list may have to be decomposed in an arbitrary way. In general this may
+lead to exponential time matching of the input list.
+
+
+@node Tuple pattern
+@subsection Tuple pattern
+@cindex tuple pattern
+
+@noindent
+A tuple pattern is written using the normal tuple notation. Where the
+elements of the tuple themselves may declare variables with the variable
+pattern, it also has the effect of declaring local variables. If we have
+the receive clause:
+
+@smallexample
+(@var{V1},@dots{},@var{Vk}) ->> @var{S}
+@end smallexample
+
+@noindent
+in a message receive statement (@pxref{Receiving messages}) then this
+clause will fire with a k-tuple and will bind local variables
+@var{V1}@dots{}@var{Vk} during the execution of @var{S}.
+
+@node record pattern
+@subsection Record pattern
+@cindex Record pattern
+
+@noindent
+A record pattern is written as a tuple of the fields of the record where
+each field pattern is of the form:
+
+@smallexample
+@var{Ptn}.=@var{field}
+@end smallexample
+
+@noindent
+Where a field is to be ignored an anonymous variable can be used. For
+example, given a value of type:
+
+@smallexample
+(string?name,number?age,string?dept)
+@end smallexample
+
+@noindent
+We can match the @code{name} and @code{age}, ignoring the @code{dept}
+using the pattern:
+
+@smallexample
+(@var{N}.=name,@var{A}.=age,_)
+@end smallexample
+
+@noindent
+where @var{N} and @var{A} are patterns that will be matched against the
+@code{name} and @code{age} fields respectively.
+
+Note that all the fields must be present, the ignored ones should be
+marked with an anonymous variables, in the correct order. Note also that
+the pattern:
+
+@smallexample
+(N,A,_)
+@end smallexample
+
+@noindent
+@emph{would} match a value of the above type (assuming that @code{N} and
+@code{A} are new variables). However the types of these variables may
+surprise you: the type associated with @code{N} would be the singleton
+record:
+
+@smallexample
+string?name
+@end smallexample
+
+@noindent
+not simply @code{string}. Thus to access the value of @code{N} one would
+need to use an expression of the form: @code{N.name}. This is also true
+in reverse; i.e., if @code{N} were a variable of this type, then 
+
+@smallexample
+(N,age=30,dept="finance")
+@end smallexample
+
+@noindent
+is a legal instance of a record, and its type is also:
+
+@smallexample
+(string?name,number?age,string?dept)
+@end smallexample
+
+
+@node labelled type pattern
+@subsection labelled type pattern
+@cindex labelled type pattern
+
+@noindent
+A labelled pattern simply consists of the label and a pattern that
+should match the legal arguments of the label -- as determined by the
+type definition where the label is introduced.
+
+For example, given the definition of @code{tree}:
+
+@smallexample
+tree(%s) ::= empty | node(tree(%s),%s,tree(%s))
+@end smallexample
+
+@noindent
+A @code{node} pattern may look like:
+
+@smallexample
+node(l,lb,r) ->> @dots{}
+@end smallexample
+
+@noindent
+This pattern matches a @code{node} labelled type, involving three
+variables @code{l}, @code{lb} and @code{r} which are bound to the three
+elements of the @code{node} structure. If the input is a @code{node}
+labelled type then the three variables will be bound to the elements of
+the labelled tuple.
+
+Note that where a labelled term is really a labelled record -- again as
+per the type definition where the label is introduced -- then the
+argument of the labelled pattern must also be a record of the
+appropriate form.
+
+@node handle pattern
+@subsection @code{handle} pattern
+@cindex @code{handle} pattern
+@findex handle @r{pattern}
+
+@noindent
+Process handles are generated when processes are forked and are often
+passed within messages.
+
+There are two major ways of denoting a @code{handle} in a pattern: the
+@code{handle} keyword denotes a @code{handle} pattern -- it matches any
+@code{handle} -- and the @code{hdl} constructor term.  The type of a
+@code{handle} pattern is also @code{handle}.
+
+A @code{hdl} labelled tuple is a pattern based on the pre-defined type
+declaration:
+
+@smallexample
+handle::= nullhandle | hdl(symbol,symbol);
+@end smallexample
+
+@noindent
+where the first element is the @emph{thread} identifier and the second is the 
+@emph{name} of a group of threads -- typically implementing an agent. @code{nullhandle} is the handle of no possible process.
+
+The actual representation of a @code{handle} is not guaranteed to be
+identical to this labelled record; however, the @code{April} programmer
+can rely on these fields being present in a handle.
+
+The @code{hdl} record pattern can be used to filter out messages
+based on properties of the @code{handle}:
+
+@smallexample
+receive
+  @var{Ptn}::(hdl(_,nme)::nme in @var{allowed}).=sender ->> @dots{}
+@end smallexample
+
+@noindent
+assumed that @var{allowed} is a list of the allowed names that this
+process wishes to receive messages from.
+
+
+@node Guarded pattern
+@subsection Guarded pattern
+@cindex guarded pattern
+@findex :: @r{pattern operator}
+
+@noindent
+A pattern of the form:
+
+@smallexample
+@var{Ptn} :: @var{Test}
+@end smallexample
+
+@noindent
+is a @emph{guarded pattern}. This pattern applies if both @var{Ptn}
+applies and the predicate @var{Test} evaluates to @code{true}. Note that
+variables declared in @var{Ptn} or @var{Test} @emph{may} extend their
+scope outside the pattern -- depending on the context of the guarded
+pattern. In the case of variables declared within @var{Test} variables
+that are declared at the top-level of @code{Test} may extend their
+scope.
+@cindex scope of variables, in guarded patterns
+
+For example, in:
+
+@smallexample
+I ::  K .= I && ( J .= K || L .= I*I )
+@end smallexample
+
+@noindent
+variables @code{I} and @code{K} extend their scope outside the guarded
+pattern but @code{J} and @code{L} do not -- since they are declared
+within a disjunction in the test.
+
+@node Types as patterns
+@section Types as patterns
+@cindex Types as patterns
+
+@noindent
+Any type can also be pressed into service as a pattern, by including it
+in a query pattern -- i.e., a variable defining pattern. For example,
+the @code{tree} type:
+
+@smallexample
+tree(%a) ::= empty | node(tree(%a), %a, tree(%a));
+@end smallexample
+
+@noindent
+can also be used in patterns. This is useful when sending values of such
+types in messages. If a user-defined type is used as a pattern, care
+must be taken with type parameters:
+
+@smallexample
+tree(number)?X ->> @dots{}
+@end smallexample
+
+@noindent
+One particular use for this is in receiving functions and procedures in
+messages. 
+
+For example, in the message receive clause:
+
+@smallexample
+(exec,@{(handle)=>string@}?F) ->> @dots{}
+@end smallexample
+
+@noindent
+we are looking for a 2-tuple, whose second element is a function from
+@code{handle}s to @code{string}s. A function pattern matches a function
+whose type is unifyable with the argument types and result type given in
+the pattern.
+
+Note that it is not possible to verify that a given function is the same
+as another one: i.e., in the above pattern we cannot include a further
+test of @code{F} of the form:
+
+@smallexample
+(exec,@{(handle)=>string@}?F)::F==G ->> @dots{}
+@end smallexample
+
+@noindent
+This is because functions are not comparable with each other.
+
+@node String patterns
+@section String patterns
+@cindex String patterns
+
+@noindent
+@code{April} has a few simple but powerful matching operators for matching
+strings. These allow a string to be partitioned, a string segment to be
+tested against a list of literal strings and for an arbitrary value to be
+`read' from a string.
+
+@menu
+* Character matching::          
+* String partitioning::         Splitting a string via matching
+* Fixed width string pattern::  
+* Membership test::             
+* Value extraction::            
+@end menu
+
+@node Character matching
+@subsection Character matching
+@cindex Character matching
+@findex ,+
+
+@noindent
+A string is formed of a sequence of characters, and the @code{,+}
+pattern can be used to match against the first character of a string. As
+a pattern, @code{,+} is the compliment of its use as an expression
+(@pxref{string character prepend}).
+
+The @code{,+} pattern `splits' an incoming @code{string} into a lead
+character -- which is of type @code{symbol} -- and remainder string. If
+the incoming @code{string} is empty, then the @code{,+} pattern fails.
+
+For example, the pattern:
+
+@smallexample
+C,+A .= @var{string_value}
+@end smallexample
+
+@noindent
+puts the first character of @var{string_value} into the variable
+@code{C}, and the remainder in @code{A}.@footnote{This feature is not
+yet finalized.}
+
+@node String partitioning
+@subsection String partitioning
+@cindex String partitioning
+@findex ++
+
+@noindent
+The string concatenation operator @code{++} can also be used in string
+@emph{patterns}. In this context, the behaviour of @code{++} is subtly
+different to its normal behaviour: instead of joining two strings
+together to form a new one, the @code{++} string matching operator
+splits the string being matched into two portions. Recall that, in the
+context of matching, the `result' value is always known: we are trying to
+match a known value against a pattern.
+
+The @code{++} string match operator takes this known value and
+non-deterministically splits it into a front portion and back
+portion. The the string matching operands of the @code{++} operator must
+match the front and back portions of the string as generated by the
+split.
+
+This, combined with @code{April}'s existing matching operators, allows some
+very powerful operations, for example to extract the substring between a
+front and tail string, we can use:
+
+@smallexample
+"front" ++ sub ++ "tail" .= @var{string_value}
+@end smallexample
+
+@noindent
+This has the effect of extracting the middle portion of
+@var{string_value} and assigning it to the variable @var{sub}.
+
+@node Fixed width string pattern
+@subsection Fixed width string pattern
+@cindex Fixed width string pattern
+@findex ~
+
+@noindent
+The @code{~} string pattern can be used to `pinch off' a fixed portion
+of a string in a string pattern match. The form of this pattern is:
+
+@smallexample
+@var{Ptn}~@var{W}
+@end smallexample
+
+@noindent
+This pattern matches a @code{string} -- or a portion of a @code{string}
+if the @code{~} is combined with a string concatenation operator --
+whose width is fixed to the value of @var{W} -- provided it also matches
+@var{Ptn}.
+
+For example, the string pattern:
+
+@smallexample
+C~1++R.=@var{string_value}
+@end smallexample
+
+@noindent
+extracts the first character of @var{string_value} and puts it into the
+variable @code{C}. The remainder of the string is placed in the @code{R}
+variable. 
+
+The slightly more complicated example:
+
+@smallexample
+(F++"*"++R)~10++L .= @var{string_value}
+@end smallexample
+
+@noindent
+matches the first 10 characters of the @var{string_value} against the
+pattern:
+
+@smallexample
+F++"*"++R
+@end smallexample
+
+@noindent
+The variable @code{L} is bound to the remainder of the string value if a
+@code{"*"} is found in the first 10 characters.@footnote{The fixed width
+pattern is deprecated in version 4.2.7; use character matching instead.}
+
+@node Membership test
+@subsection Membership test
+@cindex String list membership test
+@findex in
+
+@noindent
+The @code{in} test may be used in a string pattern to verify that a
+sub-string is also a member of a list of strings. The form of this
+string pattern is:
+
+@smallexample
+@var{var} in @var{string-list}
+@end smallexample
+
+@noindent
+For example, the @code{string} pattern in:
+
+@smallexample
+front ++ X in ["alpha", "beta", "gamma"] ++ tail .= @dots{}
+@end smallexample
+
+@noindent
+will match a string such as @code{"majorbetaminor"} and bind the
+variables @code{front}, @code{X} and @code{tail} to the substrings
+@code{"major"}, @code{"beta"} and @code{"minor"} respectively.
+
+@node Value extraction
+@subsection Value extraction
+@cindex Value extraction
+@findex %%
+
+@noindent
+The @code{%%} operator can be used to `read' a value from a string. The
+form of this @code{string} pattern is:
+
+@smallexample
+@var{type} %% @var{var}
+@end smallexample
+
+@noindent
+where @var{type} is any type expression. This @code{string} pattern will
+parse the string to verify that the string contains a @var{type} value
+and binds the variable @var{var} to that value.
+
+This operator is able to parse values of any legal @code{April}
+value. For example, a number can be stripped from the front of a string
+using:
+
+@smallexample
+number%%X ++ tail .= @dots{}
+@end smallexample
+
+@noindent
+Complex data values can also be parsed; for example a @code{tree} of
+@code{number} values can be parsed using:
+
+@smallexample
+tree(number)%%T ++ tail .= "node(empty,10,node(empty,12,empty))"
+@end smallexample
+
+@noindent
+where a @code{tree} is defined using the type definition:
+
+@smallexample
+tree(%a) ::= empty | node(tree(%a),%a,tree(%a))
+@end smallexample
+
+
+
+
+

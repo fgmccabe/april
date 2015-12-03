@@ -1,0 +1,7 @@
+program{
+  hello() => "Hello world";
+
+  main(){
+    hello() ++ "\n" >> stdout
+  }
+} execute main;

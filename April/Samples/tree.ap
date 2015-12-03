@@ -1,0 +1,69 @@
+/*
+ * Some simple tree processing programs
+ */
+
+program
+{
+  tree(%alpha) ::= empty|
+                   node(tree(%alpha),%alpha,tree(%alpha));
+
+  string_tree ::= tree(string);
+
+  treeFind = {
+    (E, node(_,E,_)) => true
+  | (E, node(_,D,R)) :: D<E => treeFind(E,R)
+  | (E, node(L,_,_)) =>  treeFind(E,L)
+  | (E, empty) => false
+  };
+
+  insert = {
+    (E,empty) => node(empty,E,empty)
+  | (E,node(left,E,right)) => node(left,E,right)
+  | (E,node(left,lbl,right))::lbl>E => node(insert(E,left),lbl,right)
+  | (E,node(left,lbl,right)) => node(left,lbl,insert(E,right))
+  };
+
+  handleTree()
+  {
+     receive 
+       string_tree?T ->> "We have a tree "++string%%T++"\n">>stdout;
+  };
+
+  disp(T,d)
+  {
+    case T in {
+      empty -> "empty:"++d^0 >> stdout
+    | node(l,e,r) -> {
+        "(" >> stdout;
+        disp(l,d+1);
+        e^2++":"++d^0 >> stdout;
+        disp(r,d+1);
+        ")" >> stdout;
+      }
+    }
+  };
+
+  main()
+  {
+    T : insert("a",insert("d",insert("b",insert("c",empty))));
+    _break("");
+    disp(T,0);
+    T !>>;
+
+    T :=insert("b",insert("c",empty));
+    disp(T,0);
+
+    "\n" >> stdout;
+    fflush(stdout);
+
+    if treeFind("c",T) then
+      "ok\n" >> stdout
+    else
+      "not ok\n" >> stdout;
+
+    T !>>;
+
+    handleTree();
+
+  }
+} execute main;

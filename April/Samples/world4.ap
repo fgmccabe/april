@@ -1,0 +1,8 @@
+program
+  import {{()=>string}?hello from "hel.aam" and
+         {()=>string}?world from "wor.aam"} where 
+{
+  main(){
+    hello() ++ " " ++ world() ++ "\n" >> stdout
+  }
+} execute main;

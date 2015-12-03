@@ -1,0 +1,53 @@
+/* 
+ * Type definition for April abstract syntax parse tree
+ */
+
+expTree ::= VAR(symbol) | SYM(symbol) | NUM(number) | STR(string) |
+    TUPLE(expTree[]) |
+    RECORD((symbol,expTree)[]) |
+    DOT(expTree,expTree) |
+    VALOF(stmtTree) |
+    COLLECT(stmtTree) |
+    LIST(expTree[]) |
+    SWITCH(expTree,(ptnTree,expTree)[]) |
+    MATCH(ptnTree,expTree) |
+    INTEST(ptnTree,expTree) |
+    PRIMFUN(symbol) |
+    PRIMPRC(symbol) |
+    APPLY(expTree,expTree[]) |
+    LAMBDA(symbol, expTree) |
+    MU(symbol,expTree) |
+    THETA((symbol,expTree)[]) |
+    CHOICE(expTree[]);
+
+stmtTree ::= SEQ(stmtTree) |
+    IFTHEN(expTree,stmtTree,stmtTree) |
+    WHILE(testTree,stmtTree) |
+    FOR(ptnTree,expTree,stmtTree) |
+    TRY(stmtTree,expTree) |
+    RAISE(expTree) |
+    ASSIGN(symbol,expTree) |
+    DTSTMT(expTree,stmtTree) |
+    MATCHSTMT(ptnTree,expTree) |
+    DECL(symbol,expTree) |
+    VALIS(expTree) |
+    ELEMIS(expTree) |
+    CALL(expTree,expTree[]) |
+    NOOP;
+
+ptnTree ::= EXPPTN(expTree) |
+    DECLVAR(symbol,typeTree) |
+    TYPEPTN(typeTree);
+
+typeTree ::= PRIMTYPE(symbol) |
+    LISTTYPE(typeTree) |
+    TUPLETYPE(typeTree[]) |
+    RECORDTYPE((symbol,typeTree)[]) |
+    ANYTYPE |
+    TVAR(symbol) |
+    BOUNDTVAR(symbol,typeTree);
+
+    
+
+
+

@@ -1,0 +1,378 @@
+@node Using Alex
+@chapter Using @code{Alex} to construct a tokenizer
+
+@noindent
+Suppose that one was given the task of writing a tokenizer for a simple
+programming language. Most programming languages have tokens for
+identifiers, numbers, various keywords and various punctuation marks. It
+would also almost certainly have a syntax for comments. In
+our case we will include the following set of tokens:
+@cindex Example tokens
+
+@table @code
+@item ID
+@smallexample
+alpha b2
+@end smallexample
+@item INT
+@smallexample
+73 23 0 -23
+@end smallexample
+@item REAL
+@smallexample
+0.3 1.3e-34
+@end smallexample
+@item IF
+@smallexample
+if
+@end smallexample
+@item THEN
+@smallexample
+then
+@end smallexample
+@item COMMA
+@smallexample
+,
+@end smallexample
+@item LESSEQ
+@smallexample
+<=
+@end smallexample
+@item LPAREN
+@smallexample
+(
+@end smallexample
+@end table
+
+@noindent
+In addition, we will assume a comment syntax along the familiar lines of
+@code{April} comments:
+
+@smallexample
+/* This is a comment
+ */
+-- so is this
+@end smallexample
+
+@noindent
+In this chapter we will develop -- using @code{Alex} -- a simple
+tokenizer that is capable of detecting and processing such tokens.
+
+@menu
+* Alex rule files::             
+* Using regular expressions to define tokens::  
+* An Alex rule::                
+* Using states::                
+* Putting it all together::     
+* Using the tokenizer::         
+@end menu
+
+@node Alex rule files
+@section @code{Alex} rule files
+@cindex Alex rule files
+
+@noindent
+An @code{Alex} rule file is split into three parts: a preamble, a rule
+section and a postamble. The preamble is typically used to introduce
+needed type definitions and macros and the postamble is used to
+introduce necessary auxiliary functions.
+
+The three sections are separated -- in traditional fashion -- by lines
+containing the two characters @code{%%} only.
+
+The rule section consists of a set of rules; each rule combines a
+regular expression with an action.
+
+@node Using regular expressions to define tokens
+@section Using regular expressions to define tokens
+@cindex Using regular expressions to define tokens
+
+@noindent
+Nearly every programming language defines the syntax of its tokens in
+such a way that they can be recognized via @emph{regular
+expressions}.@footnote{Perhaps because it is so easy to construct
+tokenizers for regular expressions.} Classical regular expressions are
+built from a small number of operators:
+
+@table @asis
+@item literal characters
+@item any character
+@item Alternation of regular expressions
+@item Concatenation of regular expressions
+@item 0 or more repetition of a regular expression
+@item 1 or more repetition of a regular expression
+@item optional regular expression
+@item character set alternation
+@end table
+
+@noindent
+Some regular expressions may be very simple, as in the following
+r.e. which matches an opening parenthesis only:
+
+@smallexample
+"("
+@end smallexample
+
+@noindent
+and others may be quite complex, as in this example which matches
+floating point numbers:
+
+@smallexample
+"-"?[0-9]+"."[0-9]+([eE][-+]?[0-9]+)?
+@end smallexample
+
+@node An Alex rule
+@section An @code{Alex} rule
+@cindex Format of an @code{Alex} rule
+
+@noindent
+@code{Alex} rules take the form:
+
+@smallexample
+@var{rule} @expansion{} @var{state-label} @var{re} "=>" "@{" @var{action} "@}"
+@end smallexample
+
+@noindent
+We will explore the optional @var{state-label} below (@pxref{Using
+states}; for the moment we shall look at `stateless' rules.
+
+The @var{re} part of the rule indicates which r.e. is to be used to
+recongize this token, and the @var{action} part indicates how to process
+the result. In @code{Alex} the action is commonly the name of a
+@var{function} to call.
+
+In the example below, we give a rule for recognizing identifiers in our
+programming language:
+
+@smallexample
+-- Rule for identifiers
+
+[a-zA-Z_][a-zA-Z_0-9]* => @{ ID(string%%yyTok) @}
+@end smallexample
+
+@noindent
+@code{ID} is a constructor label introduced in the preamble.If the input
+contains a prefix that matches this r.e., then the expression is
+evaluated. @code{yyTok} is bound to a list of single-character symbols
+which denote the matched token. Other standard variables are
+@code{yyPos}, @code{yyLPos}, @code{yyLine} and @code{yyClnt} which
+denote the starting character offset, the ending character offset, the
+line number and `client' data respectively (often used for capturing a
+file name for example).
+
+The value of this expression becomes part of the value returned by the
+tokenizer.
+
+The @var{action} part of a rule may also be a @code{skip} operation. A
+@code{skip} has the efect of `consuming' the input recognized so far and
+then restarting the tokenizer. @code{skip} operations are commonly used
+to allow the tokenizer to skip white space and comments:
+
+@smallexample
+[ \t\n\v] => skip   -- consume white space
+
+"--"[^\n]*\n        -- skip assumed in case action is ommitted
+@end smallexample
+
+@noindent
+Note that if the action is omitted from a rule then @code{skip} is
+assumed.
+
+@node Using states
+@section Using states
+@cindex Using states
+
+@noindent
+On occasion, the simple model of having rules as above is not quite
+adequate. One common situation where this is useful is in consuming
+`continuous style comments' -- a.k.a. slash-star-star-slash.
+
+For such a purpose an @code{Alex} rule may be associated with a
+@var{state-label} and an action may involve switching to a new
+state. @var{state-label}s are composed of identifiers enclosed in
+angle-brackets.
+
+The rules for consuming our continuous comments might look like:
+
+@smallexample
+"/*" => <comment>             -- enter comment state
+
+<comment> "*/" => <initial>   -- enter initial state
+<comment> .                   -- ignore other characters
+@end smallexample
+
+@noindent
+The first rule switches the tokenizer into @code{<comment>} state. In
+doing so, it also consumes the slash-star that marks the start of the
+comment. The second rule switches into the @code{<initial>} state --
+this is the name of the default state that is associated with unlabelled
+rules. The third rule simply skips over other data.
+
+One might ask why it is necessary to use states for comments. In fact it
+is very hard to construct a single rule that will consume continuous
+comments. Consider the rule:
+
+@smallexample
+"/*".*"*/" => skip
+@end smallexample
+
+@noindent
+This rule certainly matches continuous comments. However, the semantics
+of regular expression matching require that this rule would match the
+@emph{longest} substring that matches it. This would have the effect of
+consuming the text between the comments in input text such as:
+
+@smallexample
+foo /* The name of a name */ := 
+  /* about to be assigned */
+  2
+  /* last comment */
+  ;
+@end smallexample
+
+@noindent
+resulting in something equivalent to:
+
+@smallexample
+foo ;
+@end smallexample
+
+@noindent
+which is hardly the intent of the programmer.
+
+The modified rule:
+
+@smallexample
+"/*"[^*]*[^/]*"*/"
+@end smallexample
+
+@noindent
+is hardly any better as it rules out comments such as:
+
+@smallexample
+/*****************/
+@end smallexample
+
+@noindent
+which some programmers are fond of!
+
+It turns out that due to the nature of regular expressions it is hard to
+specify a negative match of an extended string. For such cases states are
+very useful. On the other hand, extended use of states is probably a
+sign of attempting to use regular expressions for something that
+cannot be parsed with regular expressions.
+
+@node Putting it all together
+@section Putting it all together
+
+@noindent
+As noted above, a rule file has a preamble, a rule section and a
+postamble. The preamble is typically used for introducing type
+definitions. In our case the appropriate type definition is the
+@code{token} type that would be used by the consumer of our tokens:
+
+@smallexample
+token ::= ID(string) 
+ | INT(number)
+ | REAL(number)
+ | KEY(symbol)
+ | LPAREN | RPAREN | COMMA | SEMI;
+@end smallexample
+
+@noindent
+We can insert this into the preamble either directly or via an
+@code{include} directive:
+
+@smallexample
+-- Tokenizer for a simple PL
+#include "token.ah";
+
+%%
+@end smallexample
+
+@noindent
+The postamble should include definitions of functions referred to by
+name in the rule section:
+
+@smallexample
+%%
+listToReal(token) => number%%(string%%token);
+@end smallexample
+
+@noindent
+Note that the @code{April} expression 
+
+@smallexample
+number%%(string%%token))
+@end smallexample
+
+@noindent
+is a way of converting a list of single character symbols into a number
+in @code{April}.
+
+@node Using the tokenizer
+@section Using the tokenizer
+@cindex Using the tokenizer
+
+@noindent
+Once the rule file has been constructed, we can use @code{Alex} to
+construct a tokenizer from it. @code{Alex}@footnote{@code{Alex} is
+written in @code{April}. This means that in order to use it,
+@code{April} must have been properly installed. By default, @code{Alex}
+installs itself in the same place that @code{April} has been installed.}
+has a very simple interface: 
+
+@smallexample
+% alex token
+@end smallexample
+
+@noindent
+The result of this is a file -- @code{token.ap} -- that contains the
+generated tokenizer. This is then compiled as a normal @code{April}
+program:
+
+@smallexample
+% apc token
+@end smallexample
+
+@noindent
+This constructs a module file with a single exported function -- the
+generated tokenizer.
+
+In order to access the tokeniser we must @code{import} its module into a
+program or other module:
+
+@smallexample
+program
+import 
+  (@{(char[],number,number,%x)=>((char[],number,number,%x),token)@}?nextToken) 
+  from "token.aam"
+in @dots{}
+@end smallexample
+
+@noindent
+Finally, we can process the input with the tokenizer. The tokenizer
+returns each time a token is successfully consumed from the input; in
+this case we have arranged for the returned data to be simply printed and
+then we iterate again on the remainder of the input data:
+
+@smallexample
+    data : (txt=input,line=1,pos=1,cl="filename");
+
+    while data.txt!=[] do@{
+      (dta,tok) = nextToken(data);
+
+      tok^0++"\n">>stdout;
+      data := dta;
+    @}
+  @}
+@end smallexample
+
+@noindent
+Of course, in a complete compiler, we would be using the output of the
+tokenizer to feed into a parser.
+
+The complete listing of our simple tokenizer is given in @ref{Listing of
+token}.
+
+

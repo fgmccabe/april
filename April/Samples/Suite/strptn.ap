@@ -1,0 +1,37 @@
+/* 
+ * Part of the April test suite
+ * Exercise string based patterns 
+ */
+program
+{
+  main(input)
+  {
+    { "front" ++ string?middle ++ "end" .= input;
+      "We found "++middle++"\n">>stdout
+    }
+    onerror
+    { error(_,_) ->
+        "Couldnt parse "++input++"\n">>stdout
+    };
+
+    { string?front ++ "front" ++ string?middle ++ "end" .= input;
+      "We found "++front++"/"++middle++"\n">>stdout
+    }
+    onerror
+    { error(_,_) ->
+        "Couldnt parse "++input++"\n">>stdout
+    };
+
+    Catagory="Common";
+    FieldName="Last Name";
+
+    string?Head++"<"++Catagory++"."++FieldName ++ ">" ++ string?Tail .= 
+              "cn=<Common.First Name> <Common.Last Name>,mail=<Common.EMail>";
+
+    "Splits into "++Head++"/"++Tail++"\n">>stdout;
+
+    {X::{"0".=X || "1" .=X || "2".=X || "3".=X || "4".=X || "5".=X}} .= "120235";
+
+    "ok\n">>stdout;
+  }
+} execute main;

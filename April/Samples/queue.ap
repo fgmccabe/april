@@ -1,0 +1,39 @@
+program{
+
+  foo ::= kkk(string?name,(string){}?disp);
+
+  value(X) => {
+    val : X;
+    new(E){
+      val := E
+    }
+  };
+
+  queue(I) => {
+    q = value(I);
+    add(E){ q.new(q.val<>[E]) };
+    remove() => valof {
+      [E,..R].=q.val;
+      q.new(R);
+      valis E
+    };
+    front()=>head(q.val);
+  }.(add=add, remove=remove, front=front);
+
+  main()
+  {
+    Q =  queue([]);
+
+    Q.add("first");
+    Q.add("second");
+
+    writef(stdout,"Q=%w, head=%w\n",(Q,Q.front()));
+
+    L = kkk("me",(X)->{writef(stdout,"%w",(X))});
+
+    L.disp(Q.front());
+
+  }
+} execute main;
+
+

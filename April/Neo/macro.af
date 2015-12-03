@@ -1,0 +1,5 @@
+/* automatically generated -- do not edit */
+/* Module interface file for macro.aam */
+({
+    asItm=>asItm
+   }?macroReplace) from "macro.aam";

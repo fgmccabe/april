@@ -1,0 +1,33 @@
+#include "mobile.ah";
+
+program {
+  main(Name) {                  -- Initial entry point of ball agent
+    home = self();              -- come back here
+    string[]%%Visit .= binline(stdin);
+    b = spawn ball(Visit,home,Name) as handle('mobile,Name); 
+    receive{
+      Done ->>                  -- When its done
+        "All done\n">>stdout
+    }
+  };
+
+  ball(visit,home,name) {       -- Normal entry point
+    querySkill("stdout") >> handle('skills,'server)
+    stdout = valof {	        -- pick up local stdout
+      receive
+        skillsAre("stdout",S) ->> valis S
+    };
+
+    if visit!=[] then {
+      [next,..rest] .= visit;   -- Where are we going next?
+      self()^1++" migrating to ... "++next++"\n">>stdout;
+
+      take_this_agent({()-> ball(tail(visit),home,name)},name) >>
+        handle(name="mobile",home=head(visit),locs=[head(visit)]);
+    }
+    else{
+      "We're done\n" >> stdout;
+      Done >> home
+    }
+  }
+} execute main;

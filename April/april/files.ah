@@ -1,0 +1,54 @@
+/*
+ * File interface type
+ */
+
+file_msg_type ::= _char_
+  | _bytes_(number)
+  | _chars_(number)
+  | _ascii_
+  | _line_
+  | _all_
+  | _bline_
+  | _lines_(number)
+  | _read_
+  | _decode_
+  | _eof_
+  | _ready_
+  | _ftell_
+  | _seek_(number,number)
+  | _outchar_(string)
+  | _outbytes_(number[])
+  | _encode_(any)
+  | _flush_
+  | _ready_
+  | _close_;
+
+file_cmd ::= _open_(string,_file_open_mode)
+  | _popen_(string,string[],string[])
+  | _pipe_(handle,handle,handle)
+  | _connect_(string,number)
+  | new_connection(handle)
+  | _server_(number,(string,number,handle,handle){})
+  | _new_server_(handle)
+  | _s_open_(string,_file_open_mode,_stream_mode,handle)
+  | _s_popen_(string,string[],string[],_stream_mode)
+  | _s_connect_(string,number,_stream_mode,handle)
+  | _s_server_(number,(string,number,handle,handle){},_stream_mode)
+  | _connection_(handle,handle)
+  | _open_dir_(string,_access_right[])
+  | _filename_(string)
+  | _file_(string)
+  | _fmode_(string)
+  | _chmod_(string,_file_permission[])
+  | _mkdir_(string,_file_permission[])
+  | _ls_(string)
+  | _file_type_(string)
+  | _stat_(string)
+  | _rm_(string)
+  | _cd_(string)
+  | _mv_(string,string)
+  | _rmdir_(string)
+  | _pwd_
+  | _home_;
+
+

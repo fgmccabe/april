@@ -1,0 +1,18 @@
+/*
+ * Header file for the Apg system
+ */
+
+item ::= item(number,symbol,symbol[],symbol[],symbol[]);
+
+valT(%x) ::= (%x?v,(%x){}?up);
+
+action ::= shiftOn(symbol,number,number)
+  | reduceBy(symbol,number)
+  | accept(symbol)
+  | recoverError(symbol[],number,number)
+  | disabled(action);
+
+assoc ::= leftA | rightA | nonA | tokenA;
+
+rule::=rule(number,symbol,symbol[],symbol[],string,(assoc,number));
+

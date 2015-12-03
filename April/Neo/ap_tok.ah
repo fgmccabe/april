@@ -1,0 +1,23 @@
+/*
+ * Type definition of a token type -- for April's compiler
+ */
+
+yyTokType ::= 
+   SEMI
+ | COMMA
+ | CONS
+ | QUOTE
+ | LPAR
+ | RPAR
+ | LBRA
+ | RBRA
+ | LBRC
+ | RBRC
+ | ID(string)
+ | DQUOTE(string)
+ | NUM(number)
+ | STR(string)
+ | EOF;
+
+yyToken ::= (yyTokType?yyTok,number?yyLine,string?yyFile);
+

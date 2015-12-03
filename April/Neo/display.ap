@@ -1,0 +1,315 @@
+/*
+ * A module to display an op_tree expression in a way that looks nice
+ */
+
+#include "op_tree.ah";
+#include "ops.ah";
+
+module
+  import { interface <stdio.af> and
+           interface "operators.af"}
+in
+{
+  dispName(out,N,alt){
+    string%%N>>out;
+  };
+
+  showParen(XP,prior,out,string?P){
+    if XP>prior then
+      P>>out
+  };
+
+  displayExp(E,prior,indent,out,logical?alt){
+    case E in {
+      IDEN(_,_,N) -> dispName(out,N,alt)
+    | NM(_,_,N) ->
+	N^0>>out
+    | ST(_,_,S) -> "\""++S++"\"">>out
+    | VOID -> "<<void>>">>out
+    | END -> "<<end>>">>out
+    | APPLY(IDEN(_,_,"valof"),S) -> {
+        (XP,XR).=prefixPr("valof");
+        "valof">>out;
+        displayStmt(S,XR,indent+2,out,alt);
+      }
+    | APPLY(IDEN(_,_,"collect"),S) -> {
+        (XP,XR).=prefixPr("collect");
+        "collect">>out;
+        displayStmt(S,XR,indent+2,out,alt);
+      }
+    | APPLY(IDEN(_,_,",.."),PAIR(H,T)) -> {
+        "[">>out;
+         displayExp(H,999,indent,out,alt);
+         L : T;
+         while APPLY(IDEN(_,_,",.."),PAIR(HH,TT)).=L do{
+	   ", ">>out;
+	   displayExp(HH,999,indent,out,alt);
+	   L := TT;
+	 };
+         if !IDEN(_,_,"[]").=L then {
+           ",..">>out;
+	   displayExp(L,999,indent,out,alt);
+	 };
+         "]">>out;
+      }
+    | APPLY(IDEN(_,_,"in"),PAIR(H,T)) -> {
+        (XL,XP,XR) = infixPr("in");
+        showParen(XP,prior,out,"(");
+        displayPtn(H,XL,indent,out,alt);
+        " in ">>out;
+        displayExp(T,XR,indent,out,alt);
+        showParen(XP,prior,out,")");
+      }
+
+    | APPLY(IDEN(_,_,".="),PAIR(H,T)) -> {
+        (XL,XP,XR) = infixPr(".=");
+        showParen(XP,prior,out,"(");
+        displayPtn(H,XL,indent,out,alt);
+        " .= ">>out;
+        displayExp(T,XR,indent,out,alt);
+        showParen(XP,prior,out,")");
+      }
+
+    | APPLY(IDEN(_,_,"=>"),PAIR(H,T)) -> {
+        (XL,XP,XR) = infixPr("=>");
+        showParen(XP,prior,out,"{");
+        displayPtn(H,XL,indent,out,alt);
+        " => ">>out;
+        displayExp(T,XR,indent,out,alt);
+        showParen(XP,prior,out,"}");
+      }
+
+    | APPLY(IDEN(_,_,"->"),PAIR(H,T)) -> {
+        (XL,XP,XR) = infixPr("->");
+        showParen(XP,prior,out,"{");
+        displayPtn(H,XL,indent,out,alt);
+        " -> ">>out;
+        displayStmt(T,XR,indent,out,alt);
+        showParen(XP,prior,out,"}");
+      }
+
+    | APPLY(IDEN(_,_,"^/"),PAIR(H,T)) -> {
+        (XL,XP,XR) = infixPr("^/");
+        showParen(XP,prior,out,"(");
+        displayExp(H,XL,indent,out,alt);
+        " ^/ ">>out;
+        displayPtn(T,XR,indent,out,alt);
+        showParen(XP,prior,out,")");
+      }
+
+    | APPLY(IDEN(_,_,"^\\"),PAIR(H,T)) -> {
+        (XL,XP,XR) = infixPr("^\\");
+        showParen(XP,prior,out,"(");
+        displayExp(H,XL,indent,out,alt);
+        " ^\\ ">>out;
+        displayPtn(T,XR,indent,out,alt);
+        showParen(XP,prior,out,")");
+      }
+
+    | PAIR(H,T) -> {			-- tuple
+        "(">>out;
+        displayExp(H,1000,indent,out,alt);
+        L : T;
+        while PAIR(HH,TT).=L do{
+	  ", ">>out;
+	  displayExp(HH,999,indent,out,alt);
+	  L := TT;
+	};
+        ")">>out;
+      }
+
+    | APPLY(IDEN(_,_,N),PAIR(L,R)) :: (XL,XP,XR).=infixPr(N) && XP!=10000 ->{
+        showParen(XP,prior,out,"(");
+        displayExp(L,XL,indent,out,alt);
+        " ">>out;
+        dispName(out,N,alt);
+        " ">>out;
+        displayExp(R,XR,indent,out,alt);
+        showParen(XP,prior,out,")");
+      }
+    | APPLY(IDEN(_,_,N),R) :: (XP,XR).=prefixPr(N) && XP!=10000 ->{
+        showParen(XP,prior,out,"(");
+        dispName(out,N,alt);
+        " ">>out;
+        displayExp(R,XR,indent,out,alt);
+        showParen(XP,prior,out,")");
+      }
+    | APPLY(IDEN(_,_,N),L) :: (XL,XP).=postfixPr(N) && XP!=10000 ->{
+        showParen(XP,prior,out,"(");
+        displayExp(L,XL,indent,out,alt);
+        " ">>out;
+        dispName(out,N,alt);
+        showParen(XP,prior,out,")");
+      }
+    | APPLY(L,R) -> {
+        displayExp(L,0,indent,out,alt);    
+        " ">>out;
+        displayExp(R,0,indent,out,alt);
+      }
+    }
+  };
+
+  displayPtn(E,prior,indent,out,alt){
+    case E in {
+      IDEN(_,_,N) -> dispName(out,N,alt)
+    | NM(_,_,N) ->
+	N^0>>out
+    | ST(_,_,S) -> "\""++S++"\"">>out
+    | VOID -> "<<void>>">>out
+    | END -> "<<end>>">>out
+    | APPLY(IDEN(_,_,",.."),PAIR(H,T)) -> {
+        "[">>out;
+         displayPtn(H,999,indent,out,alt);
+         L : T;
+         while APPLY(IDEN(_,_,",.."),PAIR(HH,TT)).=L do{
+	   ", ">>out;
+	   displayPtn(HH,999,indent,out,alt);
+	   L := TT;
+	 };
+         if !IDEN(_,_,"[]").=L then {
+           ",..">>out;
+	   displayPtn(L,999,indent,out,alt);
+	 };
+         "]">>out;
+      }
+    | APPLY(IDEN(_,_,"in"),PAIR(H,T)) -> {
+        (XL,XP,XR) = infixPr("in");
+        showParen(XP,prior,out,"(");
+        displayPtn(H,XL,indent,out,alt);
+        " in ">>out;
+        displayPtn(T,XR,indent,out,alt);
+        showParen(XP,prior,out,")");
+      }
+
+    | APPLY(IDEN(_,_,"::"),PAIR(H,T)) -> {
+        (XL,XP,XR) = infixPr("::");
+        showParen(XP,prior,out,"(");
+        displayPtn(H,XL,indent,out,alt);
+        " :: ">>out;
+        displayExp(T,XR,indent,out,alt);
+        showParen(XP,prior,out,")");
+      }
+
+    | PAIR(H,T) -> {			-- tuple
+        "(">>out;
+        displayPtn(H,1000,indent,out,alt);
+        L : T;
+        while PAIR(HH,TT).=L do{
+	  ", ">>out;
+	  displayPtn(HH,999,indent,out,alt);
+	  L := TT;
+	};
+        ")">>out;
+      }
+
+    | APPLY(IDEN(_,_,N),PAIR(L,R)) :: (XL,XP,XR).=infixPr(N) && XP!=10000 ->{
+        showParen(XP,prior,out,"(");
+        displayPtn(L,XL,indent,out,alt);
+        " ">>out;
+        dispName(out,N,alt);
+        " ">>out;
+        displayPtn(R,XR,indent,out,alt);
+        showParen(XP,prior,out,")");
+      }
+    | APPLY(IDEN(_,_,N),R) :: (XP,XR).=prefixPr(N) && XP!=10000 ->{
+        showParen(XP,prior,out,"(");
+        dispName(out,N,alt);
+        " ">>out;
+        displayPtn(R,XR,indent,out,alt);
+        showParen(XP,prior,out,")");
+      }
+    | APPLY(IDEN(_,_,N),L) :: (XL,XP).=postfixPr(N) && XP!=10000 ->{
+        showParen(XP,prior,out,"(");
+        displayPtn(L,XL,indent,out,alt);
+        " ">>out;
+        dispName(out,N,alt);
+        showParen(XP,prior,out,")");
+      }
+    | APPLY(L,R) -> {
+        displayPtn(L,0,indent,out,alt);    
+        " ">>out;
+        displayPtn(R,0,indent,out,alt);
+      }
+    }
+  };
+
+
+  displayStmt(E,prior,indent,out,alt){
+    case E in {
+      IDEN(_,_,N) -> dispName(out,N,alt)
+    | NM(_,_,N) ->
+	N^0>>out
+    | ST(_,_,S) -> "<<<\""++S++"\">>>">>out
+    | VOID -> "<<void>>">>out
+    | END -> "<<end>>">>out
+    | APPLY(IDEN(_,_,"="),PAIR(H,T)) -> {
+        (XL,XP,XR) = infixPr("=");
+        showParen(XP,prior,out,"{");
+        displayPtn(H,XL,indent,out,alt);
+        " = ">>out;
+        displayExp(T,XR,indent,out,alt);
+        showParen(XP,prior,out,"}");
+      }
+
+    | APPLY(IDEN(_,_,":"),PAIR(H,T)) -> {
+        (XL,XP,XR) = infixPr(":");
+        showParen(XP,prior,out,"{");
+        displayPtn(H,XL,indent,out,alt);
+        " : ">>out;
+        displayExp(T,XR,indent,out,alt);
+        showParen(XP,prior,out,"}");
+      }
+
+    | APPLY(IDEN(_,_,":="),PAIR(H,T)) -> {
+        (XL,XP,XR) = infixPr(":=");
+        showParen(XP,prior,out,"{");
+        displayPtn(H,XL,indent,out,alt);
+        " := ">>out;
+        displayExp(T,XR,indent,out,alt);
+        showParen(XP,prior,out,"}");
+      }
+
+    | APPLY(IDEN(_,_,N),PAIR(L,R)) :: (XL,XP,XR).=infixPr(N) && XP!=10000 ->{
+        showParen(XP,prior,out,"{");
+        displayStmt(L,XL,indent,out,alt);
+        " ">>out;
+        dispName(out,N,alt);
+        " ">>out;
+        displayStmt(R,XR,indent,out,alt);
+        showParen(XP,prior,out,"}");
+      }
+    | APPLY(IDEN(_,_,N),R) :: (XP,XR).=prefixPr(N) && XP!=10000 ->{
+        showParen(XP,prior,out,"{");
+        dispName(out,N,alt);
+        " ">>out;
+        displayStmt(R,XR,indent,out,alt);
+        showParen(XP,prior,out,"}");
+      }
+    | APPLY(IDEN(_,_,N),L) :: (XL,XP).=postfixPr(N) && XP!=10000 ->{
+        showParen(XP,prior,out,"{");
+        displayStmt(L,XL,indent,out,alt);
+        " ">>out;
+        dispName(out,N,alt);
+        showParen(XP,prior,out,"}");
+      }
+    | APPLY(L,R) -> {
+        displayExp(L,0,indent,out,alt);    
+        " ">>out;
+        displayExp(R,0,indent,out,alt);
+      }
+    | PAIR(H,T) -> {			-- tuple, shouldnt happen
+        "(">>out;
+        displayExp(H,1000,indent,out,alt);
+        L : T;
+        while PAIR(HH,TT).=L do{
+	  ", ">>out;
+	  displayExp(HH,999,indent,out,alt);
+	  L := TT;
+	};
+        ")">>out;
+      }
+
+    }
+  };
+
+} export (displayExp,displayPtn,displayStmt);

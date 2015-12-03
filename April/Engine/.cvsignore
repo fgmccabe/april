@@ -1,0 +1,9 @@
+.deps
+.libs
+Makefile
+Makefile.in
+april
+dltest.lo
+ieee.lo
+libdltest.la
+libieeestr.la

@@ -1,0 +1,1181 @@
+@node Extending the April system
+@chapter Extending the @code{April} system
+@cindex Extending @code{April} with plug-in modules
+@cindex @code{April} plug-ins
+
+@noindent
+The @code{April} engine has some support for extension via plug-in
+modules. This facility is most useful for interfacing existing libraries to
+@code{April}; however, in principal, any function in a C-callable
+programming language can be linked in to @code{April} using the plug-in
+system.
+
+It should be noted that, except for simple string and number processing
+functions, it can be somewhat complex implementing a plug-in module for
+@code{April} -- especially if it involves list or tuple processing. If
+your intention lies in that direction, you are strongly advised to look
+at some of the standard @code{April} built-in functions'
+implementations' source files for guidance.
+
+While using plug-in modules can allow for convenient extension to
+@code{April} and for convenient access to standard libraries, there are
+certain disadvantages to using them. In particular:
+
+@itemize @bullet
+@item
+Due to the severe security risks of executing foreign code, only
+`priviliged' @code{April} processes may access plug-modules directly.
+@item
+In a distributed application, it is necessary to either arrange that all
+the @code{April} engines in use have access to the same plug-in
+libraries or the application has to be written in a location sensitive
+fashion.
+@item
+Since the plug-in code shares the same address space as the main
+@code{April} system, a bug in the plug-in module may cause the
+@code{April} system itself to compute incorrect results or to crash.
+@item
+The @code{April} system uses a garbage collection-based memory
+management system. This system requires a string discipline on the part
+of the built-in functions -- and by extension the functions implemented
+in the plug-in module. Failing to adhere strictly to this discipline can
+cause problems that are very difficult to track down (in particular,
+since it isnt possible in general to predict when the garbage collector
+is invoked, strongly intermittent problems may arise.
+@item
+An alternative approach that is potentially much more stable and
+flexible is to construct a specialized server that uses some form of
+communications protocol, such as one using the Simple Communications
+System. Then, from the point of view of the @code{April} application,
+the server appears like a regular process that can send and receive
+messages like other @code{April} programs.
+
+The disadvantage of this latter approach is some increased overhead and the
+increased complexities of constructing a server around a suite of
+library functions. However, reciprocally, an advantage of the server
+approach is increased flexibility in implementation and increased
+scalability in distributed environments.
+@end itemize
+
+@noindent
+If we havent managed to dissuade you from building plug-ins for
+@code{April}, what follows are intructions for using plug-in modules and
+guidelines for building them.
+
+@menu
+* Using a plug-in module::      
+* Defining a plug-in module::   
+* Type signature representation::  
+* Support functions and macros::  
+@end menu
+
+@node Using a plug-in module
+@section Using a plug-in module
+@cindex Using a plug-in module
+@cindex importing a plug-in module
+
+@noindent
+Using a plug-in module in an @code{April} source program is quite
+straightforward. In order to access a module that has been implemented
+as a plug-in, we @code{import} it in a similar way to regular
+@code{April} modules; except that the module specification is prefixed
+by the @code{native} keyword:
+@findex native @r{import plug-in module keyword}
+
+@smallexample
+program
+  import native @var{spec} from @var{lib-file} in
+@{
+    @dots{}
+@} execute @var{initial}
+@end smallexample
+
+@noindent
+If the designer of the plug-in module has a provided an interface file
+(to be recommended) then importing plug-in modules is no different to
+other modules:
+@cindex using interface files to import plug-in modules
+@smallexample
+program
+  import interface @var{interface-file} in
+@{
+    @dots{}
+@} execute @var{initial}
+@end smallexample
+
+@noindent
+Once imported in this way the individual functions and procedures that
+are defined by the module can be used as any other function or
+procedure. Note however, that using plug-in functions is considered a
+`privileged' instruction. This means that access to plug-in modules is
+not permitted to processes that have been launched in non-privileged
+mode -- this is likely to apply to programs that have been dynamically
+received in messages such as mobilets.
+
+@node Defining a plug-in module
+@section Defining a plug-in module
+@cindex Defining a plug-in module
+@cindex building plug-in modules
+
+@noindent
+In order to build a plug-in module for @code{April} a number of simple
+steps need to be taken:
+
+@enumerate
+@item
+The set of functions and procedures that constitute the desired
+functionality are implemented.
+@item
+A special structure -- called the signature structure -- is constructed
+in the module source.
+@item
+The library is compiled and @emph{dynamically} linked -- i.e., the
+plug-in is compiled as though it were a regular dynamically linked
+library.
+@item
+An @code{April} interface file is designed and constructed.
+@item
+Of course, we can assume that there are no bugs in the plug-in
+library. However, if there are, they are also liable to crash the
+@code{April} system itself.
+@end enumerate
+
+@noindent
+We shall explain the process of constructing a plug-in module by means
+of a simple example. Our @code{list} module duplicates two of the
+standard built-in functions: @code{front} (@pxref{front}) and
+@code{listlen} (@pxref{listlen}).@footnote{but that doesnt matter since
+our @code{list} plug-in module is for explicatory purposes only.}
+The @code{listlen} function computes the length of a list and the
+@code{front} function `snips' off the front @var{n} elements of a list.
+
+All @code{April} functions and procedures share a common C type
+definition. The function template for the @code{listlen} function is:
+
+@smallexample
+retCode d_listlen(processpo p,objPo *args);
+@end smallexample
+
+@noindent
+The return type -- @code{retCode} -- is an enumerated type that is used
+to signal the success -- or otherwise -- of the function or procedure
+call. The definition of @code{retCode} is:
+
+@smallexample
+typedef enum @{
+  ok,
+  Fail,
+  Switch,
+  IoSuspend,
+  MsgSuspend,
+  TmrSuspend,
+  ResSuspend,
+  Error,
+  Eof,
+  Space
+ @} retCode;
+@end smallexample
+
+@noindent
+The most important of these for most programs are @code{ok} -- which
+means that the function was successfully executed and a return value has
+been computed (or simply successfully executed in the case of a
+procedure) -- and @code{Error} -- which means that some run-time error
+condition has arisen. @code{Switch} is the same as @code{ok} -- except
+that the run-time engine is requested to immediately switch to another
+process if possible.
+
+The @code{processpo} argument is an opaque pointer to the current
+process' structure. For most plug-in functions it will never be
+necessary to directly refer to this.
+
+The @code{objPo*} argument is a pointer to the vector of arguments of
+the function or procedure. The @code{April} compiler arranges the
+arguments to the function in a slightly paradoxical way: the first
+argument to the the function is found at @code{args[@var{N-1}]} where
+@var{N} is the arity of the function or procedure; and the last argument
+is at @code{args[0]}.
+
+@code{April} program values all have a uniform representation; in part
+to enable effective garbage collection. There are a number of standard
+macros that can be used to determine the run-time type of a structure
+addressed via an @code{objPo} pointer; and to access its value. In
+addition, there are standard functions to create new values.
+
+@emph{Important}
+@quotation
+@code{April} is primarily a `single assignment' language. It is
+@emph{highly} undesirable for plug-in functions to `side-effect'
+structures passed in as arguments to the functions. The run-time engine
+does support so-called opaque values however. These may be used by the
+plug-in function to return special pointers or other values not directly
+acessible to @code{April} programs.
+@end quotation
+
+
+@menu
+* Protecting pointers::         
+* Returning values from a plug-in function::  
+* Reporting errors from a plug-in function::  
+* The signature structure::     
+@end menu
+
+@node Protecting pointers
+@subsection Protecting pointers
+@cindex Protecting pointers from garbage collection
+@cindex Garbage collection and plugh-in modules
+
+@noindent
+The arguments of the function are `protected' -- i.e., the garbage
+collector is aware of them. However, other @code{objPo} values are
+@emph{not} protected unless explictly marked. So, a fragment of code
+such as:
+
+@smallexample
+retCode d_foobar(processpo p,objPo *args)
+@{
+  objPo tmp = args[2];
+
+  @dots{}
+@end smallexample
+
+@noindent
+is inherently unsafe. In particular, if @code{foobar} does any kind of
+memory allocation (including constructing numeric values) then, unless
+@code{tmp} is protected, its value is liable to become invalid. In order
+to protect the C variable @code{tmp} above, we can `mark' it with the
+@code{gcAddRoot} function:
+
+@smallexample
+retCode d_foobar(processpo p,objPo *args)
+@{
+  objPo tmp = args[2];
+  void *root = gcAddRoot(&tmp);
+  @dots{}
+@end smallexample
+
+@noindent
+Each @code{objPo} variable that is required within the function should
+be protected by a call to @code{gcAddRoot}.
+
+Note that it is only necessary to remember the result of the first call
+to @code{gcAddRoot}. This value is used at the end of the function,
+immediately prior to returning to the @code{April} engine. To release
+the protection on all the variables marked with @code{gcAddRoot} call
+@code{gcRemoveRoot}.@footnote{It is important to properly
+balance the initial call to @code{gcAddRoot} with a call to
+@code{gcRemoveRoot}; the run-time system will complain otherwise.}
+
+@smallexample
+  @dots{}
+  gcRemoveRoot(root);
+  return ok;         /* return success code */
+@}
+@end smallexample
+
+@node Returning values from a plug-in function
+@subsection Returning values from a plug-in function
+@cindex Returning values from a plug-in function
+@cindex List processing in plug-in functions
+
+@noindent
+Our first complete example is the @code{listlen} function. The code for
+this is:
+
+@smallexample
+retCode d_listlen(processpo p,objPo *args)
+@{
+  objPo lst = args[0];
+  long len = 0;
+
+  while(NonEmptyList(lst))@{
+    lst = ListTail(lst);
+    len++;
+  @}
+  args[0] = allocateInteger(len);
+  return ok;
+@}
+@end smallexample
+
+@noindent
+This program is fairly straightforward. We use the standard macros
+@code{NonEmptyList} for
+@findex NonEmptyList @r{plug-in support macro}
+checking for a non-empty list and @code{ListTail} to return the tail of the
+list. The corresponding macros @code{EmptyList} and @code{ListHead}
+check for an empty list and return the head of a list.
+@findex ListTail @r{plug-in support macro}
+@findex ListHead @r{plug-in support macro}
+Note that this function does not need to use the @code{gcAddRoot} call
+to protect the @code{lst} variable. The reason for this is that no
+memory allocation takes place until the last step in the function -- the
+returning of the result.
+
+A plug-in function that implements an @code{April} procedure does not
+return a value: it returns a success code only. A plug-in function that
+implements an @code{April} function must return a value to the
+@code{April} engine. This is done by overwriting the first argument slot
+with the value. Hence the @code{listlen} function returns the length of
+the list by overwriting @code{args[0]} with a numeric value.
+
+@cindex Constructing values in a plug-in function
+All @code{April} computed values must be constructed using one or more
+of the standard @code{April} constructor functions. The @code{April} memory
+management system uses garbage collection for all values -- including
+number values.
+
+The @code{front} function shows a more elaborate example of list
+processing. Its complete code is:
+
+@smallexample
+retCode d_front(processpo p,objPo *args)
+@{
+  objPo t1 = args[1];
+  long len = IntVal(args[0]);
+  long pos=0;
+  objPo last = args[1] = emptyList;
+  objPo elmnt = emptyList;
+  void *root = gcAddRoot(&last);
+
+  gcAddRoot(&t1);
+  gcAddRoot(&elmnt);
+
+  while(pos++<len && !EmptyList(t1))@{
+    elmnt = ListHead(t1);
+    elmnt = allocatePair(&elmnt,&emptyList);
+
+    if(last==emptyList)
+      last = args[1] = elmnt;
+    else@{
+      updateListTail(last,elmnt);
+      last = elmnt;
+    @}
+    t1 = ListTail(t1);
+  @}
+
+  gcRemoveRoot(root);
+  return ok;
+@}
+@end smallexample
+
+@noindent
+Note the careful protection of the @code{t1} and @code{elmnt} temporary
+variables with calls to @code{gcAddRoot}. In addition, note the method
+for constructing and updating list structures.
+@cindex updating structures in a plug-in function
+
+The function @code{allocatePair} returns a new list pair. The arguments
+@findex allocatePair @r{plug-in support function}
+to @code{allocatePair} are @code{objPo*} pointers rather than direct
+@code{objPo} values. Again, this is to facilitate access by the garbage
+collector.
+
+@findex updateListHead @r{plug-in support function}
+@findex updateListTail @r{plug-in support function}
+In order to update the contents of a list pair, you should use the
+standard functions @code{updateListHead} and
+@code{updateListTail}. Using these functions is required -- you should
+not attempt to update fields of @code{April} structures directly.
+
+@findex emptyList @r{plug-in support variable}
+The external variable @code{emptyList} is an @code{objPo} value that the
+@code{April} engine uses to denote an empty list. The @code{EmptyList}
+macro is simply a test for equality with this variable.
+
+@node Reporting errors from a plug-in function
+@subsection Reporting errors from a plug-in function
+@cindex Reporting errors from a plug-in function
+@cindex Reporting errors from a plug-in function
+
+@noindent
+Most real-life programs have numerous possibilities for errors -- apart
+from type checking there are invalid values of arguments, or simply
+some requested action failed.
+
+For most run-time errors, the @code{April} language allows @code{April}
+programs to recover from errors using the @code{onerror} mechanism.
+The @code{April} engine has a standard method for reporting errors that
+can be recovered from: the @code{liberror} function.
+
+The prototype of the @code{liberror} function is:
+
+@smallexample
+retCode liberror(char *@var{libname},int @var{arity},char *@var{reason},objPo @var{code});
+@end smallexample
+
+@noindent
+Normally, @code{liberror} is used to exit directly out of a plug-in
+function:
+
+@smallexample
+  if(@var{test-fails})
+    return liberror("name",3,"your input is not valid",einval);
+@end smallexample
+
+@noindent
+@var{libname} should be the name that the programmer uses to invoke the
+function, @var{arity} is the number of arguments, @var{reason} is a
+@code{char *} detailing the reason for the error, and @code{code} is 
+a symbol that denotes the formal classification of the error.
+
+@node The signature structure
+@subsection The signature structure
+@cindex The signature structure
+
+@noindent
+The signature structure is used by @code{April} to determine the types
+of functions and procedures that are loaded as plug-in modules. The
+signature structure includes a type signature of the entire module as
+well as pointers to the individual plug-in functions. The run-time
+engine will verify this structure against the expected type when the
+plug-in module is dynamically loaded.
+
+The `C' type definition of the signature structure is:
+
+@smallexample
+typedef retCode (*funpo)(processpo p,objPo *args);
+
+typedef struct @{
+  void *h;                      /* Used by April for internal purposes */
+  char *sig;                    /* The actual signature */
+  long sigLen;                  /* The length of the signature */
+  long modLen;                  /* How many functions are exported? */
+  struct @{
+    funpo fun;                  /* The escape function itself */
+    int ar;                     /* Its arity */
+  @} funs[0];                    /* The array of escape functions being */
+@} SignatureRec;
+@end smallexample
+
+@noindent
+The @code{sig} component is a @code{char[]} array that encodes the type
+signature of the whole module. Note that this is not necessarily a
+normal @code{C} string. This is because it may contain ASCII NUL
+values; hence the separate @code{sigLen} field which contains the actual
+length of the type signature.
+
+The @code{modLen} field indicates the total number functions and procedures
+that are defined within the plug-in module.
+
+For each function or procedure that is being defined in the module an
+entry in the @code{funs} array is created. This gives a pointer to the C
+function that implements the plug-in function or procedure and the arity
+of the function. Note that strictly speaking, the @code{modLen} and
+@code{ar} fields are redundant -- they can be derived from the type
+signature itself. However, their presence improves the run-time
+performance of plug-in functions.
+
+The signature structure of a plug-in module should have the standard C
+name: @code{signature}. Generally, this can be defined as a load-time
+initialized structure. The signature structure of our @code{list}
+module looks like:
+
+@smallexample
+/* This type signature string defines the type:
+   (%x-(%x[]=>number), %x-((%x[],number)=>%x[]))
+*/
+#define LIST_SIG "T\2:\0FL$\0N:\0FT\2L$\0NL$\0"
+
+SignatureRec signature = @{
+  LIST_SIG,                     /* The type signature of the list module */
+  NumberOf(LIST_SIG),
+  2,                            /* Two functions in module */
+  @{
+    @{ d_listlen,1@},             /* the listlen function */
+    @{ d_front,2@}                /* the front function */
+  @}
+@};
+@end smallexample
+
+@noindent
+The @code{NumberOf} macro is a standard @code{April} macro that computes
+the arity of any array.
+
+@node Type signature representation
+@section Type signature representation
+@cindex Type signature representation
+
+@noindent
+The @code{April} engine uses a string representation for representing
+types at run-time. This is used in a number of situations, including
+representing the type signature of plug-in modules.  In this section we
+detail the form of that representation.
+
+@table @code
+@item N
+The @code{N} type signature is used to represent the @code{number}
+type. Note that @code{April} does not distinguish integer values from
+floating point values -- the @code{N} type represents either.
+
+@item s
+The @code{s} type signature is used to represent the @code{symbol} type.
+
+@item S
+The @code{S} type signature is used to represent the @code{string} type.
+
+@item h
+The @code{h} type signature is used to represent the @code{handle} type.
+
+@item l
+The @code{l} type signature is used to represent the @code{logical} type.
+
+@item $
+The @code{$} type signature is used to represent a type variable. The
+specific type variable is identified by the ASCII value of the following
+byte.
+
+@item A
+The @code{A} type signature is used to represent the encapsulated
+@code{any} type.
+
+@item O
+The @code{O} type signature is used to represent opaque values. Opaque
+values are not allowed in normal @code{April} programs; however, plug-in
+functions may return opaque values and use them as arguments.
+
+@item L
+The @code{L} type signature is used to represent a list type. The type
+of the list elements follows the @code{L} character.
+
+@item T
+The @code{T} type signature is used to represent a tuple type. The arity
+of the tuple is encoded as the ASCII byte that follows the @code{T}
+character; the types of the elements of the tuple follow the
+@code{T@var{<arity>}} sequence.
+
+@item :
+The @code{:} type signature represents a universally quantified
+type. The bound type variable follows the @code{:} character and the
+type itself follows the @code{:@var{<var>}} pair. Universally quantified
+type variables are used in polymorphic types.
+
+@item F
+The @code{F} type signature denotes a function type. The argument type(s) of
+the function follow the @code{F} character, and the type of the result
+of the function follows the argument types.
+
+@item P
+The @code{P} type signature denotes a procedure type. The argument type(s) of
+the procedure follow the @code{F} character.
+
+@item u
+The @code{u} type signature introduces a user-defined type -- in
+particular a non-polymorphic user defined type. The name of the type
+follows the @code{u} character -- delimited by delimiter characters.
+
+For example, the type signature:
+
+@smallexample
+u'foo#123456'
+@end smallexample
+
+@noindent
+denotes the user defined type @code{foo}. The actual text enclosed in
+the delimited characters often also includes a @emph{hash value}. The
+hash value is used to provide a measure of security: the hash value is
+computed from the actual type definition used to introduce the
+@code{foo} type.
+
+@item U
+The @code{U} type denotes a polymorphic user defined type. Similar to
+the non-polymorphic user defined type, its denotation consists of the
+name of the type associated with a hash value. In addition, the argument
+type of the polymorphic type.
+
+@item ?
+The @code{?} type signature denotes a fielded type. Following the
+@code{?} character is the field name, and following that is the type
+associated with the field name.
+
+The @code{?} type signature is used to represent record types.
+@end table
+
+@node Support functions and macros
+@section Support functions and macros
+@cindex Support functions and macros
+
+@noindent
+In this section, we outline a number of the @code{April} engine's
+internal macros and functions that can be used in the support of plug-in
+functions.
+
+Most of these are used for @code{April}'s own functions.
+
+@menu
+* IsInteger::                   
+* IntVal::                      
+* allocateInteger::             
+* IsFloat::                     
+* FloatVal::                    
+* allocateFloat::               
+* IsSymb::                      
+* SymVal::                      
+* newSymbol::                   
+* IsString::                    
+* StrVal::                      
+* StringText::                  
+* StringSize::                  
+* allocateString::              
+* allocateSubString::           
+* allocateCString::             
+* IsList::                      
+* ListHead::                    
+* ListTail::                    
+* allocatePair::                
+* updateListHead::              
+* updateListTail::              
+* IsTuple::                     
+* tupleArity::                  
+* tupleArg::                    
+* allocateTpl::                 
+* updateTuple::                 
+* IsOpaque::                    
+* OpaqueType::                  
+* OpaqueValue::                 
+* allocateOpaque::              
+@end menu
+
+@node IsInteger
+@subsection IsInteger
+@findex IsInteger @r{plug-in support macro}
+
+@noindent
+Form:
+@smallexample
+inline logical IsInteger(objPo p);
+@end smallexample
+
+@noindent
+The @code{IsInteger} macro is @code{True} if its argument is an integer
+value; @code{False} otherwise.
+
+@node IntVal
+@subsection IntVal
+@cindex IntVal @r{plug-in support macro}
+
+@noindent
+Form:
+@smallexample
+typedef long long integer;
+inline integer IntVal(objPo p);
+@end smallexample
+
+@noindent
+The @code{IntVal} macro returns the @code{integer} value of an
+@code{objPo} structure. Note that @code{April} @code{integer}s are
+@code{long} @code{long} values -- i.e., at least 64 bits long.
+
+The programmer should make sure that the @code{IsInteger} is true of
+@code{p} -- otherwise the returned value of @code{IntVal} is undefined.
+
+Note that the @code{April} engine distinguishes between integer values
+and floating point values; however, the @code{April} language itself
+does not -- there is only a single @code{number} type in
+@code{April}. That means that the plug-in function designer should
+handle both @code{IsInteger} and @code{IsFloat} cases in functions that
+handle numeric values.
+
+@node allocateInteger
+@subsection allocateInteger
+@findex allocateInteger @r{plug-in support function}
+
+@noindent
+Form:
+@smallexample
+inline objPo allocateInteger(integer i);
+@end smallexample
+
+@noindent
+The @code{allocateInteger} function returns an @code{April} value that
+represents an @code{integer} value. Note that the returned value may
+need to be `protected' if additional allocations are performed in a
+plug-in function.
+
+@node IsFloat
+@subsection IsFloat
+@findex IsFloat @r{plug-in support macro}
+
+@noindent
+Form:
+@smallexample
+inline logical IsFloat(objPo p);
+@end smallexample
+
+@noindent
+The @code{IsFloat} macro is @code{True} if its argument is a float
+value; @code{False} otherwise.
+
+@node FloatVal
+@subsection FloatVal
+@findex FloatVal @r{plug-in support macro}
+
+@noindent
+Form:
+@smallexample
+inline double FloatVal(objPo p);
+@end smallexample
+
+@noindent
+The @code{FloatVal} macro returns the @code{double} value of an
+@code{objPo} structure. Note that @code{April} floating point values are 
+@code{double} values.
+
+The programmer should make sure that the @code{IsFloat} is true of
+@code{p} -- otherwise the returned value of @code{FloatVal} is undefined.
+
+Note that the @code{April} engine distinguishes between integer values
+and floating point values; however, the @code{April} language itself
+does not -- there is only a single @code{number} type in
+@code{April}. That means that the plug-in function designer should
+handle both @code{IsInteger} and @code{IsFloat} cases in functions that
+handle numeric values.
+
+@node allocateFloat
+@subsection allocateFloat
+@findex allocateFloat @r{plug-in support function}
+
+@noindent
+Form:
+@smallexample
+inline objPo allocateFloat(double i);
+@end smallexample
+
+@noindent
+The @code{allocateFloat} function returns an @code{April} value that
+represents a @code{double} value. Note that the returned value may
+need to be `protected' if additional allocations are performed in a
+plug-in function.
+
+@code{allocateFloat} should only be used if the actual value is
+non-integral or if the value cannot be represented using an @code{integer}.
+
+@node IsSymb
+@subsection IsSymb
+@findex IsSymb @r{plug-in support macro}
+
+@noindent
+Form:
+@smallexample
+inline logical IsSymb(objPo p);
+@end smallexample
+
+@noindent
+The @code{IsSymb} macro is @code{True} if its argument is a symbol
+value; @code{False} otherwise.
+
+@node SymVal
+@subsection SymVal
+@findex SymVal @r{plug-in support macro}
+
+@noindent
+Form:
+@smallexample
+inline char *SymVal(objPo p);
+@end smallexample
+
+@noindent
+The @code{SymVal} macro returns the @code{symbol} value of an
+@code{objPo} structure. Note that although @code{April} @code{symbol}s are
+represented as @code{char *} pointers, they are in fact entries in a
+standard dictionary table. I.e., it is not acceptable to return use an
+arbitrary @code{char *} pointer when comparing or using an @code{April}
+@code{symbol} value.
+
+The programmer should make sure that the @code{IsSymb} is true of
+@code{p} -- otherwise the returned value of @code{SymVal} is undefined.
+
+@node newSymbol
+@subsection newSymbol
+@findex newSymbol @r{plug-in support function}
+
+@noindent
+Form:
+@smallexample
+inline objPo newSymbol(const char *s);
+@end smallexample
+
+@noindent
+The @code{newSymbol} function returns an @code{April} value that
+represents a @code{symbol} value. Note that the returned value may
+need to be `protected' if additional allocations are performed in a
+plug-in function.
+
+@node IsString
+@subsection IsString
+@findex IsString @r{plug-in support macro}
+
+@noindent
+Form:
+@smallexample
+inline logical IsString(objPo p);
+@end smallexample
+
+@noindent
+The @code{IsString} macro is @code{True} if its argument is a string
+value; @code{False} otherwise.
+
+@node StrVal
+@subsection StrVal
+@findex StrVal @r{plug-in support macro}
+
+@noindent
+Form:
+@smallexample
+inline stringPo StrVal(objPo p);
+@end smallexample
+
+@noindent
+The @code{StrVal} macro returns the @code{string} value of an
+@code{objPo} structure. Note that @code{April} @code{string}s are
+represented specific compound structures. @code{string} values should
+only be accessed via the special access functions @code{StringText} and
+@code{StringChar}.
+
+The programmer should make sure that the @code{IsString} is true of
+@code{p} -- otherwise the returned value of @code{StrVal} is undefined.
+
+@node StringText
+@subsection StringText
+@cindex Access text of an @code{April} string
+@findex StringText @r{plug-in support function}
+
+@noindent
+Form:
+@smallexample
+inline char *StringText(stringPo p);
+@end smallexample
+
+@noindent
+The @code{StringText} macro returns the @code{char *} value of an
+@code{stringPo} structure; i.e., it returns the actual text of an
+@code{April} string.
+
+Note that the text of a @code{string} value passed in an argument should
+not be modified by a plug-in function.
+
+In addition, note that @code{April} @code{string} values may contain
+arbitrary characters -- including the @code{ASCII} @code{NUL}
+value. I.e., @code{April} @code{string} values are not the same as C
+@code{char *} values -- which are always terminated by a @code{NUL}
+character.
+
+@node StringSize
+@subsection StringSize
+@cindex Access size of an @code{April} string
+@findex StringSize @r{plug-in support function}
+
+@noindent
+Form:
+@smallexample
+inline long StringSize(stringPo p);
+@end smallexample
+
+@noindent
+The @code{StringSize} macro returns the length of an @code{stringPo}
+structure.
+
+@node allocateString
+@subsection allocateString
+@cindex Allocate a new @code{April} string
+@findex allocateString @r{plug-in support function}
+
+@noindent
+Form:
+@smallexample
+inline objPo allocateString(char *s,long size,long margin);
+@end smallexample
+
+@noindent
+The @code{allocateString} function constructs an @code{April}
+@code{string} value from a @code{char *} array. The length of the string
+is given in @code{size}. The @code{margin} of the string is normally set
+to 0; however, if the programmer of the plug-in function believes that
+the returned @code{string} value is likely to `participate' in a `string
+concatenation' then setting the margin to a positive value may improve
+system performance.
+
+@node allocateSubString
+@subsection allocateSubString
+@cindex Allocate a sub-string of a @code{April} string
+@findex allocateSubString @r{plug-in support function}
+
+@noindent
+Form:
+@smallexample
+inline objPo allocateSubString(char *s,long offset,long size);
+@end smallexample
+
+@noindent
+The @code{allocateSubString} function constructs a sub-string of an
+already existing @code{April}
+@code{string} value. The length of the string is given
+in @code{size}, and the start position of the sub-string is given as
+@code{offset} (starting at 0).
+
+Where appropriate, creating sub-strings is more memory efficient and
+time-efficient than creating new strings.
+
+@node allocateCString
+@subsection allocateCString
+@cindex Allocate a new @code{April} string
+@findex allocateCString @r{plug-in support function}
+
+@noindent
+Form:
+@smallexample
+inline objPo allocateCString(char *s);
+@end smallexample
+
+@noindent
+The @code{allocateCString} function constructs an @code{April}
+@code{string} value from a C string. This is equivalent to a call of the
+form:
+
+@smallexample
+  allocateString(s,strlen(s),0);
+@end smallexample
+
+@node IsList
+@subsection IsList
+@findex IsList @r{plug-in support macro}
+
+@noindent
+Form:
+@smallexample
+inline logical IsList(objPo p);
+@end smallexample
+
+@noindent
+The @code{IsList} macro is @code{True} if its argument is a list pair
+value; @code{False} otherwise.
+
+@node ListHead
+@subsection ListHead
+@findex ListHead @r{plug-in suport macro}
+
+@noindent
+Form:
+@smallexample
+inline objPo ListHead(objPo l);
+@end smallexample
+
+@noindent
+The @code{ListHead} function returns the head of a non-empty list.
+
+@node ListTail
+@subsection ListTail
+@findex ListTail @r{plug-in suport macro}
+
+@noindent
+Form:
+@smallexample
+inline objPo ListTail(objPo l);
+@end smallexample
+
+@noindent
+The @code{ListTail} function returns the tail of a non-empty list.
+
+@node allocatePair
+@subsection allocatePair
+@cindex Allocate a new @code{April} pair
+@findex allocatePair @r{plug-in support function}
+
+@noindent
+Form:
+@smallexample
+inline objPo allocatePair(objPo *head,objPo *tail);
+@end smallexample
+
+@noindent
+The @code{allocatePair} function constructs an @code{April}
+list @code{pair} value from two other @code{April} values. Note that the
+head and tail of the new list pair are passed in as @code{objPo *}
+pointers rather than @code{objPo} values.
+
+@node updateListHead
+@subsection updateListHead
+@findex updateListHead @r{plug-in suport macro}
+
+@noindent
+Form:
+@smallexample
+inline void updateListHead(objPo l,objPo el);
+@end smallexample
+
+@noindent
+The @code{updateListHead} function is used to `update' the head of a
+list. Note that you should should not modify any @code{April} value
+passed in as an argument to the plug-in function. However, it is
+acceptable to modify a list that has been created within the same
+plug-in function call.
+
+@node updateListTail
+@subsection updateListTail
+@findex updateListTail @r{plug-in suport macro}
+
+@noindent
+Form:
+@smallexample
+inline void updateListTail(objPo l,objPo el);
+@end smallexample
+
+@noindent
+The @code{updateListTail} function is used to `update' the tail of a
+list. Note that you should should not modify any @code{April} value
+passed in as an argument to the plug-in function. However, it is
+acceptable to modify a list that has been created within the same
+plug-in function call.
+
+@node IsTuple
+@subsection IsTuple
+@findex IsTuple @r{plug-in support macro}
+
+@noindent
+Form:
+@smallexample
+inline logical IsTuple(objPo p);
+@end smallexample
+
+@noindent
+The @code{IsTuple} macro is @code{True} if its argument is a tuple
+value; @code{False} otherwise.
+
+@node tupleArity
+@subsection tupleArity
+@findex tupleArity @r{plug-in suport macro}
+
+@noindent
+Form:
+@smallexample
+inline long tupleArity(objPo l);
+@end smallexample
+
+@noindent
+The @code{tupleArity} function returns the length or arity of a tuple.
+
+@node tupleArg
+@subsection tupleArg
+@findex tupleArg @r{plug-in suport macro}
+
+@noindent
+Form:
+@smallexample
+inline objPo tupleArg(objPo t,long i);
+@end smallexample
+
+@noindent
+The @code{tupleArg} function returns an element of a tuple. The first
+element of the tuple is argument 0.
+
+@node allocateTpl
+@subsection allocateTpl
+@cindex Allocate a new @code{April} tuple
+@findex allocateTpl @r{plug-in support function}
+
+@noindent
+Form:
+@smallexample
+inline objPo allocateTpl(long len);
+@end smallexample
+
+@noindent
+The @code{allocateTpl} function constructs an @code{April}
+tuple.
+
+@cindex tuples of arity 1
+Note that the @code{April} language cannot deal with tuples of arity
+1. Therefore, plug-in functions should never return such values.
+
+The individual elements of the new tuple should be set using the
+@code{updateTuple} function.
+
+@node updateTuple
+@subsection updateTuple
+@findex updateTuple @r{plug-in suport macro}
+
+@noindent
+Form:
+@smallexample
+inline void updateTuple(objPo l,long offset,objPo el);
+@end smallexample
+
+@noindent
+The @code{updateTuple} function is used to `update' an element of a
+tuple.  Note that you should should not modify any @code{April} value
+passed in as an argument to the plug-in function. However, it is
+acceptable (indeed, it is required) to modify a tuple that has been
+created within the same plug-in function call.
+
+@node IsOpaque
+@subsection IsOpaque
+@findex IsOpaque @r{plug-in support macro}
+
+@noindent
+Form:
+@smallexample
+inline logical IsOpaque(objPo p);
+@end smallexample
+
+@noindent
+The @code{IsOpaque} macro is @code{True} if its argument is an opaque
+value; @code{False} otherwise. Opaque values are never directly used by
+@code{April} programs. However, they provide a convenient method for
+plug-in functions to return values to the @code{April} program that can
+be accessed by other plug-in functions in the same plug-in module.
+
+@node OpaqueType
+@subsection OpaqueType
+@findex OpaqueType @r{plug-in support macro}
+
+@noindent
+Form:
+@smallexample
+inline void *OpaqueType(objPo p);
+@end smallexample
+
+@noindent
+@code{Opaque} values have a type and a value. The type can be used by a
+plug-in function to verify that an opaque value passed into to it truly
+`belongs' to it.
+
+@node OpaqueValue
+@subsection OpaqueValue
+@findex OpaqueValue @r{plug-in support macro}
+
+@noindent
+Form:
+@smallexample
+inline void *OpaqueValue(objPo p);
+@end smallexample
+
+@noindent
+This function `unwraps' an opaque value as passed into a plug-in
+function and returns the actual value associated with the opaque
+value. The type of this value is returned as a @code{void *} pointer
+since the @code{April} engine has no interpretation of @code{Opaque}
+values.
+
+@node allocateOpaque
+@subsection allocateOpaque
+@findex allocateOpaque @r{plug-in support function}
+
+@noindent
+Form:
+@smallexample
+inline objPo allocateOpaque(const void *type,void *val);
+@end smallexample
+
+@noindent
+This function can be sed by plug-in functions to `wrap up' pointers in a
+way that can be returned and processed by @code{April} programs. The
+primary purpose of this is to allow @code{April} programs to remember
+values of importance to the plug-in function itself -- and to pass them
+in to subsequent calls to plug-in functions in the same plug-in module.
+
+The @code{type} argument should be a specific fixed value that the
+plug-in module can use to distinguish opaque values as belonging to it.
+
+Note that the memory management system may `lose' opaque values if the
+@code{April} program no longer references them. The plug-in module is
+not informed up such a loss of reference.
+

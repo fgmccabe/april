@@ -1,0 +1,43 @@
+/*
+ * Type definition of a token type -- for Apg's rule parser
+ */
+
+#include "apg.ah";
+
+yyTokType ::= MARK
+ | COLON
+ | BAR
+ | SEMI
+ | ID(char[])
+ | NUM(number)
+ | BRACE(char[])
+ | CENTBRACE(char[])
+ | TYPE
+ | TOKEN
+ | LEFT
+ | RIGHT
+ | NONASSOC
+ | PREC
+ | START
+ | EXPECT
+ | EOF;
+
+yyToken ::= (yyTokType?yyTok,string?yyFile,number?yyLine);
+
+yyType ::= N(number) 
+  | I(char[])
+  | APGRULESET(yyType,yyType)
+  | SEQ(yyType,yyType)
+  | TOKENSPEC(yyType)
+  | OPERATORSPEC(yyType,assoc)
+  | STARTSPEC(char[])
+  | EXPECTSPEC(number)
+  | APPLY(char[],char[])
+  | TYPESPEC(char[])
+  | RULESET(char[],yyType)
+  | CHOICE(yyType,yyType)
+  | RULE(yyType,yyType,yyType)
+  | EMPTY;
+
+
+

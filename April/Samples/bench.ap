@@ -1,0 +1,87 @@
+/*
+ * A simple benchamrk program suite
+ */
+
+program {
+  plus_test(count)
+  {
+    i : 0;
+
+    while i<count do
+     i+:= 1;
+  };
+
+  fib = {
+    (0) =>  1 
+  | (1) =>  1 
+  | (X) => fib(X-1)+fib(X-2)
+  };
+
+  fib_test(count)
+  {
+     xx = fib(count);
+  };
+
+  app(X,Y) => theta{
+    ap = {
+      ([]) => Y
+    | ([H,..X]) => [H,..ap(X)]
+    }
+  }.ap(X);
+
+  naive = {
+    ([]) => [] 
+  | ([E,..T]) => app(naive(T),[E])
+  };
+
+  naive_test(els)
+  {
+    R = naive(1..els);
+  };
+
+  reverse(L) => theta{
+    rev = {
+      ([],R) => R
+    | ([E,..L],R) => rev(L,[E,..R])
+    }
+  }.rev(L,[]);
+
+  rev_test(els)
+  {
+    R : reverse(1..els);
+  };
+
+  main(iterate)
+  {
+    start : ticks();
+
+    for i in 1..iterate do
+      plus_test(1000000);
+
+    "Plus test took "++(ticks()-start)^0++" msecs\n" >> stdout;
+
+    start := ticks();
+
+    for ?i in 1..iterate do
+      fib_test(25);
+    "Fib test took "++(ticks()-start)^0++" msecs\n" >> stdout;
+
+    start := ticks();
+
+    for i in 1..iterate do
+      naive_test(200);
+
+    "Naive reverse test took "++(ticks()-start)^0++" msecs\n" >> stdout;
+
+    start := ticks();
+
+    for i in 1..iterate do
+      rev_test(200);
+
+    "Smart reverse test took "++(ticks()-start)^0++" msecs\n" >> stdout;
+  }
+} execute main;
+
+
+
+

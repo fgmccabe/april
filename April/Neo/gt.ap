@@ -1,0 +1,3 @@
+module{
+  setof { X : X in male && not X in female }
+} export foo;

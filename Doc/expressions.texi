@@ -1,0 +1,645 @@
+@node Expressions
+@chapter @code{April} expressions
+@cindex Format of @code{April} expressions
+
+@noindent
+The legal expressions in a programming language can be classified into
+`value expressions' -- such as arithmetic or list expressions -- and
+`syntax expressions' -- which reflect syntactic constructs in the
+language. A common example of a syntax expression found in many
+programming languages is the conditional expression --
+@pxref{conditional expression}.
+
+In this chapter we focus on the format of @code{April} expressions,
+particularly on those features which are novel in @code{April}. The
+available value expressions are documented in other chapters.
+
+@menu
+* Value expression forms::      
+* Syntactic expression forms::  Special @code{April} expressions
+@end menu
+
+@node Value expression forms
+@section Value expression forms
+
+@noindent
+Many of the value expression forms are described in @ref{Data values and
+types}. In this section we show some of the other value expression
+forms.
+
+@menu
+* Function application expression::  
+@end menu
+
+@node Function application expression
+@subsection Function application expression
+@cindex function application expression
+
+@noindent
+A function application expression takes the form:
+
+@smallexample
+@var{fun} @var{arg}
+@end smallexample
+
+@noindent
+where @var{fun} and @var{arg} are also all expressions. In the case of
+the @var{fun} expression, it should evaluate to a function value. In the
+case of @var{arg}, it will often evaluate to a tuple of arguments; the
+value of the expression is the result of applying the function to the
+arguments @var{arg1},@dots{},@var{argk}.
+
+Note that @var{fun} may be a @emph{literal} function value, in which
+case this expression is analogous to a @code{case} expression
+(@pxref{case expression}.
+
+Functions, and function values are described more fully in
+@pxref{Function}.
+
+@node Syntactic expression forms
+@section Syntactic expressions forms
+
+@noindent
+@code{April} has a relatively rich collection of syntax expressions as
+well as a rich collection of value expressions. Typically, an
+@code{April} syntax expression relates the value of an expression to the
+execution of one or more @emph{statements}.
+
+@menu
+* valof expression::            Execute statements in an expression
+* onerror expression::          
+* exception expression::        
+* collect expression::          Collect a list of values
+* setof expression::            
+* case expression::             Switch on an expression
+* conditional expression::      
+* type coercion::               
+* theta expression::            
+* Dot expression::              Accessing elements of records
+@end menu
+
+@node valof expression
+@subsection @code{valof} expression
+@cindex @code{valof} expression
+
+@noindent
+The @code{valof} expression allows the value of an expression to be
+determined as a result of executing one or more statements. The form of
+the @code{valof} expression is:
+
+@smallexample
+valof @var{statement}
+@end smallexample
+
+@noindent
+where @var{statement} should include an @code{valis} statement:
+
+@smallexample
+valis @var{expression}
+@end smallexample
+
+@noindent
+The value of the @var{valof} expression -- and its associated type -- is
+the value (and type) computed by the @code{valis} statement. Executing a
+@code{valis} statement inside the body of the @code{valof} also
+terminates the body.
+
+For example, one way of expressing classical conditional expression in
+@pxref{conditional expression} is to use a standard
+@code{if}-@code{then}-@code{else} statement together with the
+@code{valof} expression:
+
+@smallexample
+valof @{
+  if @var{test} then
+    valis @var{Exp1}
+  else
+    valis @var{Exp2}
+@}
+@end smallexample
+
+@noindent
+The type of a @code{valof} expression is determined by the types of
+the expressions associated with any @code{valis} statements embedded in
+the body, all of which must have the same type.
+
+Note that if no @code{valis} statement is executed in the body of the
+@code{valof} statement, a run-time error exception is raised. This
+exception has as its error code the string @code{"valof
+exception"}. See @ref{onerror statement} for the standard method of
+handling and recovering from run-time errors.
+
+@node onerror expression
+@subsection @code{try}@dots{}@code{onerror} expression
+@cindex @code{try}@dots{}@code{onerror} expression
+@cindex recovering from run-time errors in expressions
+@cindex expressions, recovering from run-time errors
+
+@noindent
+A @code{try}@dots{}@code{onerror} expression allows a programmer to
+handle failure within an expression. It is related to the
+@code{try}@dots{}@code{onerror} statement (@pxref{onerror statement}).
+
+The form of a @code{try}@dots{}@code{onerror} expression is:
+
+@smallexample
+try
+  @var{Exp}
+onerror
+  @var{Fun}
+@end smallexample
+
+@noindent
+where @var{Exp} is evaluated, and if successful, becomes the value of
+the entire expression. If a run-time exception is raised during the
+evaluation of @var{Exp}, then @var{Exp} is terminated, and @var{Fun} is
+entered.
+
+@var{Fun} is a single-argument function, whose argument is of type
+@code{error} (@pxref{error type}).
+@findex error @r{standard type}
+@cindex @code{error} type
+It is applied to the error code generated as a result of the
+run-time exception. The value returned by @var{Fun} becomes the value
+returned by the entire @code{try}@dots{}@code{onerror} expression.
+
+Note that typically, the error-handling @var{Fun} is given explicitly as
+a set of cases of a @code{case} expression:
+
+@smallexample
+X = @{
+       @{
+         if I < 10 then I 
+         else
+           exception error("Foo", 'foo)
+       @} onerror @{
+          error("Foo", _) => 20
+       @}
+    @};
+@end smallexample
+
+@node exception expression
+@subsection @code{exception} expression
+@cindex @code{exception} expression
+
+@noindent
+The @code{exception} expression does not have a value, although it does
+have an argument!  Instead it forces the termination of current
+evaluation, and causes the generation of a run-time exception. The
+exception generated is based on the argument of the @code{exception}
+expression:
+
+@smallexample
+exception @var{Exp}
+@end smallexample
+
+@noindent
+This value is `collected' by the right hand side of the @code{onerror};
+in this case by matching against the @code{error()} pattern and returns
+a default value.
+
+@node collect expression
+@subsection @code{collect} expression
+@cindex collect elements into a list
+
+@noindent
+The @code{collect} expression allows a list of values to be computed --
+as the result of a statement. The form of a @code{collect} expression
+is:
+
+@smallexample
+collect @var{statement}
+@end smallexample
+
+@noindent
+where @var{statement} is expected to contain at least one @code{elemis}
+statement. The @code{elemis} statement(s) represent the elements of the
+resulting list -- each time an @code{elemis} statement is executed, the
+value associated with it is added to the end of the list being
+constructed.
+
+We can use @code{collect} expressions in many situations, it allows a
+powerful and expressive way of determining the elements of a list. For
+example, the common @var{map} higher-order operator can be represented
+as a @code{collect} expression. A @var{map} expression such as
+
+@smallexample
+L // double
+@end smallexample
+
+@noindent
+where @code{L} is a list of numbers and @code{double} is a single
+argument function that doubles its argument, can be represented using
+the @code{collect} expression:
+
+@smallexample
+collect @{
+  for I in L do
+    elemis double(I)
+@}
+@end smallexample
+
+@noindent
+The `list collection' is terminated when the @var{statement} body of the
+@code{collect} expression terminates. The type of the @code{collect}
+expression is a list of the type associated with the @code{elemis}
+statements. All the @code{elemis} statements inside a given
+@code{collect} body must agree to a common type.
+
+Note that if @emph{no} @code{elemis} statements are executed in a
+@code{collect} body, then the result is the empty list.
+
+The @code{collect} expression is a unique feature of
+@code{April}. @code{collect} has an interesting `history'. In standard
+mathematics, it is common to represent sets using @emph{set
+abstractions}. A set abstraction is a way of writing down the elements
+of a set without enumerating them explicity; for example, the set
+abstraction:
+
+@smallexample
+@{ X | X in L & X<5 @}
+@end smallexample
+
+@noindent
+represents the set of elements of @code{L} which are smaller than
+5. @code{April}'s @code{collect} expression is a direct representation
+of a similar expressive power but relating to lists rather than sets.
+
+
+@node setof expression
+@subsection @code{setof} expression
+@cindex collect elements into a set
+
+@noindent
+The @code{setof} expression is similar to the @code{collect} expression,
+except that the resulting list is sorted with duplicates removed --
+i.e., a set is returned ratehr than a bag.  The form of a @code{setof}
+expression is:
+
+@smallexample
+setof @var{statement}
+@end smallexample
+
+@noindent
+where @var{statement} is expected to contain at least one @code{elemis}
+statement. The @code{elemis} statement(s) represent the elements of the
+set.
+
+
+@emph{Hint:}
+@quotation
+Using the raw @code{collect} expression/statement to `capture' set
+abstractions can sometimes lead to complicated code. The set abstraction
+notation in @ref{Lists and set abstractions} considerably `raises the
+level' of @code{collect} and @code{setof} expressions.
+@end quotation
+
+@node case expression
+@subsection @code{case} expression
+@cindex case expression
+
+@noindent
+The @code{case} expression allows the value of an expression to be
+determined by cases in the value of a governing expression.
+
+The form of the @code{case} expression is:
+
+@smallexample
+case @var{exp} in @{
+  @var{ptn1} => @var{E1}
+| @dots{}
+| @var{ptnk} => @var{Ek}
+@}
+@end smallexample
+
+@noindent
+where @var{ptni} are all @var{patterns} compatible with @var{exp}, and
+expressions @var{Ei} are all expressions of the same type. The value of
+a @code{case} expression depends on the first pattern @var{ptni} that
+matches @var{exp}. This pattern selects a corresponding expression --
+@var{Ei} -- which is the value returned by the @code{case}.
+
+The patterns @var{ptni} can declare variables -- whose scopes extend to
+the corresponding selected expressions.
+
+At least one of the matching patterns @var{ptni} must match the value of
+the expression @var{exp}; if none do, then a @code{failed}
+exception will be raised; @xref{onerror expression}.
+
+Note that the @code{case} expression is the only form of expression that
+can involve values with disjunctive types. If the governing expression
+@var{exp} is of a disjunctive type, then the individual matching
+patterns can separately handle the different cases of the disjunctive
+type.
+
+Note that the body of the @code{case} expression takes the form of a
+disjunction of equations -- i.e., it takes  the form of a function. This
+is not an accident: the body of a @code{case} expression is indeed a
+function. It is possible to supply the function in a @code{case}
+expression in a different style; for example as the value of a variable:
+
+@smallexample
+case @var{exp} in @var{fun_var}
+@end smallexample
+
+@noindent
+The @code{case} expression is discussed more fully in @ref{Case
+expression as a function call}.
+
+@node conditional expression
+@subsection Conditional expression
+@cindex Conditional expression
+@findex if @r{conditional expression}
+
+An expression such as in:
+
+@smallexample
+I := @{if I>10 then I-1 else I+1 @}:
+@end smallexample
+
+@noindent
+is a @emph{conditional expression}. The predicate part of the expression
+is evaluated, and depending on whether it evaluates to @code{true} or
+@code{false}, the value of the complete expression is @var{Exp1} or
+@var{Exp2} respectively.
+
+Conditional expressions are useful in the definition of simple functions
+as well as in statements:
+
+@smallexample
+app(X,Y) => @{
+  if [?El,..?Z] .= X then [El,..app(Z,Y)]
+  else Y
+@}
+@end smallexample
+
+@noindent
+Conditional expressions are equivalent to a specific use of the
+@code{valof} construct. The above function definition is entirely
+equivalent to:
+
+@smallexample
+app(X,Y) => valof @{
+  if [El,..Z] .= X then valis [El,..app(Z,Y)]
+  else valis Y
+@}
+@end smallexample
+
+@node type coercion
+@subsection Type coercion expression
+@cindex type coercion expression
+@findex %% @r{function}
+
+@noindent
+A type coercion expression can be used to convert values of one type
+into another. Of course not all values are convertible, but @code{April}
+attemptsto be as generous as possible in this area.
+
+The form of a type coercion expression is:
+
+@smallexample
+@var{type} %% @var{E} 
+@end smallexample
+
+@noindent
+The type of such an expression -- provided it has a value -- is always
+@var{type}. However, not all forms of type coercion are legal. In
+particular, type coercions involving programs are only legal if the
+type of the input expression is convertible to a value of the required type.
+
+The legal transformations supported by @code{%%} are:
+
+@table @asis
+@item @var{type} to @var{type}
+Any null-coercion is allowed. This refers to the situation where the
+type of the input is already of the required type of the output.
+
+@item @var{type} to @code{string}
+Any @code{April} value may be coerced to a @code{string}
+value. However, this coercion is not guaranteed to be reversable: in
+particular, the result of coercing functions and procedures to
+@code{string} values only results in a display of the type of the
+function or procedure.
+
+@item @code{string} to @code{number}
+A @code{string} value may be converted to a @code{number} value,
+provided that the contents of the string can be said to represent a
+@code{number} using @code{April}'s normal rules for the syntax of
+numbers.
+
+@item tuple to/from record
+A tuple of values may be coerced to or from a record of values, provided
+that successive elements of the tuples are coercible to/from the
+corresponding record elements.
+@end table
+
+@noindent
+Note that it is @emph{not} permitted to coerce a value to type
+@code{any}, or a type involving @code{any}.
+
+@node theta expression
+@subsection Theta expression
+@cindex Theta expression
+
+@noindent
+In some situations, a record can be viewed as a kind of binding
+environment. The fields of the record introduce `variables' which have a
+certain scope. In the case of regular anonymous records and labelled
+tuples the scope of the field variables does not extend to the values
+defined in a given record literal itself. In the case of theta
+expressions, the scope of fields @emph{includes} the fields
+themselves.
+
+A theta expression is written using semi-colon to separate a sequece of
+fields; each of which is denoted either by an @code{=} -- for a
+read-only definition -- or by a @code{:} for a read/write
+definition.@footnote{In the case that there is only a single field, then
+it must be followed by a semi-colon `@code{;}' in order to distinguish
+the expression as a theta expression.}
+
+@smallexample
+@{
+  @var{field1};
+  @dots{}
+  @var{fieldk}
+@}
+@end smallexample
+
+@noindent
+In the case of the @code{:} form of field declaration, the field may be
+@emph{updated} by procedures and functions defined within the
+@emph{same} theta record. An @code{=} field defines a read-only value
+that cannot be updated. In either case, no field of a theta
+record is updateable directly by procedures or functions which are
+defined @emph{outside} the theta -- on the other hand, such an
+`outside' procedure or function may invoke an updating procedure that
+is `inside' the theta.
+
+Theta expressions are described more fully in @pxref{programs and
+theta expressions}.
+
+@node Dot expression
+@subsection Dot expression
+@cindex dot expression
+@cindex accessing elements of a record.
+
+@noindent
+The `dot' expression allows elements of a record to be accessed by field
+name. The form of a dot expression is:
+
+@smallexample
+@var{R}.@var{E}
+@end smallexample
+
+@noindent
+where @var{R} on the left hand side of the dot expression must be a
+record type, and @var{E} on the right hand side can be any
+expression.
+
+The meaning of a dot expression can be summarized as
+follows: if the type of @var{R} is a record with fields @var{f1} to
+@var{fk}, then the value of @var{R}.@var{E} is the value of @var{E}
+where @var{f1} to @var{fk} act as @emph{read-only variables} whose values are
+extracted as the corresponding fields of @var{R}.
+
+In addition to the fields of @var{R} being declared, the value of
+@var{R} itself is also available within @var{E} -- as the value of the
+standard variable @code{environment}. This is convenient for cases where
+@var{R} is a complex expression -- such as the returned value of a
+function -- where both the entire value and the internal fields are
+required in some expression.
+
+This is slightly different to `standard' record accessing operators
+where the right hand side of dot expressions is restricted to a single
+field name of @var{R}. This form of record accessing allows multiple
+fields of a record to accessed in a single expression, and it allows
+expressions to involve the combination of several records.
+
+For example, if @var{R} is a record variable, of type:
+
+@smallexample
+(number?i,number?j,string?a)
+@end smallexample
+
+@noindent
+then the expression:
+
+@smallexample
+R.(i+j)
+@end smallexample
+
+@noindent
+has as its value the value of the @var{i} field and the @var{j} field of
+@var{R} added together.
+
+An important feature of @code{April}'s dot operator is that the
+expression @var{E} does not need to refer exclusively to elements of
+@var{R} -- it may additionally refer to other variables currently within
+the scope of @var{E}.@footnote{It does not even need to refer to
+@emph{any} of @var{R}'s fields.} Furthermore, it is possible to `nest'
+record access; as in the expression:
+
+@smallexample
+R.(S.(i+k))
+@end smallexample
+where @var{i} is a field of @var{R} and @var{k} is a field of @var{S}.
+
+@quotation
+@emph{Hint:}
+theta expressions are also defined to be records, and we can use
+record access to access elements of such expressions. For
+example, in the expression
+
+@smallexample
+@{
+  fact = @{
+    0 => 1
+  | X => X*fact(X-1)
+  @};
+@dots{}
+@}.fact
+@end smallexample
+
+@noindent
+we `export' the definition of @code{fact} from the
+theta record expression. This is an effective way of defining the
+semantics of a system of modules.
+@end quotation
+
+@emph{Note:}
+@quotation
+There is a subtle difference between an expression such as:
+
+@smallexample
+R.f(A)
+@end smallexample
+
+@noindent
+and the expression:
+@smallexample
+(R.f)(A)
+@end smallexample
+
+@noindent
+They both apply the function @code{f} found in @code{R} to argument
+@code{A}. However, the former may `find' @code{A} in @code{R} whereas
+the latter will not look in @code{R} for any definition of @code{A}.
+
+This can lead to mysterious problems where both @code{R} and the current
+scope has a definition for @code{A}.
+@end quotation
+
+@c @node Dynamic Dot expression
+@c @subsection Dynamic Dot expression
+@c @cindex dynamic dot expression
+@c @cindex accessing elements of a record.
+@c 
+@c @noindent
+@c Like the dot expression (@pxref{Dot expression}), the `dynamic dot'
+@c expression allows elements of a record to be accessed by field
+@c name.@footnote{This is an experimental feature. It was introduced into
+@c @code{April} in version 4.4.0-pre1b.} However, one difference between
+@c the @code{.} and the @code{.!}  operator is that the field name to use
+@c is computed at run-time. The form of a dynamic dot expression is:
+@c 
+@c @smallexample
+@c @var{R}.!@var{E}
+@c @end smallexample
+@c 
+@c @noindent
+@c where @var{R} on the left hand side of the dot expression must be a
+@c record type, and @var{E} is a @code{symbol} valued expression. If
+@c @var{E} evaluates to a @code{symbol} that is a field of @var{R}, then
+@c the value of the expression is that field of @var{R} -- encapsulated as
+@c an @code{any} expression (@pxref{any type}). If @var{E} does
+@c not evaluate to a field of @var{R} then an exception is raised.
+@c 
+@c The type of a @code{.!} expression is @code{any}. In order to actually
+@c access the value that represents the field of the record, the result
+@c must be matched against an @code{any} pattern. This will result -- as a
+@c side-effect -- in additional type checking to make sure that the
+@c retrieved value is safe to use.
+@c 
+@c For example, given the record:
+@c @smallexample
+@c R = @{first=10,second=20,third="john"@};
+@c @end smallexample
+@c 
+@c @noindent
+@c we can access the @code{second} field with the statement:
+@c @smallexample
+@c S = R.!'second;
+@c @end smallexample
+@c 
+@c @noindent
+@c The type of @code{S} is @code{any}. To get at the value itself, we match
+@c @code{S} against a suitable @code{any} pattern:
+@c @smallexample
+@c any N = S;
+@c @end smallexample
+@c where presumably @code{N} is alread constrained to be a @code{number}
+@c for example, as in:
+@c @smallexample
+@c if any N .= S then
+@c   XX := XX+N;
+@c @end smallexample

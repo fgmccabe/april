@@ -1,0 +1,108 @@
+\input psfig.tex
+\input texinfo
+@c %**start of header
+@setfilename apg.info
+@settitle Apg Reference Manual
+@c %**end of header
+@smallbook
+@setchapternewpage odd
+@include version.texi
+
+@dircategory Programming
+@direntry
+* apg: (apg).		April Parser Generator
+@end direntry
+
+@titlepage
+@title April Parser Generator
+@subtitle Version 0.0, last updated @value{UPDATED}
+@author F.G. McCabe @email{fgm@@fla.fujitsu.com}
+
+@c  The following two commands
+@c  start the copyright page.
+@page
+@vfill
+@copyright{} 1994-1999 Fujitsu Labs of America Inc. and F.G. McCabe
+
+Permission is granted to make and distribute verbatim copies of this
+manual provided the copyright notice and this permission notice are
+preserved on all copies.
+
+Permission is granted to copy and distribute modified versions of this
+manual under the conditions for verbatim copying, provided that the
+entire resulting derived work is distributed under the terms of a
+permission notice identical to this one.
+
+Permission is granted to copy and distribute translations of this manual
+into another language, under the above conditions for modified versions,
+except that this permission notice may be stated in a translation
+approved by Fujitsu Labs of America.
+@end titlepage
+     
+@node Top
+@top April Parser Generator
+
+@noindent
+This is the 
+@ifinfo
+on-line
+@end ifinfo 
+Reference Manual for the April Parser Generator -- known as
+@code{Apg}, version 0.0, last updated on @value{UPDATED}.
+@refill
+
+This manual offers a description of the April Parser Generator, how it
+can be used to generate a parser for @code{April} and a little of the
+theory behind it.
+
+
+@ifinfo
+@copyright{} 1999 Fujitsu Labs of America inc. and F.G. McCabe
+
+Permission is granted to make and distribute verbatim copies of this
+manual provided the copyright notice and this permission notice are
+preserved on all copies
+
+Permission is granted to copy and distribute modified versions of this
+manual under the conditions for verbatim copying, provided that the
+entire resulting derived work is distributed under the terms of a
+permission notice identical to this one.
+
+Permission is granted to copy and distribute translations of this manual
+into another language, under the above conditions for modified versions,
+except that this permission notice may be stated in a translation
+approved by Fujitsu Labs of America.
+@end ifinfo
+
+
+@menu
+* Copying::                     Your rights and freedoms
+* Introduction::                Summary of the basic concepts
+* Using Apg::                   Writing a rule file
+* Format of an Apg rule file::  Complete definition of rule file formats
+* Background theory::           How it works
+* Listing of UL::               Sample @code{Apg} program
+* Apg rule grammar::            Formal definition of @code{Apg} rule files
+* Concept index::
+@end menu
+
+@include gpl.texi
+@include intro.texi
+@include using.texi
+@include rules.texi
+@include theory.texi
+@include ul.texi
+@include grammar.texi
+
+@node Concept index
+@unnumbered Concept index
+@printindex cp
+
+@c @node Function index
+@c @unnumbered Standard function index
+@c @printindex fn
+
+@summarycontents
+@contents
+@bye
+

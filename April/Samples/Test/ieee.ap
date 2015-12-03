@@ -1,0 +1,59 @@
+program{
+  ieee2str(N) -> charof(collect{
+    ?sign = 0;
+    ?exp = 0;
+    ?ip = 0;
+    if N < 0.0 then{
+      sign := 0x80;
+      N := -N;
+    };
+
+    (N, exp) := frexp(N);
+
+    exp := exp+1023;
+
+    elemis bor(sign,band(bright(exp,4),0x7f));
+    (ip,N) := modf(N*16);
+
+    elemis bor(bleft(band(exp,0xf),4),band(ip,0xf));
+
+    for ?i in 3..8 do{
+      (ip,N) := modf(N*256);
+      elemis ip;
+    }
+  });
+
+  str2ieee(S) -> valof{
+    ?buff = ascii(S);
+    ?sign = bright(buff[1],7);
+    ?exp = bor(bleft(band(buff[1],0x7f),4),bright(band(buff[2],0xff),4))-1023;
+    ?f = 0;
+    for ?i in 3..8 do
+      f := {f+band(buff[11-i],0xff)}/256;
+    f := {f+band(buff[2],0xf)}/16;
+
+    if sign==1 then
+      valis -ldexp(f,exp)
+    else
+      valis ldexp(f,exp)
+  };
+
+  test(N){
+    ?S = ieee2str(N);
+    writef(stdout,"Convert %w into IEEE string: %w\n",(N,S));
+    writef(stdout,"Convert %w into IEEE string (builtin): %w\n",(N,__ieeestr(N)));
+
+    writef(stdout,"Convert back into IEEE: %w\n",(str2ieee(S)));
+    writef(stdout,"Convert back into IEEE (builtin): %w\n",(__strieee(S)));
+
+  };
+
+  main()
+  {
+/*    test(0.0);*/
+    test(12.234e45);
+    test(-123.45e100);
+    test(pi());
+    test(-pi());
+  }
+} execute main;

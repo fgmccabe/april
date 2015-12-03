@@ -1,0 +1,45 @@
+/*
+ * A sample TCP server program
+ */
+program
+{
+  connection(host,port,input,output)
+  {
+  loop:-{
+    if not eof(input) then {
+    {  file = inline(input);
+       file_server(file,output);
+    }
+    onerror
+      { error("end of file",_) ->> leave loop
+
+      | error(C,X) ->>
+        { writef(stderr,"Problem: %S in reading %w\n",(C,X));
+          leave loop;
+        }
+      }
+    }};
+   "End of session\n">>stderr;
+  };
+
+  file_server(name,output)
+  {
+    f = fopen(name,"r");
+
+    while not eof(f) do{
+      inline(f) ++ "\n" >> output;
+    };
+    fclose(f);
+  };
+
+  main(port)
+  {
+    h + tcp_server(integer%%port,connection);
+
+    while true do
+    {
+      X ->> writef(stdout,"We have message: %2w from %s\n",(X,replyto))
+    }
+  }
+} execute main;
+

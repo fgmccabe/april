@@ -1,0 +1,74 @@
+/*
+ * Process forking and related macros 
+ */
+
+/* fork is obsolete ... use spawn instead */
+#macro fork ?P ==> spawn P();
+
+/* Basic process spawn statement */
+#macro spawn ?P ==> 
+      _fork_( {()->{
+		#_debug_ _debug(any(fork_debug(creator(),self())));
+		P;
+		#_debug_ _debug(any(die_debug(self())));
+	      }});
+
+#macro spawn ?P using ?D ==>
+  __fork_(nullhandle,self(),D,_mailer(),true,
+	{()->{
+	      #_debug_ _debug(any(fork_debug(creator(),self())));
+	      P;
+	      #_debug_ _debug(any(die_debug(self())));
+	    }});
+
+#macro spawn ?P as ?N ==>
+  __fork_(N,self(),file_manager(),_mailer(),true,{()->{
+      #_debug_ _debug(any(fork_debug(creator(),self())));
+      
+      try P
+      onerror{
+        Error -> Error >> creator()
+      };
+
+      #_debug_ _debug(any(die_debug(self())));
+    }})
+  onerror{
+    error(msg,C) =>
+	exception error(msg,C)
+  };
+
+#macro spawn (?P) as ?N using ?D ==>
+  __fork_(N,self(),D,_mailer(),true,{()->{
+      #_debug_ _debug(any(fork_debug(creator(),self())));
+      
+      try P
+      onerror
+        Error -> Error >> creator()
+      ;
+
+      #_debug_ _debug(any(die_debug(self())));
+    }});
+
+#macro ?N public_spawn ?P  ==> { _ := spawn P as N};
+
+/* Wait for a local or remote procedure to terminate */
+#macro waitfor(?H) ==> {{} ; #_nodebug_ {
+  HH = H;
+  monitor(HH) >> _monitor();
+  receive { termin(!HH) ->> {}
+          | error(X,Y) ->> exception error(X,Y)
+          }
+}};
+	
+/* Kill a local or remote process */
+#macro kill(?H) ==> {
+  HH = H;
+  _kill_(HH) >> _monitor(); /* all killing is actually done by monitor */
+  receive{
+    _killed_(HH)::sender==_monitor() ->> {}
+  | X::sender==_monitor() ->> exception X
+  }
+};
+
+
+

@@ -1,0 +1,31 @@
+program{
+kqml_mess ::= ask(avpair[]) | tell(avpair[]) | register(avpair[])
+              | reply(avpair[]);
+
+avpair::= content(%T) | reply_with(symbol) | in_reply_to(symbol) | 
+          language(symbol) | ontology(symbol);
+
+client(S){
+  tell([language('april),content(('knows,'peter,'sally))]) >> S;
+  ask([language('april),reply_with('q1),content(('knows,'peter,'sally))]) >> S;
+  reply(AVs) :: sender == S && in_reply_to('q1) in AVs && content(C) in AVs <<;
+  (if C=='yes then "yes\n" else "no\n")  >> stdout
+};
+
+server(){
+  Facts:[];
+  while true do
+    receive tell(AVs)::language('april) in AVs && content(F) in AVs ->>
+       Facts:=[F,..Facts]
+   | ask(AVs)::reply_with(L) in AVs && content(Q) in AVs ->>
+       reply([in_reply_to(L),content(if Q in Facts then 'yes else 'no)])
+                >> replyto;
+};
+
+main(){
+  S=spawn server();
+  _= spawn client(S);
+  waitfor(S)
+}
+
+}execute main;

@@ -1,0 +1,107 @@
+Version 4.4.0
+
+Mostly a lot of bug fixes. Please see the changelog.
+
+Version 4.3.1x
+
+This is quite heavily modified version, and many bugs have been
+fixed. Please see the Changelog for a list of changes.
+
+Version 4.2.7
+April has been released under the GPL licence!  This is the first
+version to be released under open source.
+
+Some major bugs were found in the type model. Not our fault really, and no
+users had tripped up on them. However, in order to fix it, we have had
+to re-implement the type  system and tighten up on a lot of aspects of
+the language:
+
+1. A new type expression called the quantified type expression is
+introduced. If you need a variable to be polymorphic you'll need this
+one.
+
+2. Type any has been recast to type encapsulation. This means that ?? is
+now obsolete (partial undocumented support is retained).
+An any value is written: any(exp) and an any pattern is written
+any(ptn)
+
+This also affected the ICM, since encapsulated values carry with them
+a type signature.
+
+3. Records are now no longer compatible with tuples. A record literal
+must be written with its field names in the correct order. (This fixes
+a problem with single element records which were screwed.)
+
+4. Default values have been taken out of service.
+
+Fixed problems in type expressions (e.g., if a type expression
+`duplicated' a pre-existing type then the compiler got it way wrong)
+
+Fixed problems in initializing theta variables
+
+Added a feature to the compiler to automatically generate interface
+.af files.
+
+Added a new string expression/pattern (,+) which is like cons for
+strings. (It adds a character -- represented as a symbol) to the front
+of a string.
+
+Reordered a few of the operators. (in particular ? has moved to 750)
+
+
+Version 4.2.6:
+A number of small bugs have been fixed.
+Extended the declaration of read/write variables to allow a kind of matching:
+Ptn : Exp
+declares the variables in Ptn to be read/write.
+
+This version introduces Alex -- an April LEXical analyser generator
+
+Fixed a problem with the unifier in the type checker -- deep stuff
+Fixed a problem with negative widths in string formatting
+Fixed a problem with files not being flushed properly
+Fixed a problem with onerror in functions
+Fixed a problem with multi/single adic functions not being set up correctly
+
+Version 4.2.5 
+
+This version introduces a syntax for single character symbols:
+
+''X
+
+e.g., ''(
+
+X is a string-char, so it may also be:
+
+''\n
+
+for the new-line character.
+
+Also, type coercion has been strengthened to allow:
+
+symbol[]%%string
+
+and 
+
+string%%symbol[]
+
+conversion.
+
+Version 4.2.3:
+
+This is a completely different version of the April system. The list
+of changes over prior versions is unfortunately quite long.... On the
+other hand, the April pocket guide is a new but nifty encapsulation of
+the whole system.
+
+This version makes obsolete all prior versions of April. There were a
+number of necessary changes to the syntax of April programs; which
+means that there will be some re-writing of code necessary. We hope that
+this will be the last time we have to make such a statement....
+
+This is also the first official release which uses the ICM rather than
+the april communications server. The ICM was based on the
+apcommserver, but has been completely re-written and is now released
+as a separate package.
+
+

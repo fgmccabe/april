@@ -1,0 +1,6 @@
+<window title="Hello world">
+  <button msg="Push me">
+    <![CDATA[Hello ]]>world
+  </button>
+</window>
+

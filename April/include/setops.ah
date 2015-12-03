@@ -1,0 +1,56 @@
+/* Macros to implement standard set functions */
+/* These macros rely on the compiler's ability to do type inference */
+
+#macro ?S ^/ ?P ==> collect {for {##X::P.= ##X} in S do elemis ##X};
+
+#macro ?S ^\ ?P ==> collect {for ? ##X in S do
+	if ! P .= ##X then elemis ##X};
+#macro ?S // ?F ==> collect { for ? ##X in S do elemis F(##X)};
+#macro ?S \\ ?F ==> valof {
+        [##X,..##R] : S;
+
+	while [##Y,.. ##Z] .= ##R do{
+          ##X := F(##X,##Y);
+	  ##R := ##Z;
+        };
+        valis ##X
+      };
+#macro ?S .. ?T \\ ?F ==> valof {
+       ##X : S;
+       for ##I in S+1 .. T do {
+	 ##X := F(##X,##I);
+       };
+       valis ##X;
+     };
+#macro ?S /\ ?T ==> collect {
+  ##S = S;
+  ##T = T;
+  for ##X in ##S do
+    if ##X in ##T then
+      elemis ##X
+};
+#macro ?S \/ ?T ==> collect {
+  ##S = S;
+  ##T = T;
+  for ##X in ##S do
+    if not ##X in ##T then
+      elemis ##X
+}<>T;
+
+#macro ?S \ ?T ==> collect {
+  ##S = S;
+  ##T = T;
+  for ##X in ##S do
+    if not ##X in ##T then
+      elemis ##X
+};
+
+
+/* Standard synonyms for builtin list operators */
+#macro ?L append ?R ==> L<>R;
+#macro ?L select ?R ==> L^/R;
+#macro ?L reject ?R ==> L^\R;
+#macro ?L map ?R ==> L//R;
+#macro ?L reduce ?R ==> L\\R;
+
+#macro setof ?E ==> _setof(collect{E});

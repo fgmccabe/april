@@ -1,0 +1,11 @@
+%%
+-- [ \n\t\b\r]+ => skip     	-- ignore white space
+
+-- "--"[^\n]*"\n"		       	-- line comment
+
+"keyword" => { key(string%%yyTok) }
+
+[a-zA-Z_][a-zA-Z_0-9]* => ident
+
+
+%%

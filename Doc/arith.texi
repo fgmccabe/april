@@ -1,0 +1,1086 @@
+@node Arithmetic functions
+@chapter Arithmetic and mathematical functions
+@cindex Arithmetic and math functions
+
+@noindent
+These functions take numerical arguments.  Giving non-numeric
+arguments will result in errors. All arithmetic functions will accept
+either integral or fractional arguments. Internally, results of
+arithmetic expressions are stored as integers where possible.
+
+@menu
+* Standard arithmetic functions::  
+* Mathematical functions::      
+* Miscellaneous arithmetic functions::  
+@end menu
+
+@node Standard arithmetic functions
+@section Standard arithmetic functions
+@cindex Standard arithmetic functions
+
+These functions implement standard arithmetic operations such as
+addition and multiplication. Some of these functions are actually
+@emph{polymorphic} -- i.e., they can take different kinds of arguments.
+
+@menu
+* Addition::                    Addition
+* Integer Addition::            
+* Subtraction::                 Subtraction
+* Integer Subtraction::         
+* Negation::                    Arithmetic negation
+* Multiplication::              Multiplication
+* Integer Multiplication::      
+* Division::                    Division
+* Integer quotient::            Integer quotient
+* Remainder::                   Remainder
+* Integer Division::            
+* Bitwise and::                 Bitwise and
+* Bitwsie or::                  
+* Bitwise xor::                 Bitwise exclusive or
+* Ones complement::             Bitwise negation
+* Logical left shift::          
+* Logical right shift::         
+* Absolute value::              Absolute value
+* Truncate to Integer::         Truncate to integer nearest 0
+* Integer ceiling::             Integer ceiling
+* Integer floor::               Integer floor
+* Integral test::               
+@end menu
+
+@node Addition
+@subsection Addition
+@cindex Addition of numbers
+@findex @code{+} @r{function}
+
+@noindent
+Function template:
+@smallexample
+number?@var{A} + number?@var{B} => number
+@end smallexample
+
+@noindent
+The @code{+} function returns the result of adding @var{A} to @var{B}.
+
+@emph{Hint:}
+@quotation
+The @code{April} compiler can optimise certain common cases of
+this function, in particular when one of the arguments is an integer
+known at compile time.
+@end quotation
+
+@node Integer Addition
+@subsection Integer Addition
+@cindex Addition of numbers
+@findex @code{+.} @r{function}
+
+@noindent
+Function template:
+@smallexample
+number?@var{A} +. number?@var{B} => number
+@end smallexample
+
+@noindent
+The @code{+.} function returns the result of adding @var{A} to @var{B}.  However, @code{.+} is only defined for 64 bit integers; and it returns a number that is also a 64 bit integer.
+
+@node Subtraction
+@subsection Subtraction
+@cindex Subtraction of numbers
+@findex @code{-} @r{function}
+
+@noindent
+Function template:
+@smallexample
+number?@var{A} - number?@var{B} => number
+@end smallexample
+
+@noindent
+The @code{-} function returns the result of subtracting @var{B} from @var{A}.
+
+@node Integer Subtraction
+@subsection Integer Subtraction
+@cindex Subtraction of numbers
+@findex @code{-.} @r{function}
+
+@noindent
+Function template:
+@smallexample
+number?@var{A} -. number?@var{B} => number
+@end smallexample
+
+@noindent
+The @code{-.} function returns the result of subtracting @var{B} from @var{A}. However, @code{-.} is only defined for 64 bit integers; and it returns a number that is also a 64 bit integer.
+
+@node Negation
+@subsection Negation
+@cindex Negation of numbers
+@cindex Arithmetic negation
+@findex @code{-} @r{function}
+
+@noindent
+Function template:
+@smallexample
+- number?@var{A} => number
+@end smallexample
+
+@noindent
+Unary negation is equivalent to subtracting from 0. 
+
+@node Multiplication
+@subsection Multiplication
+@cindex Multiplication of numbers
+@findex @code{*} @r{function}
+
+@noindent
+Function template:
+@smallexample
+number?@var{A} * number?@var{B} => number
+@end smallexample
+
+@noindent
+The @code{*} function returns the result of multiplying @var{A} and @var{B}.
+
+@node Integer Multiplication
+@subsection Integer Multiplication
+@cindex Multiplication of numbers
+@findex @code{*.} @r{function}
+
+@noindent
+Function template:
+@smallexample
+number?@var{A} *. number?@var{B} => number
+@end smallexample
+
+@noindent
+The @code{*.} function returns the result of multiplying @var{B} and @var{A}. However, @code{*.} is only defined for 64 bit integers; and it returns a number that is also a 64 bit integer.
+
+@node Division
+@subsection Division
+@cindex Division of numbers
+@findex @code{/} @r{function}
+
+@noindent
+Function template:
+@smallexample
+number?@var{A} / number?@var{B} => number
+@end smallexample
+
+@noindent
+The @code{/} function returns the result of dividing @var{A} by @var{B}.
+
+Note that division always returns an accurate result -- as far as is
+possible within the limits of the floating point representation. So, the
+expression:
+
+@smallexample
+2/3
+@end smallexample
+
+@noindent
+will return @code{0.66@dots{}7} even though both arguments are
+integral. Use integer quotient (@pxref{Integer quotient}) for obtaining
+the integer values of a quotient; similarly, the @code{rem} function
+(@pxref{Remainder}) can determine the remainder after a division.
+
+Possible error:
+@itemize @bullet
+@item
+@code{"division by zero"}
+@end itemize
+
+@node Integer quotient
+@subsection Integer quotient
+@cindex Division of numbers
+@findex @code{quot} @r{function}
+
+@noindent
+Function template:
+@smallexample
+number?@var{A} quot number?@var{B} => number
+@end smallexample
+
+@noindent
+The @code{quot} function returns the integer quotient obtained by
+dividing @var{A} by @var{B}. Note that @code{quot} can return an
+integral quotient even if @var{A} and/or @var{B} are not themselves
+integral.
+
+Possible error:
+@itemize @bullet
+@item
+@code{"division by zero"}
+@end itemize
+
+@node Remainder
+@subsection Remainder function
+@cindex Division of numbers
+@findex @code{rem} @r{function}
+
+@noindent
+Function template:
+@smallexample
+number?@var{A} rem number?@var{B} => number
+@end smallexample
+
+@noindent
+This function returns the remainder obtained by dividing @var{A} by
+@var{B}. @code{rem} follows POSIX conventions for the result: the
+magnitude of @code{rem}'s result is always less than @var{B}, and its
+sign agrees with the sign of @var{A}.
+
+Possible error:
+@itemize @bullet
+@item
+@code{"division by zero"}
+@end itemize
+
+@node Integer Division
+@subsection Integer Division
+@cindex Division of numbers
+@findex @code{/.} @r{function}
+
+@noindent
+Function template:
+@smallexample
+number?@var{A} /. number?@var{B} => number
+@end smallexample
+
+@noindent
+The @code{/.} function returns the result of dividing @var{A} by @var{B}. However, @code{/.} is only defined for 64 bit integers; and it returns a number that is also a 64 bit integer.
+
+@node Bitwise and
+@subsection Bitwise and function
+@cindex Bitwise integer and
+@findex @code{band} @r{function}
+
+@noindent
+Function template:
+@smallexample
+band(number?@var{A},number?@var{B}) => number
+@end smallexample
+
+@noindent
+This function returns the `bitwise and' of the two integers @var{A} and
+@var{B}. 
+
+Note that @code{April}'s integer precision is not defined, however it is
+at least 16 bits.@footnote{On Intel Linux sysems, integer precision is 64bit.}
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"argument should be integer"}
+@end itemize
+
+@node Bitwsie or
+@subsection Bitwise or
+@cindex Bitwise integer or
+@findex @code{bor} @r{function}
+
+@noindent
+Function template:
+@smallexample
+bor(number?@var{A},number?@var{B}) => number
+@end smallexample
+
+@noindent
+This function returns the `bitwise or' of the two integers @var{A} and
+@var{B}. 
+
+Note that @code{April}'s integer precision is not defined, however it is
+at least 16 bits.
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"argument should be integer"}
+@end itemize
+
+@node Bitwise xor
+@subsection Bitwise exclusive or
+@cindex Bitwise integer exclusive or
+@findex @code{bxor} @r{function}
+
+@noindent
+Function template:
+@smallexample
+bxor(number?@var{A},number?@var{B}) => number
+@end smallexample
+
+@noindent
+This function returns the `bitwise exclusive or' of the two integers
+@var{A} and @var{B}.
+
+Note that @code{April}'s integer precision is not defined, however it is
+at least 16 bits.
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"argument should be integer"}
+@end itemize
+
+@node Ones complement
+@subsection Ones complement
+@cindex Bitwise integer negation
+@findex @code{bnot} @r{function}
+
+@noindent
+Function template:
+@smallexample
+bnot(number?@var{A}) => number
+@end smallexample
+
+@noindent
+This function returns the `bitwise negation' or one's complement of the
+integer @var{A}.
+
+Note that @code{April}'s integer precision is not defined, however it is
+at least 16 bits.
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"argument should be integer"}
+@end itemize
+
+@node Logical left shift
+@subsection Logical left shift
+@cindex Bitwise integer left shift
+@findex @code{bleft} @r{function}
+
+@noindent
+Function template:
+@smallexample
+bleft(number?@var{A},number?@var{B}) => number
+@end smallexample
+
+@noindent
+This function returns the `logical left shift' of the integer @var{A}
+by the number of bits given in @var{B}. Each left shift by 1 bit amounts
+to a multiplication by 2. Excess bits will be dropped off the left.
+
+Note that @code{April}'s integer precision is not defined, however it is
+at least 16 bits.
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"argument should be integer"}
+@end itemize
+
+@node Logical right shift
+@subsection Logical right shift
+@cindex Bitwise integer right shift
+@findex @code{bright} @r{function}
+
+@noindent
+Function template:
+@smallexample
+bright(number?@var{A},number?@var{B}) => number
+@end smallexample
+
+@noindent
+This function returns the `bitwise right shift' or logical right shift
+of the integer @var{A} by the number of bits given in @var{B}. Each
+right shift by 1 bit amounts to a division by 2. Excess bits will be
+dropped off the right.
+
+Note that @code{April}'s integer precision is not defined, however it is
+at least 16 bits.
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"argument should be integer"}
+@end itemize
+
+@node Absolute value
+@subsection Absolute value
+@cindex Absolute value
+@findex @code{abs} @r{function}
+
+@noindent
+Function template:
+@smallexample
+abs(number?@var{A}) => number
+@end smallexample
+
+@noindent
+This function returns the absolute value of @var{A}.
+
+@node Truncate to Integer
+@subsection Truncate to Integer
+@cindex Integer rounding
+@findex @code{trunc} @r{function}
+
+@noindent
+Function template:
+@smallexample
+trunc(number?@var{A}) => number
+@end smallexample
+
+@noindent
+This function returns the integer rounded value of @var{A}.  This is
+equivalent to the nearest integer -- in the direction of 0 -- to
+@var{A}. Where the absolute value of @var{A} is greater than the range
+of representable integers@footnote{Typically 64 bits are used to
+represent integer @code{number} values.} the returned value is the
+remainder after dividing by 2**K-1 where integers are represented in K
+bits. Put more plainly, not only is the number coerced to an integral
+value, but an integral value that can be represented in K bits.
+
+
+@node Integer ceiling
+@subsection Integer ceiling
+@cindex Integer ceiling
+@findex @code{ceil} @r{function}
+
+@noindent
+Function template:
+@smallexample
+ceil(number?@var{A}) => number
+@end smallexample
+
+@noindent
+This function returns the integer ceiling of @var{A}.  This is equivalent to
+truncating towards positive infinity.
+
+@node Integer floor
+@subsection Integer floor
+@cindex Integer floor
+@findex @code{floor} @r{function}
+
+@noindent
+Function template:
+@smallexample
+floor(number?@var{A}) => number
+@end smallexample
+
+@noindent
+This function returns the floor of @var{A}.  This is equivalent to
+truncating towards negative infinity.
+
+@node Integral test
+@subsection Integral test
+@cindex Integral test
+@cindex Test for integer
+@findex @code{integral} @r{function}
+
+@noindent
+Function template:
+@smallexample
+integral(number?@var{A}) => logical
+@end smallexample
+
+@noindent
+This function returns @code{true} if @var{A} an integral number.
+
+@node Mathematical functions
+@section Mathematical Functions
+@cindex Mathematical Functions
+
+@noindent
+These functions give support for complex mathematical computations such
+as trigonometry.
+
+@menu
+* sqrt::                        Square root
+* cbrt::                        Cube root
+* pow::                         Power
+* exp::                         Exponentation
+* log::                         Natural logarithm
+* log10::                       Deciaml logarithm
+* sin::                         Trigonometric sin
+* cos::                         Trigonometric cos
+* tan::                         
+* asin::                        Trigonometric arc sin
+* acos::                        Trigonometric arc cos
+* atan::                        Trigonometric arc tan
+* sinh::                        Hyperbolic sinh
+* cosh::                        Hyperbolic cosh
+* tanh::                        Hyperbolic tanh
+* asinh::                       Hyperbolic inverse sinh
+* acosh::                       Hyperbolic inverse cosh
+* atanh::                       Trigonometric inverse tanh
+@end menu
+
+@node sqrt
+@subsection Square root
+@cindex Square root function
+@findex @code{sqrt} @r{function}
+
+@noindent
+Function template:
+@smallexample
+sqrt(number?@var{A}) => number
+@end smallexample
+
+@noindent
+This function returns the square root of @var{A}.
+
+Possible error:
+@itemize @bullet
+@item
+@code{"argument should be positive number"}
+@end itemize
+
+@node cbrt
+@subsection  Cubic root
+@cindex Cube root function
+@findex @code{cbrt} @r{function}
+
+@noindent
+Function template:
+@smallexample
+cbrt(number?@var{A}) => number
+@end smallexample
+
+@noindent
+This function returns the cube root of @var{A}.
+
+@node pow
+@subsection Power function
+@cindex General power function
+@findex @code{pow} @r{function}
+
+@noindent
+Function template:
+@smallexample
+pow(number?@var{A},number?@var{B}) => number
+@end smallexample
+
+@noindent
+This function returns @var{A} raised to the power of @var{B}.
+
+@node exp
+@subsection Natural exponent function
+@cindex Natural exponent function
+@cindex Exponential function
+@findex @code{exp} @r{function}
+
+@noindent
+Function template:
+@smallexample
+exp(number?@var{A}) => number
+@end smallexample
+
+@noindent
+This function returns @var{e}
+@ifinfo
+(approximately 2.7182818)
+@end ifinfo
+@tex
+($\approx 2.7182818$)
+@end tex
+raised to the power @var{A}.
+@refill
+
+@node log
+@subsection  Natural logarithm function
+@cindex Natural logarithm function
+@findex @code{log} @r{function}
+
+@noindent
+Function template:
+@smallexample
+log(number?@var{A}) => number
+@end smallexample
+
+@noindent
+This function returns the natural logarithm of @var{A}.
+
+@emph{Hint:}
+@quotation
+It is possible to generate the logarithm of a number to any base
+by using the formula:
+@ifinfo
+logx(A) = log(A)/log(x)
+@end ifinfo
+@tex
+$$\log_{x}A = {{\log_{e} A}\over{\log_{e}x}}$$
+@end tex
+@refill
+@end quotation
+
+@node log10
+@subsection Logarithm base 10
+@cindex Logarithm base 10 function
+@findex @code{log10} @r{function}
+
+@noindent
+Function template:
+@smallexample
+log10(number?@var{A}) => number
+@end smallexample
+
+@noindent
+This function returns the logarithm to base 10 of @var{A}.
+
+@node sin
+@subsection Trigonometric sine
+@cindex Trigonometric sine function
+@findex @code{sin} @r{function}
+
+@noindent
+Function template:
+@smallexample
+sin(number?@var{A}) => number
+@end smallexample
+
+@noindent
+This function returns the sine of the angle @var{A} -- @var{A} is
+expressed in radians.
+
+@emph{Hint:}
+@quotation
+It is possible to convert degrees into radians by dividing by
+@ifinfo
+180/pi which is approximately
+@end ifinfo
+@tex
+$180/\pi \approx$
+@end tex
+57.29578.
+@refill
+@end quotation 
+
+@node cos
+@subsection Trigonometric cosine
+@cindex Trigonometric cosine function
+@findex @code{cos} @r{function}
+
+@noindent
+Function template:
+@smallexample
+cos(number?@var{A}) => number
+@end smallexample
+
+@noindent
+This function returns the cosine of the angle @var{A} where @var{A}
+is expressed in radians.
+
+@node tan
+@subsection Trigonometric tangent
+@cindex Trigonometric tangent function
+@findex @code{tan} @r{function}
+
+@noindent
+Function template:
+@smallexample
+tan(number?@var{A}) => number
+@end smallexample
+
+@noindent
+This function returns the tangent of the angle @var{A},
+where @var{A} is expressed in radians.
+
+@node asin
+@subsection Arc sine
+@cindex Arc sine function
+@findex @code{asin} @r{function}
+
+@noindent
+Function template:
+@smallexample
+asin(number?@var{A}) => number
+@end smallexample
+
+@noindent
+This function returns the arc sine, in radians, of @var{A}.
+The value of the function will be in the range
+@ifinfo
+[-pi/2,pi/2].
+@end ifinfo
+@tex
+$[-\pi/2,\pi/2]$.
+@end tex
+@refill
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"domain error or singularity"}
+@item
+@code{"floating point overflow or underflow"}
+@end itemize
+
+@node acos
+@subsection  Arc cosine
+@cindex Inverse cosine function
+@findex @code{acos} @r{function}
+
+@noindent
+Function template:
+@smallexample
+acos(number?@var{A}) => number
+@end smallexample
+
+@noindent
+The @code{acos} function returns the arc cosine, in radians, of @var{A}.
+The value of the function will be in the range
+@ifinfo
+[0,pi].
+@end ifinfo
+@tex
+$[0,\pi]$.
+@end tex
+@refill
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"domain error or singularity"}
+@item
+@code{"floating point overflow or underflow"}
+@end itemize
+
+@node atan
+@subsection Arc tangent
+@cindex Inverse tangent function
+@findex @code{atan} @r{function}
+
+@noindent
+Function template:
+@smallexample
+atan(number?@var{A}) => number
+@end smallexample
+
+@noindent
+The @code{atan} function returns the arc tangent, in radians, of @var{A}.
+The function's value will be in the range
+@ifinfo
+[-pi/2,pi/2].
+@end ifinfo
+@tex
+$[-\pi/2,\pi/2]$.
+@end tex
+@refill
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"domain error or singularity"}
+@item
+@code{"floating point overflow or underflow"}
+@end itemize
+
+@node sinh
+@subsection Hyperbolic sine
+@cindex Hyperbolic sine function
+@findex @code{sinh} @r{function}
+
+@noindent
+Function template:
+@smallexample
+sinh(number?@var{A}) => number
+@end smallexample
+
+@noindent
+The @code{sinh} function returns the hyperbolic sine of @var{A}.
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"domain error or singularity"}
+@item
+@code{"floating point overflow or underflow"}
+@end itemize
+
+@node cosh
+@subsection Hyperbolic cosine
+@cindex Hyperbolic cosine function
+@findex @code{cosh} @r{function}
+
+@noindent
+Function template:
+@smallexample
+cosh(number?@var{A}) => number
+@end smallexample
+
+@noindent
+The @code{cosh} function returns the hyperbolic cosine of @var{A}.
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"domain error or singularity"}
+@item
+@code{"floating point overflow or underflow"}
+@end itemize
+
+@node tanh
+@subsection Hyperbolic tangent
+@cindex Hyperbolic tangent function
+@findex @code{tanh} @r{function}
+
+@noindent
+Function template:
+@smallexample
+tanh(number?@var{A}) => number
+@end smallexample
+
+@noindent
+The @code{tanh} function returns the hyperbolic tangent of @var{A}.
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"domain error or singularity"}
+@item
+@code{"floating point overflow or underflow"}
+@end itemize
+
+@node asinh
+@subsection Inverse hyperbolic sine
+@cindex Inverse hyperbolic sine function
+@findex @code{asinh} @r{function}
+
+@noindent
+Function template:
+@smallexample
+asinh(number?@var{A}) => number
+@end smallexample
+
+@noindent
+The @code{asinh} function returns the inverse hyperbolic sine of @var{A}.
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"domain error or singularity"}
+@item
+@code{"floating point overflow or underflow"}
+@end itemize
+
+@node acosh
+@subsection Inverse hyperbolic cosine
+@cindex Inverse hyperbolic cosine function
+@findex @code{acosh} @r{function}
+
+@noindent
+Function template:
+@smallexample
+acosh(number?@var{A}) => number
+@end smallexample
+
+@noindent
+This returns the inverse hyperbolic cosine of @var{A}.
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"domain error or singularity"}
+@item
+@code{"floating point overflow or underflow"}
+@end itemize
+
+@node atanh
+@subsection Inverse hyperbolic tangent
+@cindex Inverse hyperbolic tangent function
+@findex @code{atanh} @r{function}
+
+@noindent
+Function template:
+@smallexample
+atanh(number?@var{A}) => number
+@end smallexample
+
+@noindent
+This returns the inverse hyperbolic tangent of @var{A}.
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"domain error or singularity"}
+@item
+@code{"floating point overflow or underflow"}
+@end itemize
+
+@node Miscellaneous arithmetic functions
+@section Miscellaneous arithmetic functions
+@cindex Miscellaneous arithmetic functions
+
+@menu
+* ldexp::                       Raise a number by a power of 2
+* frexp::                       Compute mantissa and exponent
+* modf::                        Compute integer and fractional part of number
+* rand::                        random number generation
+* irand::                       random integer generation
+* seed::                        seeding the random number generator
+@end menu
+
+@node ldexp
+@subsection Raise by power of 2
+@cindex Floating point power raise
+@cindex Support for floating point numbers
+@findex ldexp @r{function}
+
+@noindent
+Function template:
+@smallexample
+ldexp(number?@var{X},number?@var{N})=>number
+@end smallexample
+
+@noindent
+The @code{ldexp} function computes the expression:
+@ifinfo
+X*2**N
+@end ifinfo
+@tex
+$X\times2^N$.
+@end tex
+@refill
+
+@noindent
+This function is useful for manipulating floating point numbers directly.
+
+@node frexp
+@subsection Compute mantissae and exponent of f.p. number
+@cindex Compute mantissae and exponent of f.p. number
+@cindex Support for floating point numbers
+@findex frexp @r{function}
+
+@noindent
+Function template:
+@smallexample
+frexp(number?@var{X})=>(mantissae,exponent)
+@end smallexample
+
+@noindent
+This function computes the mantissae and exponent of the number
+@var{X}. The mantissae is a number in the range:
+@ifinfo
+[0.5,1)
+@end ifinfo
+@tex
+$[1/2,1)$
+@end tex
+and the exponent is the power to raise 2 to to recover the original
+number. @code{frexp} obeys the equations:
+@ifinfo
+@smallexample
+(mant, exp) .= frexp(@var{X})
+mant*2**exp = X
+@end smallexample
+@end ifinfo
+@iftex
+@smallexample
+(mant, exp) .= frexp(@var{X})
+@end smallexample
+$mant\times2^exp = X$.
+@end iftex
+
+@node modf
+@subsection Compute integer and fraction part
+@cindex compute integer and fraction part
+@cindex Support for floating point numbers
+@findex modf @r{function}
+
+@noindent
+Function template:
+@smallexample
+modf(number?@var{X})=>(integer,fraction)
+@end smallexample
+
+@noindent
+The @code{modf} function extracts the integer part of a number and the
+fractional part of the number as a pair. The integer part of
+@code{12.34} is @code{12}, whereas the fractional part is @code{0.34}.
+
+@node rand
+@subsection Generate random number
+@cindex Generate random number function
+@findex @code{rand} @r{function}
+
+@noindent
+Function template:
+@smallexample
+rand(number?@var{A}) => number
+@end smallexample
+
+@noindent
+This function returns a random positive number. The number generated is
+a floating point number in the range
+@ifinfo
+[0;@var{A})
+@end ifinfo
+@tex
+$[0;@var{A})$.
+@end tex
+@refill
+
+The internal algorithm uses a non-linear additive feedback random number
+generator employing a table of 31 long integers to return sucessive
+pseudo-random numbers in the range
+@ifinfo
+$[0;2**31-1).
+@end ifinfo
+@tex
+$[0;2^{31}-1)$.
+@end tex
+The value is then scaled appropriately according to @var{A}.
+@refill
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"argument should be positive number"}
+@end itemize
+
+@emph{Hint:}
+@quotation
+The random number generation can be @emph{seeded} using the @code{seed}
+procedure (@pxref{seed}): this can be used to generate a `random' but
+repeatable sequence of numbers.
+@end quotation
+
+@node irand
+@subsection Generate random integer
+@cindex Generate random integer function
+@findex @code{irand} @r{function}
+
+@noindent
+Function template:
+@smallexample
+irand(number?@var{A}) => number
+@end smallexample
+
+@noindent
+This function returns a random positive integer in the range [0;@var{A}-1].
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"argument should be positive integer"}
+@end itemize
+
+@node seed
+@subsection Set random number seed
+@cindex Set random number seed
+@cindex Seed generator function
+@findex @code{seed} @r{function}
+
+@noindent
+Procedure template:
+@smallexample
+seed(integer?@var{n})@{@}
+@end smallexample
+
+@noindent
+Initialize the seed for the random number generator with @var{n}. This
+procedure sets the seed for both the @code{rand} and the @code{irand}
+functions.
+
+Possible errors:
+@itemize @bullet
+@item
+@code{"argument should be positive number"}
+@end itemize
+
+@emph{Hint:}
+@quotation
+By seeding the generator with a value such as @code{ticks()}
+(@pxref{ticks}) a more effective and truly random sequence can be
+generated.
+@end quotation
+

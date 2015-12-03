@@ -1,0 +1,305 @@
+#macro maxx -> 800;
+#macro maxy -> 800;
+#macro radius -> 3;
+#macro fudge -> 0.3;
+#macro spring_length -> 50.0;
+
+#macro get_point(?P) -> valof {
+ where_are_you >> P;
+ (im_at, pnt?pt) -> valis pt
+};
+
+pnt ::= (number?x, number?y);
+
+program {
+  main(handle?dialox,string?fn)
+  {
+    graph_drawer(dialox,fn);
+  };
+
+  graph_drawer(handle?dialox, string?fn){
+    handle[]?points := [];
+    handle[]?edges := [];
+
+    (delete_dbase, area) >> dialox;
+    (window, "Graph experiment", (column,
+	(row, (button, "Quit", quit),
+              (button, "Save", save)),
+	(row, (button, "Point", point), (button, "Edge", edge), 
+              (button, "Move", move), (button, "ReDraw", redraw),
+              (button, "Spring", spring), (button, "EndSpring", endspring),
+              (button, "MoveObject", moveobject)),
+	(graph, area, maxx, maxy))) >> dialox;
+
+    if fn=!="" then {
+      (points,edges) := load_graph(fn);
+      redraw(dialox, points, edges)
+    };
+
+    repeat{
+      point -> {		/* Add new points to the screen area */
+        while true do {
+          (click, ?, ?, number?x, number?y) -> {
+	     handle?pid := fork mu(){Point(x, y)};
+	     points <>:= [pid];
+	     (insert_pic,area,pid,(circle,(x,y),(x+radius,y)),
+	       (clicked_on,pid)) >> dialox;
+	  }
+	| any?Mess -> {Mess >> self(); break}
+        }
+      }
+    | edge -> {
+        pnt ? pt1 := (0,0); pnt?pt2 := (0,0);
+        while true do {
+	 (clicked_on,handle?P1) -> {
+	      pt1 := get_point(P1);
+	   (select_pic,area,P1) >> dialox;
+	   { quit -> {quit >> self();break}
+	   | (clicked_on,handle?P2) -> {
+	       pt2 := get_point(P2);
+	       handle?pid := fork mu(){edge(P1, P2)}; 
+	       edges <>:= [pid];
+	       (insert_pic, area, pid, (lines, pt1, pt2)) >> dialox
+	     }
+	   }
+         }
+	 | any?Mess -> {Mess >> self(); break}
+         }
+      }
+    | move -> {
+        while true do {
+	  (clicked_on,handle?P) -> {
+	     Quit -> {Quit >> self();break}
+	   | (click, ?, ?, number?x, number?y) ->
+	     move_point(dialox, P, x, y);
+	   }
+        | any?Mess -> {Mess >> self(); break}
+        }
+      }
+    | ReDraw -> redraw(dialox, points, edges)
+    | Spring -> {
+       logical?cont_spring := true;
+         integer?count := 0;
+
+	 while cont_spring do {
+	   (spring, points) ->> points;
+           count := |points|;
+           while count > 0 do {
+              endspring -> {end_spring ->> points; cont_spring := false}
+            | point_done -> count -:= 1
+           };
+          redraw(dialox, points, edges);
+          delay(1 secs);
+        }
+      }
+    | MoveObject -> {
+        while true do {
+          Quit -> {Quit >> self();break}
+	| (Click, ?, ?, number?x, number?y) ->
+	    do_move_object(dialox, points, edges, x, y)
+	| any?Mess -> {Mess >> self(); break}
+        }
+      }
+
+    | Save -> save_graph(fn,points,edges)
+    | any?Mess -> writef(stdout, "Message - %p\n", (Mess))
+    } until Quit
+};
+
+redraw(handle?dialox, handle[]?points, handle[]?edges)
+{
+    for handle?edge in edges do
+    {
+        (delpic, area, edge) >> dialox;
+    };
+    for handle?point in points do
+    {
+        (delpic, area, point) >> dialox;
+    };
+    for handle?point in points do
+    {
+        number?x:= 0; number?y := 0;
+        (x,y) := get_point(point);
+	(addpic, area, point, (ellipse, x, y, radius, radius)) >> dialox;
+        {ok -> relax}
+    };
+    for handle?edge in edges do
+    {
+        number?x1 := 0; number?y1 := 0;
+        number?x2 := 0; number?y2 := 0;
+
+        ends >> edge;
+        (ends, ?, handle?P1, handle?P2) -> {
+          (x1,y1) := get_point(P1);
+          (x2,y2) := get_point(P2);
+        };
+
+        (addpic, area, edge, (line, x1, y1, x2, y2)) >> dialox;
+        {ok -> relax}
+    }	
+};
+
+move_point(handle?dialox, handle?P, number?x, number?y)
+{
+        (move, x, y) >> P;
+        (delpic, area, P) >> dialox;
+        (addpic, area, P, (ellipse, x, y, radius, radius)) >> dialox; 
+	your_edges >> P;
+        {
+            (my_edges, handle[]?Edges) ->
+            {
+                ends ->> Edges;
+                for handle?Edge in Edges do
+                {
+                    (ends, Edge, handle?P1, handle?P2) ->
+                        move_edge(dialox, Edge, P, P1, P2, x, y)  
+                }
+            }
+        };
+};
+
+move_edge(handle?dialox, handle?Edge, handle?P, 
+                         handle?P1, handle?P2, number?x1, number?y1)
+{
+    handle?other := valof {if P = P1 then valis P2 else valis P1};
+    number?x2 := 0; number?y2 := 0;
+    (x2,y2) := get_point(other);
+    (delpic, area, Edge) >> dialox;
+    (addpic, area, Edge, (line, x1, y1, x2, y2)) >> dialox
+};
+
+do_move_object(handle?dialox, handle[]?points, handle[]?edges, number?x, number?y)
+{
+    number?xcg := 0.0;
+    number?ycg := 0.0;
+    integer?count := |points|;
+    where_are_you ->> points;
+    while count > 0 do
+    {
+        (im_at, number?xp, number?yp) -> { count -:= 1; xcg +:= xp; ycg +:= yp} 
+    };
+    count := |points|;
+    xcg /:= count;
+    ycg /:= count;
+    (delta_move, x - xcg, y - ycg) ->> points;
+    redraw(dialox, points, edges)
+};
+
+  Point(number?initx, number?inity)
+  {
+    handle[]?edges := [];
+    handle[]?adj_points := [];
+    number?x := initx;
+    number?y := inity;
+    number?xv := 0.0;
+    number?yv := 0.0;
+    integer?count := 0;
+    number?length := 0;
+    number?length_sqr := 0;
+    number?newx := 0.0; number?newy := 0.0;
+    number?xdiff := 0.0; number?ydiff := 0.0;
+    number?length_ratio := 0.0;
+
+    while true do {
+      (move, number?newx, number?newy) -> { x := newx; y := newy }
+    | end_spring -> { xv := 0.0; yv := 0.0 }
+    | (delta_move, number?dx, number?dy) -> { x +:= dx;y +:= dy }
+    | (add_edge, handle?edge) -> edges <>:= [edge]
+    | (neighbour, handle?P) -> adj_points <>:= [P]
+    | where_are_you -> (im_at, x, y) >> replyto
+    | your_edges -> (my_edges, edges) >> replyto
+    | (spring, handle[]?all_points) -> {
+	(point_at, x, y) ->> all_points;
+
+	newx := 0.0;
+	newy := 0.0;
+	count := |all_points|;
+	while count > 0 do {
+	  (point_at, number?otherx, number?othery) -> {
+	    count -:= 1;
+	    xdiff := x - otherx;
+	    ydiff := y - othery;
+	    length_sqr := xdiff * xdiff + ydiff * ydiff;
+	    length := sqrt(length_sqr);
+	    if replyto in adj_points then {
+	      length_ratio := {100.0 - length}/{9.0 * length};
+	      newx := newx + xdiff * length_ratio;
+	      newy := newy + ydiff * length_ratio;
+	    };
+	    if length_sqr < 1 then relax else {
+	      length_ratio := 30000/{length_sqr * length};
+	      newx := newx + xdiff * length_ratio;
+	      newy := newy + ydiff * length_ratio;
+	    }
+	  }
+	};
+	xv := 5 *{xv + newx}/7.0 ;
+	yv := 5 *{yv + newy}/7.0;
+	writef(stdout, "   vel = %f %f\n", (xv, xv));
+	x +:= xv;
+	y +:= yv;
+	point_done >> replyto
+      }
+    }
+  };
+
+  edge(handle?p1, handle?p2)
+  {
+    (add_edge, self()) ->> [p1, p2];
+    (neighbour, p1) >> p2;
+    (neighbour, p2) >> p1;
+    repeat {
+      ends -> (ends, self(), p1, p2) >> replyto
+    } until quit::sender==creator();
+  };
+
+  save_graph(string?fn, handle[]?points, handle[]?edges)
+  {
+    handle?outfn := fopen(fn,"w");
+
+    for integer?pt in 1..|points| do{
+      where_are_you >> points[pt];
+      (im_at, number?x, number?y) -> 
+	writef(outfn, "(point,%d,%f,%f);\n",(pt,x,y));
+    };
+
+    for handle?h in edges do{
+      ends >> h;
+      (ends, h, handle?p1, handle?p2) ->
+	writef(outfn, "(edge,%d,%d);\n",
+	      (find(p1,points),find(p2,points)));
+    };
+    fclose(outfn);
+  };
+
+  find(any?x,any[]?y) -> integer? valof{
+    for integer?i in 1..|y| do
+      if x==y[i] then
+	valis i;
+    valis 0;
+  };
+
+  load_graph(string?fn)->(handle[],handle[])?valof
+  {
+    handle?inf := fopen(fn,r);
+    handle[]?pts := [];
+    handle[]?edges:=[];
+
+    while not eof(inf) do{
+      case read(inf) in {
+	(point,integer?i,number?x,number?y) => {
+	   writef(stdout,"Load point %d at %f,%f\n",(i,x,y));
+	   pts <>:= [fork mu(){Point(x, y)}];
+	}
+      | (edge,integer?i,integer?j) => {
+	  writef(stdout,"Load edge from point %d to point %d\n",(i,j));
+
+	  edges <>:= [fork mu(){edge(pts[i], pts[j])}];
+	}
+      }
+    };
+
+    fclose(inf);
+    valis (pts,edges)
+  }
+} execute main;

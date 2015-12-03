@@ -1,0 +1,4 @@
+unitable.lo unitable.o : ../config.h unichar.h 
+unitable.o :
+../config.h :
+unichar.h :

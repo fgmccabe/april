@@ -1,0 +1,2166 @@
+@node Detailed instruction listing
+@appendix Detailed instruction listing
+@cindex Detailed instruction listing
+
+@noindent
+In this appendix we list each of the instructions of the @code{AM}.
+
+
+@menu
+* Stop the machine::            
+* Move instructions::           
+* Program flow instructions::   
+* Variable allocation instructions::  
+* Matching instructions::       
+* Message handling instructions::  
+* Error handling instructions::  
+* Structure management instructions::  
+* Arithmetic instructions::     
+* Conditional instructions::    
+* Miscelleneous instructions::  
+* Debugging support instructions::  
+@end menu
+
+@node Stop the machine
+@section Stop the machine
+
+@menu
+* halt::                        Stop the April Machine
+@end menu
+
+@node halt
+@subsection @code{halt} -- Stop the @code{AM}
+@findex halt
+
+@noindent
+Instruction format:
+@smallexample
+halt  @r{Stop the AM}
+@end smallexample
+
+@smallexample
+@cartouche
+| 0 | 0 | 0 | 0 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction terminates the April Machine. It is a privilidged
+instruction -- which means that non-privilidged processes may not
+execute it.
+
+@page
+@node Move instructions
+@section Move instructions
+
+@menu
+* movl::                        Load literal to register
+* move::                        Move register
+* emove::                       Move from E register to local
+* stoe::                        Store E register in local
+* loade::                       Load E register from local
+@end menu
+
+@node movl
+@subsection @code{movl} -- Load literal into register
+@findex movl
+
+@noindent
+Instruction format:
+@smallexample
+movl @var{literal},fp[@var{var}] @r{Load literal into register}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{var} | -- @var{literal} -- | 1 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction loads a literal value into a register.
+
+Literal values are accessed by 16 bit offsets from the current value of
+the program counter.  Each program (procedure, function and pattern) has
+a common format, with a table of literals which are placed at the
+end of the code instructions.
+
+@node move
+@subsection @code{move} -- Move register
+@findex move
+
+@noindent
+Instruction format:
+@smallexample
+move fp[@var{from}],fp[@var{to}] @r{Move registers}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| 0 | @var{from} | @var{to} | 2 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction moves the contents of register @samp{fp[@var{from}]} to
+@samp{fp[@var{to}]}.
+
+Note that by convention, registers with an index of 3 or greater refer
+to arguments of the program, and registers with negative offsets refer
+to local variables. Offsets of 0,1 and 2 are not legal.
+
+@node emove
+@subsection @code{emove} -- Move value from E register
+@findex emove
+
+@noindent
+Instruction format:
+@smallexample
+emove E[@var{from}],fp[@var{to}] @r{Move from @code{E} register}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| 0 | @var{from} | @var{to} | 3 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction moves the contents of register @code{E[@var{from}]} to
+@code{fp[@var{to}]}. In effect, this instruction is used to
+access the free variables of a program. An offset of 0 refers to the
+first location in @code{E}, and the largest valid offset depends on the
+current length of the @code{E} register.
+
+@node stoe
+@subsection @code{stoe} -- Copy E to local
+@findex stoe
+
+@noindent
+Instruction format:
+@smallexample
+stoe fp[@var{to}] @r{Copy @code{E} register}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| 0 | 0 | @var{to} | 4 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction moves the contents of register @code{E} to
+@samp{fp[@var{to}]}. In effect, this instruction cab be used to access
+the tuple of free variables of a program.
+
+@node loade
+@subsection @code{loade} -- Load E from local
+@findex loade
+
+@noindent
+Instruction format:
+@smallexample
+loade fp[@var{from}] @r{Load @code{E} register}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| 0 | 0 | @var{from} | 5 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction loads the register @code{E} from @samp{fp[@var{from}]}.
+
+@page
+@node Program flow instructions
+@section Program flow instructions
+
+@menu
+* jmp::                         Program relative jump
+* ijmp::                        
+* hjmp::                        
+* tjmp::                        
+* esc_fun::                     Invoke built-in escape
+* call::                        Call procedure
+* ecall::                       Call procedure from E
+* fcall::                       Call function
+* fecall::                      Call function from E
+* ret::                         Return from procedure
+* result::                      Return from function
+@end menu
+
+@node jmp
+@subsection @code{jmp} -- Jump relative
+@findex jmp
+
+@noindent
+Instruction format:
+@smallexample
+jmp @var{label} @r{Jump to new instruction}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| 0 | -- @var{label} -- | 6 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction jumps to a new instruction @emph{in the same segment of
+instructions}. The instruction is given in terms of a 16 bit word
+offset, starting from the following instruction word -- i.e., a
+@code{jmp 0} is a no-op instruction.
+
+@node ijmp
+@subsection @code{ijmp} -- indirect arithmetic hash jump 
+@findex ijmp
+
+@noindent
+Instruction format:
+@smallexample
+ijmp fp[@var{from}],@var{max} @r{Arithmetic hashed jump}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{reg} | -- @var{max} -- | 7 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction performs a hashed index based on the integer value of
+@code{FP[@var{reg}]}. It should be followed by
+@var{max}+1 jump instructions, the first of which is executed if the
+register is not an integer which is referenced in the table.
+
+@node hjmp
+@subsection @code{hjmp} -- indirect symbolic hash jump 
+@findex hjmp
+
+@noindent
+Instruction format:
+@smallexample
+hjmp fp[@var{from}],@var{max} @r{Symbol hashed jump}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{reg} | -- @var{max} -- | 64 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction performs a hashed index based on the symbol value of
+@code{FP[@var{reg}]}. It should be followed by
+@var{max}+1 jump instructions, the first of which is executed if the
+register is not a symbol, or its hash value falls out of the table range.
+
+@node tjmp
+@subsection @code{tjmp} -- indirect tag jump 
+@findex hjmp
+
+@noindent
+Instruction format:
+@smallexample
+tjmp fp[@var{from}],@var{max} @r{Tag jump}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{reg} | -- @var{max} -- | 66 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction performs a hashed index based on the type of
+@code{FP[@var{reg}]}. It should be followed by
+@var{max}+1 jump instructions, the first of which is executed if the
+register content's type tag is greater than @var{max}.
+
+This instruction can be used to perform a dynamic case analysis of a
+value -- it determines the type of the register's contents.
+
+@node esc_fun
+@subsection @code{esc_fun} -- Invoke escape function
+@findex esc_fun
+
+@noindent
+Instruction format:
+@smallexample
+esc_fun @var{depth},@var{esc_code} @r{Invoke escape}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{depth} | -- @var{esc_code} -- | 8 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction invokes a built-in escape code -- identified by the 16
+bit @emph{escape code}. The arguments to the escape function are in
+registers @code{fp[@var{depth-ar}]@dots{}fp[@var{depth}]} where @var{ar}
+is the arity of the escape function.
+
+See @ref{Built-in escapes} for a complete listing of the valid escape codes
+used in the April Machine.
+
+@node call
+@subsection @code{call} -- Call procedure
+@findex call
+
+@noindent
+Instruction format:
+@smallexample
+call @var{depth},@var{arity},fp[@var{var}] @r{Call procedure}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{depth} | @var{arity} | @var{var} | 9 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction is used to call the pocedure located in register
+@samp{fp[@var{var}]}. The arity of the procedure in @samp{fp[@var{var}]}
+is verified that it matches @var{arity}.
+
+The value located in @samp{fp[@var{var}]} should either be an escape
+procedure name (@code{symbol}ic), or a structure of the form:
+
+@smallexample
+(<sclosure>, @var{code}, @var{free1},@dots{},@var{free@r{k}})
+@end smallexample
+@noindent
+
+where @var{code} is the compiled code of the procedure, and
+@var{free1},@dots{},@var{free@r{k}} are the values of the free variables
+in @var{code}.
+
+The @code{call} instruction stores the address of the following
+instruction at @samp{fp[@var{depth-1}]}, and the current value of the
+@code{E} register at @samp{fp[@var{depth-2}]}. In addition, the
+@code{call} instruction sets the @code{SP} register to point to
+@samp{fp[@var{depth-2}]}.
+
+Note that it is @emph{not safe} to invoke the garbage collector or to
+reschedule a process immediately after any @code{call}-style
+instruction. The first instruction of the new program should be an
+@code{allocv} instruction -- which is also a safe point to invoke the GC
+and to allow re-scheduling of the process. This is enforced by the code
+verifier -- by ensuring that the first instruction of a function or
+procedure is an @code{allocv} instruction.
+
+@node ecall
+@subsection @code{ecall} -- Call procedure from @code{E}
+@findex ecall
+
+@noindent
+Instruction format:
+@smallexample
+ecall @var{depth},@var{arity},E[@var{var}] @r{Call procedure}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{depth} | @var{arity} | @var{var} | 9 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction is used to call the pocedure located in register
+@code{E[@var{var}]}. The arity of the procedure in @code{E[@var{var}]}
+is verified that it matches @var{arity}.
+
+The value located in @code{E[@var{var}]} should be the symbolic name of
+an escape procedure or a structure of the form:
+
+@smallexample
+(<sclosure>, @var{code}, @var{free1},@dots{},@var{free@r{k}})
+@end smallexample
+@noindent
+
+where @var{code} is the compiled code of the procedure, and
+@var{free1},@dots{},@var{free@r{k}} are the values of the free variables
+in @var{code}.
+
+The @code{ecall} instruction stores the address of the following
+instruction at @samp{fp[@var{depth-1}]}, and the current value of the
+@code{E} register at @samp{fp[@var{depth-2}]}. In addition, the
+@code{call} instruction sets the @code{SP} register to point to
+@samp{fp[@var{depth-2}]}.
+
+Note that it is @emph{not safe} to invoke the garbage collector
+immediately after any @code{call}-style instruction.
+
+@node fcall
+@subsection @code{fcall} -- Call function
+@findex fcall
+
+@noindent
+Instruction format:
+@smallexample
+fcall @var{depth},@var{arity},fp[@var{var}] @r{Call function}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{depth} | @var{arity} | @var{var} | 10 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction is used to call the function located in register
+@samp{fp[@var{var}]}. The arity of the function in @samp{fp[@var{var}]}
+is verified that it matches @var{arity}.
+
+The value located in @samp{fp[@var{var}]} should either be an escape
+function name (@code{symbol}ic), or a structure of the form:
+
+@smallexample
+(<fclosure>, @var{code}, @var{free1},@dots{},@var{free@r{k}})
+@end smallexample
+@noindent
+
+where @var{code} is the compiled code of the function, and
+@var{free1},@dots{},@var{free@r{k}} are the values of the free variables
+in @var{code}.
+
+The @code{call} instruction stores the address of the following
+instruction at @samp{fp[@var{depth-1}]}, and the current value of the
+@code{E} register at @samp{fp[@var{depth-2}]}. In addition, the
+@code{call} instruction sets the @code{SP} register to point to
+@samp{fp[@var{depth-2}]}.
+
+Note that it is @emph{not safe} to invoke the garbage collector
+immediately after any @code{call}-style instruction. The first
+instruction of the new program should be an @code{allocv} instruction
+-- which is also a safe point to invoke the GC and to allow
+re-scheduling of the process.
+
+@node fecall
+@subsection @code{fecall} -- Call function from @code{E}
+@findex fecall
+
+@noindent
+Instruction format:
+@smallexample
+fecall @var{depth},@var{arity},E[@var{var}] @r{Call function}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{depth} | @var{arity} | @var{var} | 11 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction is used to call the function located in register
+@code{E[@var{var}]}. The arity of the function in @code{E[@var{var}]} is
+verified that it matches @var{arity}.
+
+The value located in @code{E[@var{var}]} should be a structure of the form:
+
+@smallexample
+(<fclosure>, @var{code}, @var{free1},@dots{},@var{free@r{k}})
+@end smallexample
+@noindent
+
+where @var{code} is the compiled code of the function, and
+@var{free1},@dots{},@var{free@r{k}} are the values of the free variables
+in @var{code}.
+
+
+The @code{ecall} instruction stores the address of the following
+instruction at @samp{fp[@var{depth-1}]}, and the current value of the
+@code{E} register at @samp{fp[@var{depth-2}]}. In addition, the
+@code{call} instruction sets the @code{SP} register to point to
+@samp{fp[@var{depth-2}]}.
+
+Note that it is @emph{not safe} to invoke the garbage collector
+immediately after any @code{call}-style instruction.
+
+@node ret
+@subsection @code{ret} -- Return from procedure
+@findex ret
+
+@noindent
+Instruction format:
+@smallexample
+ret  @r{Return from procedure}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| 0 | 0 | 0 | 14 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction returns from a procedure. The return address is taken
+from @samp{fp[@var{1}]}, the @code{E} register is reloaded from
+@samp{fp[2]} and the @code{FP} register is taken from
+@samp{fp[@var{0}]}.
+
+@node result
+@subsection @code{result} -- Return from function
+@findex result
+
+@noindent
+Instruction format:
+@smallexample
+result @var{arity},fp[@var{source}] @r{Return from function}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| 0 | @var{dest} | @var{source} | 15 |
+@end cartouche
+@end smallexample
+
+This instruction returns from a function, and replaces the activation
+record of the function call by the value of the function -- which is the
+value of @samp{fp[@var{source}]}. The @var{dest} value should be equal
+to the arity of the function-1.
+
+@page
+@node Variable allocation instructions
+@section Variable allocation instructions
+
+
+@menu
+* allocv::                      Establish local variables
+* initv::                       Initialize local variable
+* gc::                          Invoke garabge collector
+@end menu
+
+@node allocv
+@subsection @code{allocv} -- Allocate local variables
+@findex allocv
+
+@noindent
+Instruction format:
+@smallexample
+allocv @var{length} @r{Allocate space}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| 0 | 0 | @var{length} | 17 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction -- which should be the first instruction of every
+program -- re-establishes the @code{FP} register after a
+@code{call}-type instruction.
+
+The @code{allocv} instruction saves the current value of the @code{FP}
+register at location @code{SP} and then sets @code{FP} to point to this
+saved value. Notionally, it allocates @var{length} words on the stack;
+by convention, the number of words allocated for local variables is
+expressed as a negative number. The @code{allocv} instruction does not
+`zero' the allocated space; it is the responsibility of the compiler to
+ensure that local variables are initialized prior to a possible garbage
+collection.
+
+The AM will automatically extend the stack area if this instruction
+would result in a stack overflow.
+
+@node initv
+@subsection @code{initv} -- Initialize a variable
+@findex initv
+
+@noindent
+Instruction format:
+@smallexample
+initv fp[@var{var}] @r{Initialize a local}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| 0 | 0 | @var{var} | 19 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction initializes a local variable to a safe but invalid
+value. This instruction is often used when the compiler must guarantee
+that a given local variable is safe for garbage collection purposes but
+it cannot yet assign an actual value to the local variable.
+
+@node gc
+@subsection @code{gc} -- Invoke GC directly
+@findex mrkdpth
+
+@noindent
+Instruction format:
+@smallexample
+gc @var{depth},@var{amount} @r{Mark current stack depth}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{depth} | @var{amount} | 18 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction requests that the garbage collector be invoked.
+The depth of the active portion of the current stack frame is @var{depth} --
+which should be a negative number.
+
+If the amount of space left after a garbage collection is less than
+@var{amount} then a run-time error is raised.
+
+@page
+@node Matching instructions
+@section Matching instructions 
+
+@menu
+* mlit::                        Match literal value
+* mstring::                     Match string value
+* mfloat::                      Match floating value
+* mhdl::                        
+* mnil::                        Match empty list
+* mcons::                       Match non-empty list
+* mtpl::                        Match tuple
+* anynum::                      Match any number
+* anyint::                      Match any integer
+* anyflt::                      Match any floating point
+* anysym::                      Match any symbol
+* anystr::                      Match any string
+* anyhdl::                      Match any handle
+* anytpl::                      Match any tuple
+* anylist::                     Match any list
+* matchsig::                    
+* msigval::                     
+* tsig::                        Get code type signature
+* msign::                       Compare type signatures
+* lmbclo::                      Match function closure
+* muclo::                       Match procedure closure
+* ldstr::                       Extract length of string
+* mstep::                       Shift char between strings
+* mstr::                        Sub-match literal string
+* xstr::                        Extract sub-string
+* mchar::                       Match any single char sub-string
+@end menu
+
+@node mlit
+@subsection @code{mlit} -- Match literal value
+@findex mlit
+
+@noindent
+Instruction format:
+@smallexample
+mlit fp[@var{var}],@var{Literal} @r{Match ins}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{var} | -- literal -- | 20 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction matches the contents of @samp{fp[@var{var}]} against
+the literal value identified by the @var{literal}. If the match
+@emph{succeeds}, then the following instruction is @emph{skipped},
+otherwise the following instruction is executed. Of course, that
+instruction is typically a @code{jmp} to a failure label.
+
+This instruction only works for integers and symbols. Other literals
+either require specific instructions or must be matched
+component-wise.
+
+@node mstring
+@subsection @code{mstring} -- Match literal string
+@findex mstring
+
+@noindent
+Instruction format:
+@smallexample
+mstring fp[@var{var}],@var{string} @r{Match ins}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{var} | -- string -- | 21 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction matches the contents of @samp{fp[@var{var}]} against
+the literal string identified by the literal offset @var{string}. If the
+match @emph{succeeds}, then the following instruction is @emph{skipped},
+otherwise the following instruction is executed. Of course, that
+instruction is typically a @code{jmp} to a failure label.
+
+@node mfloat
+@subsection @code{mfloat} -- Match literal float
+@findex mfloat
+
+@noindent
+Instruction format:
+@smallexample
+mfloat fp[@var{var}],@var{float} @r{Match ins}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{var} | -- @var{float} -- | 22 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction matches the contents of @samp{fp[@var{var}]} against
+the literal float identified by the literal offset @var{float}. If the
+match @emph{succeeds}, then the following instruction is @emph{skipped},
+otherwise the following instruction is executed. Of course, that
+instruction is typically a @code{jmp} to a failure label.
+
+@node mhdl
+@subsection @code{mhdl} -- Match literal handle
+@findex mhdl
+
+@noindent
+Instruction format:
+@smallexample
+mhdl fp[@var{var}],@var{Literal handle} @r{Match ins}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{var} | -- literal -- | 44 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction matches the contents of @samp{fp[@var{var}]} against
+the literal @code{handle} value identified by the @var{literal}. If the match
+@emph{succeeds}, then the following instruction is @emph{skipped},
+otherwise the following instruction is executed. Of course, that
+instruction is typically a @code{jmp} to a failure label.
+
+@node mnil
+@subsection @code{mnil} -- Match empty list
+@findex mnil
+
+@noindent
+Instruction format:
+@smallexample
+mnil fp[@var{var}],@var{label} @r{Match empty list}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{var} | -- @var{label} -- | 23 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction matches the contents of @samp{fp[@var{var}]} against
+the empty list.  If the match @emph{fails}, then the the instruction
+becomes a @code{jmp} to @var{label}.
+
+@node mcons
+@subsection @code{mcons} -- Match non-empty list
+@findex mcons
+
+@noindent
+Instruction format:
+@smallexample
+mcons fp[@var{var}],fp[@var{head}],fp[@var{tail}] @r{Match non-empty list}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{var} | @var{head} | @var{tail} | 24 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction matches @samp{fp[@var{var}]} against a @emph{non-empty}
+list. If @samp{fp[@var{var}]} has a non-empty list in it, then the head
+of that list in loaded into @samp{fp[@var{head}]} and the tail is loaded
+into @samp{fp[@var{tail}]}, and the following instruction word is
+@emph{skipped}.
+
+Otherwise, the following instruction is executed, which will normally
+be a @code{jmp} to a failure label.
+
+@node mtpl
+@subsection @code{mtpl} -- Match n-tuple
+@findex mtpl
+
+@noindent
+Instruction format:
+@smallexample
+mtpl fp[@var{var}],@var{arity} @r{Match tuple}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{var} | -- arity -- | 25 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction matches @samp{fp[@var{var}]} against a
+@var{arity}-length tuple. If it successful, then the following
+instruction word is @emph{skipped}.  Otherwise, the following
+instruction is executed, which will normally be a @code{jmp} to a
+failure label.
+
+
+@node anynum
+@subsection @code{anynum} -- Match any number
+@findex anynum
+
+@noindent
+Instruction format:
+@smallexample
+anynum fp[@var{var}],@var{label} @r{Match any number}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{var} | -- label -- | 26 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction matches @samp{fp[@var{var}]} against @emph{any}
+number. If @samp{fp[@var{var}]} does @emph{not} contain a number, then
+this becomes a @code{jmp} to @var{label}.
+
+@node anyint
+@subsection @code{anyint} -- Match any integer
+@findex anyint
+
+@noindent
+Instruction format:
+@smallexample
+anyint fp[@var{var}],@var{label} @r{Match any integer}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{var} | -- label -- | 27 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction matches @samp{fp[@var{var}]} against @emph{any}
+integer. If @samp{fp[@var{var}]} does @emph{not} contain a number, then
+this becomes a @code{jmp} to @var{label}. Note that this refers to
+objects whose tag is @code{integer}. This instruction will still fail
+for integral valued floating point numbers.
+
+@node anyflt
+@subsection @code{anyflt} -- Match any floating point number
+@findex anyflt
+
+@noindent
+Instruction format:
+@smallexample
+anyflt fp[@var{var}],@var{label} @r{Match any float}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{var} | -- label -- | 28 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction matches @samp{fp[@var{var}]} against @emph{any}
+floating point number. If @samp{fp[@var{var}]} does @emph{not} contain a
+floating point, then this becomes a @code{jmp} to @var{label}.
+
+@node anysym
+@subsection @code{anysym} -- Match any symbol
+@findex anysym
+
+@noindent
+Instruction format:
+@smallexample
+anysym fp[@var{var}],@var{label} @r{Match any symbol}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{var} | -- label -- | 29 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction matches @samp{fp[@var{var}]} against @emph{any}
+symbol. If @samp{fp[@var{var}]} does @emph{not} contain a symbol, then
+this becomes a @code{jmp} to @var{label}.
+
+@node anystr
+@subsection @code{anystr} -- Match any string
+@findex anystr
+
+@noindent
+Instruction format:
+@smallexample
+anystr fp[@var{var}],@var{label} @r{Match any string}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{var} | -- label -- | 30 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction matches @samp{fp[@var{var}]} against @emph{any}
+string. If @samp{fp[@var{var}]} does @emph{not} contain a string, then
+this becomes a @code{jmp} to @var{label}.
+
+@node anyhdl
+@subsection @code{anyhdl} -- Match any handle
+@findex anyhdl
+
+@noindent
+Instruction format:
+@smallexample
+anyhdl fp[@var{var}],@var{label} @r{Match any handle}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{var} | -- label -- | 31 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction matches @samp{fp[@var{var}]} against @emph{any} process
+handle. If @samp{fp[@var{var}]} does @emph{not} contain a process
+handle, then this becomes a @code{jmp} to @var{label}.
+
+Note that this instruction does not distinguish `local handles from
+`non-local handles (where a local handle has a currently active process attached to it).
+
+@node anytpl
+@subsection @code{anytpl} -- Match any tuple
+@findex anytpl
+
+@noindent
+Instruction format:
+@smallexample
+anytpl fp[@var{var}],@var{label} @r{Match any tuple}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{var} | -- label -- | 32 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction matches @samp{fp[@var{var}]} against @emph{any} length
+tuple. If @samp{fp[@var{var}]} does @emph{not} contain a tuple, then
+this becomes a @code{jmp} to @var{label}.
+
+@node anylist
+@subsection @code{anylist} -- Match any list
+@findex anylist
+
+@noindent
+Instruction format:
+@smallexample
+anylist fp[@var{var}],@var{label} @r{Match any list}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{var} | -- label -- | 33 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction matches @samp{fp[@var{var}]} against an empty or
+non-empty list. If @samp{fp[@var{var}]} does @emph{not} contain a list,
+then this becomes a @code{jmp} to @var{label}.
+
+@node matchsig
+@subsection @code{matchsig} -- Unify two type signatures
+@findex matchsig
+
+@noindent
+Instruction format:
+@smallexample
+matchsig @var{depth},fp[@var{L}],fp[@var{R}] @r{Unify type signatures}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{depth} | @var{L} | @var{R} | 34 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction unifies two type descriptions encoded as types
+signature strings. If the unification succeeds, the locations
+@code{fp[@var{L}]} and @code{fp[@var{R}]} are replaced by the result of
+unifying the two type signatures -- also a type signature string -- and
+the following single-word instruction is skipped. 
+
+If the unification fails, the following instruction is executed -- which
+is conventionally a @code{jmp} to a failure recovery point.
+
+@node msigval
+@subsection @code{msigval} -- Compare value against type signature
+@findex msigval
+
+@noindent
+Instruction format:
+@smallexample
+msigval fp[@var{A}],fp[@var{S}] @r{Check value against type signature}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| 0 | @var{A} | @var{S} | 36 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction compares a computed data value against a type signature
+literal: it verifies that the data value is a legal instance of the type
+denoted by the type signature.
+If the test succeeds the following single-word instruction is skipped, otherwise
+the following instruction is executed -- which
+is conventionally a @code{jmp} to a failure recovery point.
+
+@node tsig
+@subsection @code{tsig} -- Access type signature
+@findex tsig
+
+@noindent
+Instruction format:
+@smallexample
+tsig fp[@var{var}],fp[@var{type}] @r{Access type signature}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| 0 | @var{var} | @var{tsig} | 37 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction accesses the type signature string associated with a
+procedure, function or pattern. This permits matching code to match the
+expected types of a program as well as the arity of the program.
+
+@node msign
+@subsection @code{msign} -- Match type signature string
+@findex msign
+
+@noindent
+Instruction format:
+@smallexample
+msign fp[@var{var}],@var{signature} @r{Match type signature}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{var} | -- signature -- | 38 |
+@end cartouche
+@end smallexample
+
+@noindent
+The @code{msign} instruction matches two type signature strings to
+verify that they are compatible -- i.e., represent the same types. Type
+signature strings of programs are bound in with the object code in order
+to enable proper verification of programs that are loaded from different
+modules or received in messages.
+
+Note that type signature strings are also used in type casting, where
+the escape function @code{_coerce} is used.
+
+@node lmbclo
+@subsection @code{lmbclo} -- Match a function closure
+@findex lmbclo
+
+@noindent
+Instruction format:
+@smallexample
+lmbclo fp[@var{var}],@var{label}        @r{match function closure}
+@end smallexample
+
+@smallexample
+@cartouche
+| @var{var} | -- @var{label} -- | 57 |
+@end cartouche
+@end smallexample
+
+@noindent
+The @code{lmbclo} instruction verifies that @code{fp[@var{var}]} is a
+function closure -- i.e., a tuple in the form:
+
+@smallexample
+(<fclosure>, @var{code}, @dots{})
+@end smallexample
+
+@noindent
+Actually, it verifies that the tuple is at least two elements long and
+that the first element is the function closure symbol @code{<fclosure>}
+and the second element is a function code segment. The related
+@code{msign} instruction verifies the type signature.
+
+@node muclo
+@subsection @code{muclo} -- Match a procedure closure
+@findex muclo
+
+@noindent
+Instruction format:
+@smallexample
+muclo fp[@var{var}],@var{label}        @r{match procedure closure}
+@end smallexample
+
+@smallexample
+@cartouche
+| @var{var} | -- @var{label} -- | 58 |
+@end cartouche
+@end smallexample
+
+@noindent
+The @code{muclo} instruction verifies that @code{fp[@var{var}]} is a
+procedure closure -- i.e., a tuple in the form:
+
+@smallexample
+(<sclosure>, @var{code}, @dots{})
+@end smallexample
+
+@noindent
+Actually, it verifies that the tuple is at least two elements long and
+that the first element is the procedure closure symbol @code{<fclosure>}
+and the second element is a procedure code segment. The related
+@code{msign} instruction verifies the type signature.
+
+@node ldstr
+@subsection @code{ldstr} -- Start string match
+@findex ldstr
+
+@noindent
+Instruction format:
+@smallexample
+ldstr fp[@var{source}],fp[@var{dest}] @r{Start of string}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| 0 | @var{source} | @var{dest} | 39 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction marks the beginning of a complex string matching
+operation. It verifies that @samp{fp[@var{source}]} is a string, and it
+sets @samp{fp[@var{dest}]} to the length of the string. If
+@samp{fp[@var{source}]} is a string then the following single-word
+instruction is skipped, otherwise it is executed -- representing failure
+in the match.
+
+@node mstep
+@subsection @code{mstep} -- Adjust string pointer
+@findex mstep
+@noindent
+Instruction format:
+@smallexample
+mstep fp[@var{source}],p[@var{dest}],fp[@var{limit}] @r{Adjust string marker}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{source} | @var{dest} | @var{limit} | 40 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction is used during a string match sequence when the string
+has to be re-partitioned.  @samp{fp[@var{source}]} -- which is an
+integer -- is compared with @samp{fp[@var{limit}]}, and if it is less
+than the limit then @samp{fp[@var{dest}]} is set to @samp{fp[@var{source}]}+1
+and the following single-word instruction is skipped. If
+$@samp{fp[@var{source}]}>=@samp{fp[@var{limit}]}$ then the following failure
+instruction is executed.
+
+
+@node mstr
+@subsection @code{mstr} -- Match string exact
+@findex mstr
+
+@noindent
+Instruction format:
+@smallexample
+mstr fp[@var{str}],fp[@var{off}],fp[@var{sub}] @r{Match string exact}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{str} | @var{off} | @var{sub} | 41 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction matches a sub-string of @samp{fp[@var{str}]} against
+the string in @samp{fp[@var{sub}]}. The string match is performed at
+offset @samp{fp[@var{off}]} in the string @samp{fp[@var{str}]}; an offset
+value of 0 indicates the beginning of the string. @samp{fp[@var{sub}]}
+must be completely contained in @samp{fp[@var{str}]}.
+
+If the match succeeds, then @samp{fp[@var{off}]} is updated to reflect
+the length of the string in @samp{fp[@var{sub}]}:
+
+@smallexample
+fp[@var{off}] := fp[@var{off}]+StrLen(fp[@var{sub}]
+@end smallexample
+
+@noindent
+and the following sigle word instruction is skipped, otherwise if the
+string match fails then the following instruction is executed.
+
+@node xstr
+@subsection @code{xstr} -- Extract sub-string
+@findex xstr
+
+@noindent
+Instruction format:
+@smallexample
+xstr fp[@var{str}],fp[@var{start}],fp[@var{end}] @r{Extract sub-string}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{str} | @var{start} | @var{end} | 42 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction extracts a sub-string from @code{fp[@var{str}]} as a
+separate string. The sub-string extracted is from chars
+@code{fp[@var{start}]}@dots{}@code{fp[@var{end}]}, including the character at
+@code{fp[@var{start}]} but not the character at @code{fp[@var{end}]}. The
+resulting string is placed in @code{fp[@var{start}]}.
+
+Note that since this instruction may cause the garbage collector to be
+invoked, the current `depth' should have been set -- with a
+@code{mrkdpth} instruction for example.
+
+@node mchar
+@subsection @code{mchar} -- Match 1-char string
+@findex mchar
+
+@noindent
+Instruction format:
+@smallexample
+mchar fp[@var{var}],@var{label} @r{Match string}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{var} | -- label -- | 43 |
+@end cartouche
+@end smallexample
+
+@noindent
+This verifies that @samp{fp[@var{var}]} is a single-character string. If it is
+not, then the instruction becomes a @code{jmp} to @var{label}.
+
+@page
+@node Message handling instructions
+@section Message handling instructions
+
+@menu
+* sndmsg::                      Post a message on a process message queue
+@end menu
+
+@node sndmsg
+@subsection @code{sndmsg} -- Basic message post instruction
+@findex sndmsg
+
+@noindent
+Instruction format:
+
+@smallexample
+sndmsg fp[@var{msg}],fp[@var{replyto}],fp[@var{to}] @r{Post a message}
+@end smallexample
+
+@noindent
+@smallexample
+@cartouche
+| @var{msg} | @var{replyto} | @var{to} | 49 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction posts a message on the queue of the process whose
+handle is located in @code{fp[@var{to}]}. The message is posted on the
+end of the message queue for @code{fp[@var{to}]}, and if that process is
+suspended waiting for a message then it is placed on the active process
+list.
+
+The machine can handle only messages which are sent to other
+processes within the same @code{April} invokation; other messages are
+`diverted' to a standard mailer process which is responsible for routing
+the message to the remote receiver.
+
+@page
+@node Error handling instructions
+@section Error handling instructions
+
+@menu
+* errblk::                      
+* errend::                      
+* generr::                      
+@end menu
+
+@node errblk
+@subsection @code{errblk} -- Start error handling block
+@findex errblk
+
+@noindent
+Instruction format:
+@smallexample
+errblk fp[@var{var}],@var{label} @r{Start error block}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{var} | -- label -- | 54 |
+@end cartouche
+@end smallexample
+
+@noindent
+This starts a new error handling block. If a run-time error arises after
+the execution of this instruction, then instead of aborting the process,
+execution will continue at @var{label}.
+
+@samp{fp[@var{var}]} is loaded with a key which is used when exiting the
+error block.
+
+@node errend
+@subsection @code{errend} -- End an error handling block
+@findex errend
+
+@noindent
+Instruction format:
+@smallexample
+errend fp[@var{var}] @r{End error block}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| 0 | 0 | @var{var} | 55 |
+@end cartouche
+@end smallexample
+
+@noindent
+This terminates an error handling block, and resets the error handling
+behaviour based on the previously stored value in @samp{fp[@var{var}]}.
+
+@node generr
+@subsection @code{generr} -- Raise an exception
+@findex generr
+
+@noindent
+Instruction format:
+@smallexample
+generr fp[@var{var}] @r{Raise exception}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| 0 | 0 | @var{var} | 56 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction causes the same behaviour as a run-time error. The
+error message assciated with this exception is obtained from the
+contents of @samp{fp[@var{var}]}.
+
+@page
+@node Structure management instructions
+@section Structure management instructions
+
+@menu
+* loc2tpl::                     
+* indxfld::                     
+* tpudte::                      
+* cons::                        
+* ucons::                       
+* nthel::                       
+* add2lst::                     
+@end menu
+
+@node loc2tpl
+@subsection @code{loc2tpl} -- Create tuple
+@findex loc2tpl
+
+@noindent
+Instruction format:
+@smallexample
+loc2tpl fp[@var{start}],@var{len},fp[@var{dest}] @r{Create a tuple}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{start} | @var{len} | @var{dest} | 60 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction creates a new @var{len}-tuple from entries in the local
+stack. The elements of the new tuple are created from local variables
+@samp{fp[@var{start-len}]}, @samp{fp[@var{start-len+1}]}, @dots{},
+@samp{fp[@var{start}]}. The new tuple is stored in @samp{fp[@var{dest}]}.
+
+Note that @samp{fp[@var{start}]} should represent the bottom of the
+currently active local variables.
+
+@node indxfld
+@subsection @code{indxfld} -- Access tuple element
+@findex indxfld
+
+@noindent
+Instruction format:
+@smallexample
+indxfld fp[@var{tpl}],@var{el},fp[@var{dest}] @r{Access element}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{tpl} | @var{el} | @var{dest} | 61 |
+@end cartouche
+@end smallexample
+
+@noindent
+This access the @var{el-th} element of the tuple in
+@samp{fp[@var{tpl}]} and stores it in @samp{fp[@var{dest}]}.
+
+@node tpudte
+@subsection @code{tpudte} -- Update tuple
+@findex tpudte
+
+@noindent
+Instruction format:
+@smallexample
+tpudte fp[@var{var}],@var{el},fp[@var{tpl}] @r{Update tuple}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{var} | @var{el} | @var{tpl} | 62 |
+@end cartouche
+@end smallexample
+
+@noindent
+This replaces the @var{el-th} element of the tuple in
+@samp{fp[@var{tpl}]} by the value of @samp{fp[@var{var}]}.
+
+@node cons
+@subsection @code{cons} -- Construct list pair
+@findex cons
+
+@noindent
+Instruction format:
+@smallexample
+cons fp[@var{head}],fp[@var{tail}],fp[@var{dest}] @r{New list pair}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{head} | @var{tail} | @var{dest} | 63 |
+@end cartouche
+@end smallexample
+
+@noindent
+This constructs a new list pair using @samp{fp[@var{head}]} and
+@samp{fp[@var{tail}]}. The resulting list pair is stored in
+@samp{fp[@var{dest}]}.
+
+Note that the stack should be marked -- using a @code{mrkdpth}
+instruction -- prior to this instruction.
+
+@node ucons
+@subsection @code{ucons} -- De-construct list pair
+@findex ucons
+
+@noindent
+Instruction format:
+@smallexample
+ucons fp[@var{list}],fp[@var{head}],fp[@var{tail}] @r{access list pair}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{list} | @var{head} | @var{tail} | 64 |
+@end cartouche
+@end smallexample
+
+@noindent
+This accesses the list pair in @samp{fp[@var{list}]} and stores the head
+in @samp{fp[@var{head}]} and the tail of the list in @samp{fp[@var{tail}]}.
+
+Note: if @samp{fp[@var{list}]} does not contain a list pair, then a
+run-time error will result.
+
+@node nthel
+@subsection @code{nthel} -- Access list element
+@findex nthel
+
+@noindent
+Instruction format:
+@smallexample
+nthel fp[@var{list}],fp[@var{index}],fp[@var{dest}] @r{Access list element}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{list} | @var{index} | @var{dest} | 65 |
+@end cartouche
+@end smallexample
+
+@noindent
+This accesses the @var{n-th} element of list @samp{fp[@var{list}]}, where
+@var{n} is the value of @samp{fp[@var{index}]}, and this element is placed in
+@samp{fp[@var{dest}]}.
+
+@node add2lst
+@subsection @code{add2lst} -- Add element to a list
+@findex add2lst
+
+@noindent
+Instruction format:
+@smallexample
+add2lst @var{depth},fp[@var{el}],fp[@var{lst}] @r{Add element to list}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{depth} | @var{el} | @var{lst} | 67 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction adds the contents of @samp{fp[@var{el}]} to the @var{end} of the
+list in @samp{fp[@var{lst}]}.
+
+@page
+@node Arithmetic instructions
+@section Arithmetic instructions
+
+@menu
+* plus::                        
+* minus::                       
+* times::                       
+* divide::                      
+* incr::                        
+@end menu
+
+@node plus
+@subsection @code{plus} -- Addition
+@findex plus
+
+@noindent
+Instruction format:
+@smallexample
+plus fp[@var{arg1}],fp[@var{arg2}],fp[@var{dest}] @r{Addition}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| arg1 | arg2 | @var{dest} | 70 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction adds the contents of @samp{fp[@var{arg1}]} and
+@samp{fp[@var{arg2}]} together and places the result in
+@samp{fp[@var{dest}]}. @samp{fp[@var{arg1}]} and @samp{fp[@var{arg2}]}
+can contain either floating point or integer values and the result type
+is computed automatically.
+
+@node minus
+@subsection @code{minus} -- Subtraction
+@findex minus
+
+@noindent
+Instruction format:
+@smallexample
+minus fp[@var{arg1}],fp[@var{arg2}],fp[@var{dest}] @r{Subtraction}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| arg1 | arg2 | @var{dest} | 71 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction subtracts the contents of @samp{fp[@var{arg2}]} from
+the contents of @samp{fp[@var{arg1}]} and places the result in
+@samp{fp[@var{dest}]}. @samp{fp[@var{arg1}]} and @samp{fp[@var{arg2}]}
+can contain either floating point or integer values and the result type
+is computed automatically.
+
+@node times
+@subsection @code{times} -- Multiplication
+@findex times
+
+@noindent
+Instruction format:
+@smallexample
+times fp[@var{arg1}],fp[@var{arg2}],fp[@var{dest}] @r{Multiplication}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| arg1 | arg2 | @var{dest} | 72 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction multiplies the contents of @samp{fp[@var{arg1}]} and
+@samp{fp[@var{arg2}]} together and places the result in
+@samp{fp[@var{dest}]}. @samp{fp[@var{arg1}]} and @samp{fp[@var{arg2}]}
+can contain either floating point or integer values and the result type
+is computed automatically.
+
+@node divide
+@subsection @code{divide} -- Division
+@findex divide
+
+@noindent
+Instruction format:
+@smallexample
+divide fp[@var{arg1}],fp[@var{arg2}],fp[@var{dest}] @r{Division}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| arg1 | arg2 | @var{dest} | 73 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction divides the contents of @samp{fp[@var{arg2}]} by the
+contents of @samp{fp[@var{arg1}]} and places the result in
+@samp{fp[@var{dest}]}. @samp{fp[@var{arg1}]} and @samp{fp[@var{arg2}]}
+can contain either floating point or integer values and the result type
+is computed automatically.
+
+@node incr
+@subsection @code{incr} -- Addition
+@findex incr
+
+@noindent
+Instruction format:
+@smallexample
+incr fp[@var{arg1}],@var{literal},fp[@var{dest}] @r{Addition}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| arg1 | @var{literal} | @var{dest} | 74 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction adds the contents of @samp{fp[@var{arg1}]} and the
+small integer @var{literal} together and places the result in
+@samp{fp[@var{dest}]}. @samp{fp[@var{arg1}]} can contain either floating
+point or integer values and the result type is computed
+automatically. @var{literal} is a small integer in the range -128@dots{}
+127.
+
+@page
+@node Conditional instructions
+@section Conditional instructions
+
+@menu
+* eq::                          
+* neq::                         
+* gt::                          
+* le::                          
+* iftrue::                      
+* iffalse::                     
+@end menu
+
+@node eq
+@subsection @code{eq} -- Equality
+@findex eq
+
+@noindent
+Instruction format:
+@smallexample
+eq fp[@var{arg1}],fp[@var{arg2}] @r{Equality test}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| 0 | arg1 | arg2 | 75 |
+@end cartouche
+@end smallexample
+
+@noindent
+This compares the values in @samp{fp[@var{arg1}]} and @samp{fp[@var{arg2}]}
+for equality. If they are @emph{not} equal, then the next instruction is
+@emph{skipped}. Typically this instruction -- which must be a single
+word instruction -- is a @code{jmp} instruction to a failure label.
+
+The equality test is a `deep' test -- i.e., values are compared
+recursively rather than for simple pointer equality.
+
+@node neq
+@subsection @code{neq} -- Un-equality
+@findex neq
+
+@noindent
+Instruction format:
+@smallexample
+neq fp[@var{arg1}],fp[@var{arg2}] @r{Not equal test}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| 0 | arg1 | arg2 | 76 |
+@end cartouche
+@end smallexample
+
+@noindent
+This compares the values in @samp{fp[@var{arg1}]} and @samp{fp[@var{arg2}]}
+for equality. If they @emph{are} equal, then the next instruction is
+@emph{skipped}. Typically this instruction -- which must be a single
+word instruction -- is a @code{jmp} instruction to a failure label.
+
+The equality test is a `deep' test -- i.e., values are compared
+recursively rather than for simple pointer equality.
+
+@node gt
+@subsection @code{gt} -- Greater than
+@findex gt
+
+@noindent
+Instruction format:
+@smallexample
+gt fp[@var{arg1}],fp[@var{arg2}] @r{greater than test}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| 0 | arg1 | arg2 | 77 |
+@end cartouche
+@end smallexample
+
+@noindent
+This compares the values in @samp{fp[@var{arg1}]} and
+@samp{fp[@var{arg2}]}. If @samp{fp[@var{arg1}]} is greater than
+@samp{fp[@var{arg2}]} -- according to the predefined ordering between
+April values -- then the next instruction is @emph{skipped}. Typically
+this instruction -- which must be a single word instruction -- is a
+@code{jmp} instruction to a failure label.
+
+@node le
+@subsection @code{le} -- Less than or equal
+@findex le
+
+@noindent
+Instruction format:
+@smallexample
+le fp[@var{arg1}],fp[@var{arg2}] @r{less than or equal test}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| 0 | arg1 | arg2 | 78 |
+@end cartouche
+@end smallexample
+
+@noindent
+This compares the values in @samp{fp[@var{arg1}]} and
+@samp{fp[@var{arg2}]}. If @samp{fp[@var{arg1}]} is smaller or equal to
+@samp{fp[@var{arg2}]} -- according to the predefined ordering between
+April values -- then the next instruction is @emph{skipped}. Typically
+this instruction -- which must be a single word instruction -- is a
+@code{jmp} instruction to a failure label.
+
+@node iftrue
+@subsection @code{iftrue} -- Test for true value
+@findex iftrue
+
+@noindent
+Instruction format:
+@smallexample
+iftrue fp[@var{var}],@var{label} @r{Test for true}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{var} | -- label -- | 83 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction tests the value in @samp{fp[@var{var}]} against the
+@code{true} literal. If @samp{fp[@var{var}]} contains @code{true} then
+the instruction becomes a @code{jmp} to @var{label}.
+
+@node iffalse
+@subsection @code{iffalse} -- Test for false value
+@findex iffalse
+
+@noindent
+Instruction format:
+@smallexample
+iffalse fp[@var{var}],@var{label} @r{Test for false}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{var} | -- label -- | 84 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction tests the value in @samp{fp[@var{var}]} against the
+@code{false} literal. If @samp{fp[@var{var}]} contains @code{false} then
+the instruction becomes a @code{jmp} to @var{label}.
+
+@page
+@node Miscelleneous instructions
+@section Miscelleneous instructions
+
+@menu
+* ticks::                       
+* self::                        
+* die::                         
+@end menu
+
+@node ticks
+@subsection @code{ticks} -- Record current clock
+@findex ticks
+
+@noindent
+Instruction format:
+@smallexample
+ticks fp[@var{tick}] @r{Get current tick count}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| 0 | 0 | @var{tick} | 89 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction records the current clock `tick' counter in
+@samp{fp[@var{tick}]}. This value is typically used in combination with
+the @code{cmpclk} instruction to test for @code{timeout} clauses in
+message receive statements.
+
+
+@node self
+@subsection @code{self} -- Access current proces handle
+@findex self
+
+@noindent
+Instruction format:
+@smallexample
+self fp[@var{var}] @r{Process handle}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| 0 | 0 | @var{var} | 90 |
+@end cartouche
+@end smallexample
+
+@noindent
+This stores the current process'es handle into @samp{fp[@var{var}]}.
+
+@node die
+@subsection @code{die} -- Terminate process
+@findex die
+
+@noindent
+Instruction format:
+@smallexample
+die  @r{Terminate process}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| 0 | 0 | 0 | 91 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction terminates the current process. Any messages which are
+in the process'es message queue are discarded.
+
+@page
+@node Debugging support instructions
+@section Debugging support instructions
+
+@menu
+* line_d::                      
+* entry_d::                     
+* exit_d::                      
+* return_d::                    
+* assign_d::                    
+@end menu
+
+@node line_d
+@subsection @code{line_d} -- Debugging line stop
+@findex line_d
+
+@noindent
+Instruction format:
+@smallexample
+line_d @var{depth},@var{file name},@var{line no} @r{Pause for source line}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{depth} | -- line no -- | 100 |  @r{followed by}   | --- file name --- |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction is used to support source-level debugging. This
+instruction sends a message to the debugger of the form:
+
+@smallexample
+(line_debug, @var{process-handle}, @var{file}, @var{line-no})
+@end smallexample
+
+@noindent
+where @var{process-handle} is the handle of the current process,
+@var{file} and @var{line-no} are collected from the @var{2nd} and
+@var{3rd} operands respectively.
+
+In addition to sending the message, the process will stop at this
+instruction until the debugger process sends an @code{ok} message to
+this process. If the debugger process sends a @code{q} message instead
+then the process will be terminated.
+
+This is a two-word instruction, the second word contains the reference
+to the string which gives the file name.
+
+@node entry_d
+@subsection @code{entry_d} -- Program entry debugging
+@findex entry_d
+
+@noindent
+Instruction format:
+@smallexample
+entry_d @var{depth},@var{program} @r{Report program entry}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{depth} | -- program -- | 101 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction is used to support source-level debugging, it is used
+as a procedure, function or pattern is entered. This instruction sends a
+message to the debugger of the form:
+
+@smallexample
+(entry_debug, @var{process-handle}, @var{program})
+@end smallexample
+
+@noindent
+where @var{process-handle} is the handle of the current process and
+@var{program} is collected from the @var{2nd} operand -- which is a 16
+bit reference to a literal symbol.
+
+@node exit_d
+@subsection @code{exit_d} -- Program exit debugging
+@findex exit_d
+
+@noindent
+Instruction format:
+@smallexample
+exit_d @var{depth},@var{program} @r{Report program exit}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{depth} | -- program -- | 102 |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction is used to support source-level debugging; it is used
+when a procedure or pattern is about to return. This instruction sends a
+message to the debugger of the form:
+
+@smallexample
+(exit_debug, @var{process-handle}, @var{program})
+@end smallexample
+@noindent
+where @var{process-handle} is the handle of the current process and
+@var{program} is collected from the @var{2nd} operand -- which is a 16
+bit reference to a literal symbol.
+
+@node return_d
+@subsection @code{return_d} -- Function return debugging
+@findex return_d
+
+@noindent
+Instruction format:
+@smallexample
+return_d @var{depth},@var{program},fp[@var{var}] @r{Report function exit}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{depth} | @var{var} | 0 | 104 | @r{followed by} | -- program -- |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction is used to support source-level debugging; it is used
+when a function is about to return. This instruction sends a message to
+the debugger of the form:
+
+@smallexample
+(return_debug, @var{process-handle}, @var{program}, @var{value})
+@end smallexample
+
+@noindent
+where @var{process-handle} is the handle of the current process, the
+@var{program} name is collected from the @var{2nd} operand -- which is a
+reference to a literal symbol in the following instruction word, and the
+actual returned value which is accessed relative to the frame pointer
+register.
+
+This is a two-word instruction, the second word contains the reference
+to the symbol which is the function name.
+
+@node assign_d
+@subsection @code{assign_d} -- Variable assign debugging
+@findex assign_d
+
+@noindent
+Instruction format:
+@smallexample
+assign_d @var{depth},@var{var-name},fp[@var{var}] @r{Report variable assignment}
+@end smallexample
+@noindent
+
+@smallexample
+@cartouche
+| @var{depth} | @var{var} | 0 | 104 | @r{followed by} | -- var-name -- |
+@end cartouche
+@end smallexample
+
+@noindent
+This instruction is used to support source-level debugging; it is used
+when a variable is assigned to a new value. This instruction sends a message to
+the debugger of the form:
+
+@smallexample
+(assign_debug, @var{process-handle}, @var{var-name}, @var{value})
+@end smallexample
+
+@noindent
+where @var{process-handle} is the handle of the current process, the
+@var{var-name} is collected from the @var{2nd} operand -- which is a
+reference to a literal symbol in the following instruction word, and the
+actual assigned value which is accessed relative to the frame pointer
+register.
+
+This is a two-word instruction, the second word contains the reference
+to the symbol which is the variable name.
+
+Note that this instruction can be used for denoting the initial values
+of variables and parameters as well as subsequent assignments.
+
+
+
+ 

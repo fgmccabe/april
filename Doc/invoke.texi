@@ -1,0 +1,155 @@
+@node How to invoke April
+@chapter Running @code{April} programs
+
+@noindent
+In order to run an @code{April} program, it is first of all necessary to
+ensure that the communications server is running on your machine. The
+details of running the @code{icm} are detailed in the companion
+reference manual @cite{InterAgent Communications Model Reference
+Manual}; however, in order to start the @code{icm} all that is necessary
+is to type the command:
+
+@smallexample
+% icm
+@end smallexample
+
+@noindent
+The command will terminate immediately, but the communications server is
+left running as a daemon in the background.@footnote{The @code{icm} is
+designed to be started as a daemon during the normal boot process.}
+
+A typical invocation of @code{April} from a Unix shell is
+
+@smallexample
+% april @var{options} @var{filename} @var{arg1} @var{arg2} ...
+@end smallexample
+
+@noindent
+where the arguments @var{arg1}, @var{arg2} etc. are
+collected together as a tuple and made available as the value of the
+@code{command_line} built-in function.
+
+@menu
+* Summary of command options:: April command options
+* Environment variables:: Controlling @code{April}'s standard search paths
+@end menu
+
+@node Summary of command options
+@section Summary of @code{April} command options
+
+@table @code
+@item -g @var{debugger}
+Turns on symbolic debugging.  As a pre-requisite, the program must have
+been compiled with the @code{-g} compiler option.  Executing a program
+with the @code{-g} option will cause numerous messages to be sent to the
+debugger process (whose name is @var{debugger}). This process can
+thereby `take control' of this process: and will typically show where in
+the program the process is, what variables are being assigned and so forth.
+
+@ref{Debugging April programs} for a description of these messages and
+the standard @code{April} debugger program.
+
+@item -N @var{name}
+The argument is used to override the default name for the `invocation'
+of @code{April}.
+
+By default, each @code{April} invocation has a name which is generated
+automatically in a way calculated to ensure its uniqueness. Typically it
+is of the form:
+
+@smallexample
+host#12345
+@end smallexample
+
+@noindent
+where @code{host} is the host name of the machine and
+@code{12345} is the Unix process ID of the @code{April} invocation.
+
+However, for some applications it is necessary to be able to override
+this default. In particular if it is required that the invoked
+@code{April} application is `recoverable' -- i.e., that it can restart
+after a machine crash possibly on another machine -- then the invocation
+may have to be set. However, the invocation name is still required to be
+globally unique.
+
+The `invocation' name of the @code{April} system is also used as the
+default `agent' portion of the handles of anonymously forked processes.
+
+@item -H @var{home}
+The argument is used to override the default home part of the invocation
+name. By default, the @var{home} is derived from the hostname of the
+computer running the @code{April} application.
+
+The @var{name} and @var{home} combination is intended to provide a
+method for giving @code{April} programs a globally unique name.
+
+It is always possible for an executing @code{April} program to spawn off
+a sub-process with a particular name. The difference being that using
+the command line option gives the top-level of the @code{April}
+application a specific name - one selected by the invoker of the
+@code{April} application.
+
+@item -l @var{address}
+The argument is a string giving a host name or IP address that will be
+used as an additional location for processes executing in this
+invocation. Up to 8 additional addresses@footnote{The current host's IP
+address is always available as an address for processes.} may be offered.
+
+@item -h @var{size}
+This sets the initial size of the heap to @var{size}K words -- each word
+is normally 4 bytes. The heap will grow automatically as needed, but
+setting a higher heap size can increase performance considerably (even
+if the application does not need the space).
+
+The default initial heap size is 100K words, or approximately 0.5MB.
+
+@item -v
+Display the current version of the @code{April} engine on a banner line
+before executing the program.
+
+@item -L @var{log}
+Set the `log' file to @var{log}. This is used in the @code{log_msg}
+built-in command and the @code{april_log_msg} API function.
+
+If @var{log} is the string "@samp{-}", then logging messages are printed
+to @code{stderr}; if no @samp{-L} option is given then logging messages
+are ignored.
+
+@item -p @var{path}
+Adds @var{path} to the search path. This is used when dynamically
+loading modules.
+
+@end table
+
+@node Environment variables
+@section Environment variables
+@cindex Environment variables
+
+@noindent
+Generally, it is not necessary to use or set environment
+variables. However, there are a few environment variables which may be
+of interest to the @code{April} progammer:
+@table @code
+@item APRIL_DIR
+This environment variable would not normally be set by the user.  By
+default, its value is set to @code{April}'s `home' directory -- i.e.,
+the directory where the @code{April} system itself
+resides.@footnote{Usually this is @code{/opt/april}.}
+@cindex @code{APRIL_DIR} environment variable
+
+@item APRIL_COMMSERVER
+This environment variable is used to control the location of the
+communications server. By default, the @code{April} engine looks for a
+communications server on the same computer; by setting the
+@code{APRIL_COMMSERVER} environment variable, the engine can use a
+`remote' communications server.
+
+@item APRIL_COMMS_PORT
+This environment variable would not normally be set by the user. This
+environment variable is used to identify the port number that the 
+communications server will be using. This environment variable may be
+overridden by using the @code{-P} command-line option.
+
+@end table
+
+

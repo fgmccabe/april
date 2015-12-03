@@ -1,0 +1,144 @@
+\input psfig.tex
+\input texinfo
+@c %**start of header
+@setfilename april.info
+@settitle April Reference Manual
+@c %**end of header
+@c @smallbook
+@setchapternewpage odd
+@include version.texi
+
+@dircategory Programming
+@direntry
+* april: (april).		Agent programming language
+@end direntry
+
+@titlepage
+@title April Reference Manual
+@subtitle Version @value{VERSION}, last updated @value{UPDATED}.
+@author F.G. McCabe @email{fgm@@fla.fujitsu.com}
+
+@c  The following two commands
+@c  start the copyright page.
+@page
+@vfill
+@copyright{} 1994-2004 Imperial College and F.G. McCabe.
+
+All rights reserved.
+
+@end titlepage
+     
+@node Top
+@top Overview
+
+@noindent
+This is the 
+@ifinfo
+on-line
+@end ifinfo 
+Reference Manual for the @code{April} language, Version @value{VERSION}.  
+@refill
+
+This manual offers an in-depth and complete description of the
+@code{April} language. However, it is not a tutorial on the language,
+and the order of presentation within the manual reflects that. For a
+more tutorial introduction, the reader is referred to @emph{Programming
+in April: An Agent Process Interaction Language} (by F.G. McCabe and
+K.L. Clark). For a compact description of the facilities and features of
+@code{April} the reader is referred to the @emph{April Pocket Reference
+Guide}. In addition, see @url{http://www.nar.fujitsulabs.com}.
+
+@ifinfo
+@copyright{} 1994-2004 Imperial College and F.G. McCabe
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+For a more complete description of the licence terms under which this
+software may be used @pxref{Copying}.
+
+All rights reserved.
+Last updated @value{UPDATED}
+@end ifinfo
+
+
+@menu
+* Copying::                     Your rights and freedoms
+* Compiling April programs::    Using the @code{April} compiler
+* How to invoke April::         Getting started
+* April programs::              Format of an @code{April} program
+* Data values and types::       Legal @code{April} values and types
+* Expressions::                 Format of valid @code{April} expressions
+* Patterns::                    Format of @code{April} patterns
+* Statements::                  Format of @code{April} patterns
+* Functions and procedures::    Format of @code{April} functions and procedures
+* Tests and conditions::        @code{April}'s standard test functions.
+* Arithmetic functions::        Standard arithmetic functions.
+* Input and output::            Standard procedures and functions for I/O.
+* String handling::             Standard string handling functions.
+* Lists and sets::              Standard compound structure handling functions.
+* Processes::                   Standard functions for process manipulation.
+* April communications::        How April programs communicate
+* Environment::                 Access to standard O/S functions.
+* Resource limited execution::  Executing programs in a limited environment
+* Debugging April programs::    Interfacing with the debugger.
+* April syntax::                Rules for writing @code{April} programs
+* Extending the April system::  Extending April with plug-in modules
+* April grammar::               @code{April}s formal grammar.
+* Standard operators::          April's standard predefined operators
+* Standard error codes::        April's standard error codes
+* Encoded term format::         How April values are encoded in messages
+* Notes for April v4 programmers:: Differences between V4 and V5 of @code{April}
+* Concept index::
+* Function index::
+@end menu
+
+@include compiling.texi
+@include invoke.texi
+@include program.texi
+@include values.texi
+@include expressions.texi
+@include patterns.texi
+@include statement.texi
+@include predicate.texi
+@include functions.texi
+@include arith.texi
+@include io.texi
+@include string.texi
+@include lists.texi
+@include process.texi
+@include communicate.texi
+@include environ.texi
+@include resource.texi
+@include debugging.texi
+@include syntax.texi
+@include dll.texi
+@include grammar.texi
+@include operators.texi
+@include errors.texi
+@include encoded.texi
+@include v4notes.texi
+@include gpl.texi
+
+@node Concept index
+@unnumbered Concept index
+@printindex cp
+
+@node Function index
+@unnumbered Standard function index
+@printindex fn
+
+@summarycontents
+@contents
+@bye

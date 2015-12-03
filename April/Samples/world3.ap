@@ -1,0 +1,7 @@
+program
+  import interface "hello.af" where
+{
+  main(){
+    hello() ++ "\n" >> stdout
+  }
+} execute main;

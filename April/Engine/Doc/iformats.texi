@@ -1,0 +1,51 @@
+@node Format of instructions
+@chapter Format of @code{April} machine instructions
+@cindex  Format of @code{April} machine instructions
+
+@noindent
+The @code{AM} is a 3-address instruction machine. All instructions take
+between 0 to 3 addresses; and the layout of instructions is fixed into
+a few patterns.
+
+Each instruction is 32 bits long, possibly followed by a single 32 bit
+data word. Most instructions take exactly one 32 bit word; although a
+number of instructions expect a single-word instruction to follow them.
+
+There are several main kinds of `addresses':
+
+@table @asis
+@item Register offset
+This is a integer in the range -128@dots{}127. It
+refers to a register which is an entry in a process stack relatively
+addressed from the FP register. Most instructions take at least one of
+these operands, and 3 address instructions can only contain register
+offsets or small numeric literal values.
+
+@item Small numeric literal value
+This is a literal integer in the
+range -128@dots{}127. Typically, the literal value is not an April
+value but an index into the stack. The most common instance of this is
+the `depth' marker which is present in many instructions.
+
+@item Short literal reference
+This is a reference to a literal April
+value. Up to 65535 literal values can be accomodated in a single April
+function or procedure. The number is an offset into a tabe of literal
+values which forms part of the code for a function.
+
+If an instruction has a short literal reference, then it can have at
+most one other operand -- which can be a register offset or a small
+numeric literal value.
+
+@item Long literal reference
+This is a reference to a literal value
+where the reference is encoded in the following 32 bit word.
+
+@item Short label reference
+This is a reference to another
+instruction within the @emph{same} function. It is a PC-relative number
+that identifies an instruction word in the range -32768@dots{}32767
+words from the next instruction word.
+@end table
+
+

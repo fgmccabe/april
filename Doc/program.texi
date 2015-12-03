@@ -1,0 +1,344 @@
+@node April programs
+@chapter Format of an @code{April} source file
+
+@noindent
+Each @code{April} source file contains either a single `executable'
+program or a single module. Either may contain any number of procedures and
+functions and an @code{April} application may be constructed from
+modules and programs in any number of source files but there can only be
+a single program or module in any given source file.
+
+@menu
+* Standard April programs::     Format of an `executable' @code{April} program
+* April modules::               Format of @code{April} modules
+* Including other source files::  
+@end menu
+
+@node Standard April programs
+@section Standard @code{April} programs
+@cindex Format of an april program
+
+@noindent
+A simple program file which contains a simple program to display the
+infamous @code{Hello world} banner is:
+
+@smallexample
+program@{
+  /* How to say hello in this world */
+  main()@{
+    "Hello world\n" >> stdout   -- send message to stdout
+  @}
+@} execute main;
+@end smallexample
+
+@noindent
+A @code{program} file consists of two main components: a set of
+procedures, functions and type definitions enclosed in @code{@{@}}'s
+after the @code{program} keyword and an @code{execute} clause which
+identifies the `main' program to execute. The main program of a
+@code{program} file identifies the program that will be executed when
+the program is loaded.
+
+The statement:
+
+@smallexample
+"Hello world\n" >> stdout
+@end smallexample
+@noindent
+is @code{April} for:
+
+@quotation
+``Send the message @code{"Hello world\n"} to the process @code{stdout}''
+@end quotation
+
+@noindent
+which has the side-affect of displaying it on the console.
+
+Within the @code{program}'s braces, there can be any number of
+procedures and functions (technically there must be at least one
+procedure or function in the @code{program} body). For example, the same
+effect as the program above can be achieved by:
+
+@smallexample
+program@{
+  hello() => "Hello world";
+  main()@{
+    hello() ++ "\n" >> stdout;
+  @}
+@} execute main;
+@end smallexample
+
+@noindent
+In this program we have defined an auxiliary function - called
+@code{hello} -- which returns the string @code{"hello world"}. This
+function is called in the body of @code{main} within the message send
+statement. The @code{++} operator is a function that concatenates two
+strings together (@pxref{concatenate strings}).
+
+@menu
+* Comments in programs::        
+* Command line arguments to programs::  
+@end menu
+
+@node Comments in programs
+@subsection Comments in programs
+@cindex Comments in programs
+
+@noindent
+@code{April} has two styles of comments -- `line' comments and
+`continuous' comments. Line comments are introduced using a double-dash
+@code{--} followed by a white space character and terminated by end of
+line or end-of-file.
+
+Continuous comments are introduced using the characters @code{/*},
+followed by any sequence of characters up until a closing @code{*/}
+pair.
+
+Note that a comment `takes the place' of a white space character -- it
+is not possible to have a comment embedded within an identifier for example.
+
+@node Command line arguments to programs
+@subsection Command line arguments to programs
+@cindex Command line arguments to programs
+
+@noindent
+If we wish to pass command line arguments to a program we can do so
+easily by adding extra parameters to the initial procedure we
+invoke. For example, we can write a more general echo program using:
+
+@smallexample
+program
+@{
+  main(S)
+  @{
+    S ++ "\n" >> stdout
+  @}
+@} execute main;
+@end smallexample
+
+@noindent
+Here, @code{main} has a single argument -- @code{S} -- which the type
+checker infers must have type @code{string} (because it is mentioned in
+a string concatenation expression -- @pxref{Types and type inferencing}).
+
+When running @code{echo}, the @code{April} run-time system will verify
+that it is called with at least one argument which is interpreted as a
+string:
+
+@smallexample
+% april echo hello
+@end smallexample
+
+@noindent
+If @code{echo} is run without supplying at least one argument, then a
+run-time error will be displayed:
+
+@smallexample
+arguments [] incorrect, expecting: (string)
+@end smallexample
+
+@noindent
+Since all @code{April} data types can be coerced to the @code{string}
+data type this is the only error that can arise from this program. But
+if @code{main} expected an integer as argument and was not given one
+then an analogous error message would be displayed.
+
+@node April modules
+@section @code{April} module files
+@cindex @code{April} modules
+@cindex Module files
+
+@noindent
+The second principal form of program file in @code{April} is the @emph{module
+file}. A module file is similar to a program file in that it may
+contain a number of procedures and functions. However, there is no
+declared `entry point' to a module file; instead one or more of the
+embedded functions and procedures are exported.
+
+For example, we might encapsulate the @code{hello} function 
+@ifinfo
+from @ref{Standard April programs}
+@end ifinfo
+@iftex
+above
+@end iftex
+to form a module file:
+@refill
+
+@smallexample
+module@{
+  hello() => "Hello world"
+@} export hello;
+@end smallexample
+
+@noindent
+Where more than one program is to be exported, use a tuple sequence of names.
+
+@menu
+* Importing programs from modules::  
+* Importing multiple modules::  
+* Using interface specification files::  
+@end menu
+
+@node Importing programs from modules
+@subsection Importing programs from modules
+@cindex Importing programs from modules
+
+In order to be able to use a module, which has been embedded within a
+module file, it is necessary to @emph{import} the module. This is done by
+adding an @code{import} clause before the body of a @code{program} (or
+module) body. Below, we see the @code{hello} function is imported from
+this module -- assuming that its source is located in the file
+@code{hello.ap} and the compiled code in the file @code{hello.aam}.
+
+@smallexample
+@group
+program
+import @{()=>string@}?hello from "hello.aam" where
+@{
+  main()@{
+    hello() ++ "\n" >> stdout;
+  @}
+@} execute main;
+@end group
+@end smallexample
+
+@noindent
+Notice that in the @code{import} clause we have to be quite specific
+about the types of procedures and functions that we declare; in
+addition, the import clause must match exactly the sequence of
+procedures and functions listed in the @code{export} clause of the
+module that we are importing from. On the other hand it is @emph{not}
+necessary to use the same names for programs in the @code{import} clause and
+the defining module file -- @code{April} uses a name-free mechanism for
+exporting and importing from modules.
+
+It is possible for a module file to itself import other modules. This is
+done in an analogous manner to program files importing modules.  Below,
+we have an alternative module where the @code{hello} function itself
+invokes a sub-function @code{world} -- which is imported from another
+module:
+
+@smallexample
+module
+import @{()=>string@}?world from "world_name.aam" where
+@{
+  hello() => "Hello " ++ world()
+@} export hello;
+@end smallexample
+
+@noindent
+Of course, we now also require the additional module
+@file{world_name.aam} (whose source is in the file @file{world_name.ap})
+to define the @code{world} function; this is shown in:
+
+@smallexample
+module@{
+  world() => "world"
+@} export world;
+@end smallexample
+
+@node Importing multiple modules
+@subsection Importing multiple modules
+@cindex Importing more than one module in a program
+
+@noindent
+A module or program may import several modules simultaneously. This is
+simply a combination of importing individual modules -- the `clauses' which
+describe the import specification of specific modules are separated by
+the @code{and} operator. For example, in the `Hellow world' example, we
+might import two modules:
+
+@smallexample
+@group
+program
+import @{@{()=>string@}?hello@} from "hello.aam" and
+       @{@{()=>string@}?world@} from "world_name.aam" where
+@{
+  main()@{
+    hello() ++ world() ++ "\n" >> stdout;
+  @}
+@} execute main;
+@end group
+@end smallexample
+
+@node Using interface specification files
+@subsection Using interface specification files
+@cindex Using interface specification files
+
+@noindent
+As an alternative to an explicit specification when importing from a
+module, it is possible to use an interface file. The contents of an
+interface file is an import specification. For example, we could have:
+
+@smallexample
+@{()=>string@}?hello from "hello.aam"
+@end smallexample
+
+@noindent
+in a file @file{hello.af}, and 
+
+@smallexample
+@{@{()=>string@}?world@} from "world_name.aam" 
+@end smallexample
+
+@noindent
+in the file @file{world_name.af}
+
+Then, the above example program may be more conveniently written as:
+
+@smallexample
+@group
+program
+import interface "hello.af" and
+       interface "world_name.af" where
+@{
+  main()@{
+    hello() ++ world() ++ "\n" >> stdout;
+  @}
+@} execute main;
+@end group
+@end smallexample
+
+@noindent
+Using interface files in this way has the benefit of ensuring that the exact
+specification of a module only needs to be held in a single file; and
+there is no special need to modify the sources of programs which import
+modules if the module's specification is changed.
+
+However, if a module's interface specification is changed then both the
+implementing module and any programs and modules which import the
+modified module @emph{will} need to be recompiled.
+
+Note that @code{.af} files can be generated automatically by the
+compiler using the @code{-M @file{af-file}} command-line option.
+
+@node Including other source files
+@section Including other source files
+@cindex Including other source files
+
+@noindent
+A source file can be included `in place' using the @code{#include}
+statement. There are two forms of the @code{#include} statement:
+
+@smallexample
+#include "@var{file}";
+@end smallexample
+
+@noindent
+and
+
+@smallexample
+#include <@var{file}>;
+@end smallexample
+
+@noindent
+The latter form is used for accessing `system' include files which form
+part of the @code{April} distribution or other published include
+files. It searches @code{April}'s installation directories for the
+source of the file, whereas the former form only looks in the user's
+directories (@pxref{Compiling April programs} for how the search path
+for include files can be specified). 
+
+
+

@@ -1,0 +1,8 @@
+program
+import {
+  interface <stdio.af> and
+  interface "../world.af"} in {
+  main(){
+    "hello "<>world()<>"\n">>stdout
+  }
+} execute main;

@@ -1,0 +1,29 @@
+/* 
+ * Test list processing -- with naive reverse
+ */
+
+program{
+  reverse(L) => {
+    rev = {
+      ([],L) => L
+    | ([E,..R],L) => rev(R,[E,..L])
+    };
+  }.rev(L,[]);
+
+  find(E,L) => theta{
+      fnd = {
+	[]=>false
+      | [E,.._]=>true
+      | [_,..R]=>fnd(R)
+      };
+    }.fnd(L);
+
+  main(i)
+  {
+    List = 1..i;
+    Reverse = reverse(List);
+    "Reverse of "++List^2++" is "++Reverse^2++"\n">>stdout;
+    I = find(3,List);
+    "15 is "++(if find(15,List) then "" else "not ")++"in "++List^2++"\n">>stdout;
+  };
+}execute main;

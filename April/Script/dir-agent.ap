@@ -1,0 +1,27 @@
+/*
+ * Simple agent using the bboard
+ */
+
+kqml_item ::= (string,any)[];
+kqml_msg ::= assert(kqml_item) | query(kqml_item);
+
+bb_protocol ::= bb_quit | reg_interest({()<-kqml_msg}?ptn,logical?old) | 
+   reset_interest | dump |
+   new_entry(string?key,kqml_msg?value) |
+   current_entry(string?key,kqml_msg?value);
+
+program
+  import (?bboard) from "bboard.aam" in
+{
+  agent(name,initial)
+  {
+    ?board = fork bboard;
+
+    for ?E in initial do
+      new_entry(name,E) >> board;
+
+    reg_interest({tau()<-query(?X)::("
+
+    
+
+} execute main;

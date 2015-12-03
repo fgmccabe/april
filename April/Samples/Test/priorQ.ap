@@ -1,0 +1,94 @@
+/*
+ * Example object program
+ */
+
+program{
+  var(V)=>theta{
+    val:V;
+    upD(E){
+      val:=E;
+    }
+  };
+
+  queue()=>theta{
+    Q:var([]);
+
+    insert(E)
+    {
+      Q.upD(Q.val<>[E]);
+    };
+
+    front() =>
+      head(Q.val);
+
+    remove() => valof{
+      [?E,..?R] .= Q.val;
+      Q.upD(R);
+      valis E
+    };
+
+    me:{Q:Q; 
+        insert:insert;
+        front:front;
+        remove:remove};
+
+    init()=> me.{insert:insert;front:front;remove:remove};
+
+    self_is(S){
+      me := S;
+    };
+  };
+
+  prQ() => queue().theta{
+    super=environment;
+
+    insertQ(E,P,Q)=> theta{
+      ins = {
+        ([]) => [(E,P)]
+      | {([(?EE,?PE),..?R])::PE>P} =>
+		     [(E,P),(EE,PE),..R]
+      | ([?EE,..?R]) => [EE,..ins(R)]
+      }
+    }.ins(Q);
+
+    insert(El){
+      (?E,?P) .= El;
+      Q.upD(insertQ(E,P,Q.val));
+    };
+
+    me:{Q:Q; insert:insert; front:front; remove:remove};
+
+    self_is(S){
+      me := S;
+      environment.self_is(S);
+    };
+
+    init()=> valof {
+      self_is(me);
+      valis me.{Q:Q; insert:insert; front:front; remove:remove};
+    };
+
+  };
+
+  main()
+  {
+    QQ=queue().init();
+    QQ.insert(foo);
+    QQ.insert(bar);
+
+    writef(stdout,"Front is: %w\n",(QQ.front()));
+    writef(stdout,"Front is: %w\n",(QQ.remove()));
+    writef(stdout,"Front is: %w\n",(QQ.remove()));
+
+    PQ=prQ().init();
+    PQ.insert((foo,2));
+    PQ.insert((bar,3));
+    PQ.insert((jar,2.5));
+    writef(stdout,"PQ queue is: %w\n",(PQ.Q.val));
+
+    writef(stdout,"PQ Front is: %w\n",(PQ.front()));
+    writef(stdout,"PQ Front is: %w\n",(PQ.remove()));
+    writef(stdout,"PQ Front is: %w\n",(PQ.remove()));
+    writef(stdout,"PQ queue is: %w\n",(PQ.Q.val));
+  }
+} execute main;

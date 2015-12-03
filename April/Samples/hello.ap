@@ -1,0 +1,4 @@
+module
+{
+  hello() => "Hello world";
+} export interface "hello.af";

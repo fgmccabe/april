@@ -1,0 +1,35 @@
+program{ 
+
+  flight ::= fl(symbol,number); 
+
+  cities = ["San Francisco", "Honkong", "Tokyo", "Seoul"]; 
+
+  flts = { 
+    ("San Francisco","Tokyo") => [ fl('UL432,1000), 
+              fl('JL002,1200), 
+              fl('AA234,998) ] 
+  | ("Tokyo","San Francisco") => [ fl('UL431,1000), 
+              fl('JL001,1200), 
+              fl('AA233,998) ] 
+  | ("Tokyo","Seoul") => [fl('UL432,300), 
+              fl('ANA,400)] 
+  | ("San Francisco", "Honkong") => [ fl('SL722,1100), 
+              fl('UA321, 990)] 
+  | ("Honkong", "Tokyo") => [ fl('HL28, 300)] 
+  | (_,_) => [] 
+  }; 
+
+  flights(F,T,R) => flts(F,T) \/ setof{ fl(Fno,Prc1+Prc2) : Z in cities && 
+          ! (Z in R) && 
+          fl(Fno,Prc1) in flts(F,Z) && 
+          fl(Fno2,Prc2) in flights(Z,T,[F,..R])}; 
+
+  cheapest(From,To) => 
+     setof{ (Price,Fno) : fl(Fno,Price) in flights(From,To,[From])}; 
+  
+
+  main(F,T) 
+  { 
+    "Cheapest flight from "++F++" to "++T++" is "++cheapest(F,T)^0++"\n">>stdout 
+  } 
+} execute main; 

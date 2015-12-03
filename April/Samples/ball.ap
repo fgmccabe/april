@@ -1,0 +1,56 @@
+/* This example demonstrates mobile code
+   Set up some bases -- typically 
+	april base left right
+	april base right left
+
+   Then run the ball:
+	april ball left count
+
+   Ball sends a program to left which then moves continuously
+   between the left and right bases.
+
+   Modified from an example by S. Ushijima
+*/
+
+#include "baseball.ah";
+
+ballP ::= Done(number);
+
+program import interface <scomms.af> in
+{
+  start(first,count){
+    scsConnect((()->main(hdl('base,first),count)),"localhost",4545);
+  };
+
+  main(first,count) {
+    s = self();
+    migrate(first) >> spawn ball(count,s,0,stdout);
+    receive{
+      Done(total) ->> 
+        "Ball played out in "++total^0++" ticks\n">>stdout
+    }
+  };
+
+  ball(count,s,sofar,out) {
+    start : ticks();			-- We will be counting how long ...
+
+    hello >> creator();
+    receive{
+      migrate(wh) ->> {			-- receive command to move ...
+
+        if count>0 then {
+          self()^1++" migrating to ... "++wh^3++"\n">>out;
+          mark = sofar+ticks()-start;
+
+          doTask({(out)->
+            ball(count-1,s,mark,out)})     -- call main ball program
+           >> wh
+        }
+        else{
+          "We're done\n" >> out;
+          Done(ticks()-start+sofar) >> s
+        }
+      }
+    }
+  }
+} execute start;

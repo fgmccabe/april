@@ -1,0 +1,59 @@
+file.lo file.o : ../config.h ../Headers/local.h ../Headers/ioP.h ../Headers/io.h \
+  ../Headers/retcode.h ../Headers/integer.h ../Headers/number.h \
+  ../Headers/logical.h ../Headers/unicode.h ../Headers/formio.h \
+  ../Headers/io.h ../Headers/iostr.h ../Headers/ioTcp.h \
+  /usr/include/stdarg.h /usr/include/va-ppc.h /usr/include/sys/time.h \
+  /usr/include/sys/types.h /usr/include/sys/cdefs.h \
+  /usr/include/machine/types.h /usr/include/ppc/types.h \
+  /usr/include/machine/ansi.h /usr/include/ppc/ansi.h \
+  /usr/include/machine/endian.h /usr/include/ppc/endian.h \
+  /usr/include/time.h /usr/include/machine/limits.h \
+  /usr/include/ppc/limits.h ../Headers/iofile.h ../Headers/url.h \
+  /usr/include/string.h /usr/include/stdlib.h /usr/include/stdio.h \
+  /usr/include/errno.h /usr/include/sys/errno.h /usr/include/math.h \
+  /usr/include/sys/stat.h /usr/include/sys/wait.h /usr/include/unistd.h \
+  /usr/include/fcntl.h /usr/include/sys/fcntl.h /usr/include/limits.h \
+  /usr/include/sys/syslimits.h 
+file.o :
+../config.h :
+../Headers/local.h :
+../Headers/ioP.h :
+../Headers/io.h :
+../Headers/retcode.h :
+../Headers/integer.h :
+../Headers/number.h :
+../Headers/logical.h :
+../Headers/unicode.h :
+../Headers/formio.h :
+../Headers/io.h :
+../Headers/iostr.h :
+../Headers/ioTcp.h :
+/usr/include/stdarg.h :
+/usr/include/va-ppc.h :
+/usr/include/sys/time.h :
+/usr/include/sys/types.h :
+/usr/include/sys/cdefs.h :
+/usr/include/machine/types.h :
+/usr/include/ppc/types.h :
+/usr/include/machine/ansi.h :
+/usr/include/ppc/ansi.h :
+/usr/include/machine/endian.h :
+/usr/include/ppc/endian.h :
+/usr/include/time.h :
+/usr/include/machine/limits.h :
+/usr/include/ppc/limits.h :
+../Headers/iofile.h :
+../Headers/url.h :
+/usr/include/string.h :
+/usr/include/stdlib.h :
+/usr/include/stdio.h :
+/usr/include/errno.h :
+/usr/include/sys/errno.h :
+/usr/include/math.h :
+/usr/include/sys/stat.h :
+/usr/include/sys/wait.h :
+/usr/include/unistd.h :
+/usr/include/fcntl.h :
+/usr/include/sys/fcntl.h :
+/usr/include/limits.h :
+/usr/include/sys/syslimits.h :

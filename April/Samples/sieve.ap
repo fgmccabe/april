@@ -1,0 +1,56 @@
+program
+{
+  -- Seive of Erastosthenes
+
+  filter(K,F,G)
+  {
+    while true do{
+      receive {
+        N :: N rem K == 0 ->> 'next >> G
+      | N ->> N >> F
+      }
+    }
+  };
+
+  seive(G)
+  {
+    receive{
+      K ->> {
+        "Next prime is "++K^0++"\n">>stdout;
+
+        'next >> G;
+
+        filter(K, {spawn seive(G)}, G);
+      }
+    }
+  };
+
+  generate(low,high)
+  {
+    receive{
+      ('kickoff, F) ->> {
+        for I in low .. high step 2 do{
+          receive{
+            'next ->> I >> F
+          }
+        }
+      }
+    }
+  };
+
+
+  main(max)
+  {
+    start = ticks();
+
+    G = spawn generate(3, max);
+
+    ('kickoff,{spawn seive(G)}) >> G;
+
+    'next >> G;
+
+    waitfor(G);
+
+    "Seive up to "++max^0++" took "++ticks()-start^0++" millisecs\n">>stdout;
+  }
+} execute main;

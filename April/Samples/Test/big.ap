@@ -1,0 +1,24 @@
+program 
+import interface <"scomms.af"> in
+{
+  main(host, port) {
+    "before connect\n" >> stdout;
+    delay(0.1);
+    scsConnect(proc,host, port);
+  };
+  
+  proc() {
+    "creating big msg...\n" >> stdout;
+    delay(0.1);
+    
+    msg : [];
+    for x in 1..(300*1024) do msg := [''x,..msg];
+    
+    "sending big msg...\n" >> stdout;
+    delay(0.1);
+    
+    msg >> handle%%"testHandle";
+    
+    "msg sent...\n" >> stdout;
+  };
+} execute main;

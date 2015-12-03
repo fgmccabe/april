@@ -1,0 +1,45 @@
+/*
+ * Program to automatically generate macro functions from a macro specification
+ */
+#include "ap_tok.ah";
+#include "op_tree.ah";
+#include "ops.ah";
+
+module
+  import (
+          interface <stdio.af> and
+	  interface "aptok.af" and
+	  interface "display.af") in
+{
+  grabData(fn) => valof {
+    _file_stat(_,_,_,_,_,_,_,count.=size,_,_,_,_,_) = fstat(fn);
+    f = fopen(fn,_open_read);
+
+    t = inchars(f,count);
+    fclose(f);
+
+    valis t;
+  };
+
+  streamer(file) => { 
+    collect{
+      (dIntext,dInPos,dLine,dFile) : (grabData(file),1,1,ffilename(file));
+
+      XX::{
+	while dIntext!=[] do{
+	  ((dTxt,dPos,dL,_),tok) = yyNextToken(dIntext,dInPos,dLine,dFile);
+	  dIntext := dTxt; dInPos := dPos; dLine := dL;
+	  elemis tok;
+	  if (EOF.=yyTok,_,_).=tok then
+	    leave XX;
+	}
+      };
+      elemis (yyTok=EOF,yyLine= -1,yyFile=file);
+    }
+    onerror
+      error(E,_) => valof{
+        "Error "++E++"in opening "++file++"\n">>stderr;
+	valis []
+      }
+  };
+} export streamer;

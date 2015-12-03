@@ -1,0 +1,361 @@
+/*
+ * Operator precedence grammar parser
+ * The basis of the April syntax
+ */
+
+#include "ap_tok.ah";
+#include "op_tree.ah";
+#include "ops.ah";
+
+module
+  import { interface <stdio.af> and
+           interface "operators.af"}
+in
+{
+  term00([(tok.=yyTok,ln.=yyLine,fl.=yyFile),..stream])=> {
+    case tok in {
+      STR(s) => valof {
+        S : s;
+        rstream : stream;
+        while [(STR(T).=yyTok,_,_),..rs].=rstream do{
+          S := S<>T;
+          rstream := rs;
+        };
+        valis (rstream,ST(fl,ln,S))
+      }
+    | NUM(n) => (stream,NM(fl,ln,n))
+    | DQUOTE(n) => (stream,APPLY(IDEN(fl,ln,[''\']),IDEN(fl,ln,n)))
+    | ID([''%]) => { 
+	if [(hed.=yyTok,hline.=yyLine,_),..hstream].=stream then {
+	  case hed in {
+	    RPAR => (stream,IDEN(fl,ln,[''%]))
+	  | ID(n) => (hstream,APPLY(IDEN(fl,ln,[''%]),IDEN(fl,hline,n)))
+	  | _ => reportError(fl,hline,"Identifier expected after %",(stream,VOID))
+	  }
+	}
+	else
+	  reportError(fl,ln,"Identifier expected after %",(stream,VOID))
+      }
+             
+    | ID(n) => { 
+	if isOperator(n) && !lookAhead(stream,RPAR) then 
+	  reportError(fl,ln,"unexpected operator: "++string%%n,(stream,VOID))
+	else
+	  (stream,IDEN(fl,ln,n))
+      }
+    | QUOTE => {
+	if [(hed.=yyTok,hline.=yyLine,_),..hstream].=stream then {
+	  case hed in {
+	    RPAR => (stream,IDEN(fl,ln,[''\']))
+	  | ID(n) => (hstream,APPLY(IDEN(fl,ln,[''\']),IDEN(fl,hline,n)))
+	  | _ => reportError(fl,hline,"Identifier expected after '",(stream,VOID))
+	  }
+	}
+	else
+	  reportError(fl,ln,"Identifier expected after '",(stream,VOID))
+      }
+
+    | LPAR => valof {
+        if [(RPAR.=yyTok,_,_),..rs].=stream then
+          valis (rs,IDEN(fl,ln,[''\(,''\)]))
+        else{
+          ([(tok.=yyTok,el.=yyLine,_),..rstream],_,V)=term(stream,2000,true);
+          if tok==RPAR then
+            valis (rstream,V)
+          else
+            valis reportError(fl,el,"close parenthesis expected",(stream,VOID))
+	}
+      }
+
+    | LBRA => valof {
+          (rstream,L) = parseList(fl,ln,stream);
+          if [(RBRA.=yyTok,el.=yyLine,_),..rs].=rstream then
+	    valis (rs,L)
+          else
+            valis reportError(fl,ln,"close bracket expected",(stream,VOID))
+	}
+
+    | LBRC => valof {
+        if [(RBRC.=yyTok,_,_),..rs].=stream then
+          valis (rs,IDEN(fl,ln,[''\{,''\}]))
+        else{
+          ([(tok.=yyTok,el.=yyLine,_),..rstream],_,V)=term(stream,2000,true);
+          if tok==RBRC then
+            valis (rstream,V)
+          else
+            valis reportError(fl,el,"close brace expected",(stream,VOID))
+	}
+      }
+
+    | RPAR => 
+        reportError(fl,ln,"unexpected close parenthesis",(stream,VOID))
+    | RBRA => 
+        reportError(fl,ln,"unexpected close bracket",(stream,VOID))
+    | RBRC => 
+        reportError(fl,ln,"unexpected close brace",(stream,VOID))
+    | CONS => 
+        reportError(fl,ln,"unexpected ,..",(stream,VOID))
+    | COMMA => 
+        reportError(fl,ln,"unexpected comma",(stream,VOID))
+    | SEMI => 
+        reportError(fl,ln,"unexpected semi-colon",(stream,VOID))
+    | EOF => 
+        ([],END)
+    }
+  };
+
+  term0(stream) => valof {
+    (rstream,F) : term00(stream);
+
+    if F==END || rstream==[] then
+      valis (rstream,F)
+    else{
+      while true do{
+        [(hed.=yyTok,_,_),.._] = rstream;
+
+	if STR(_) .=hed || NUM(_).=hed || QUOTE.=hed || DQUOTE(_).=hed ||
+	  LPAR.=hed || LBRA.=hed || LBRC.=hed || 
+	  (ID(n).=hed && (n==[''%]|| !isOperator(n))) then {
+            (rs,H) = term00(rstream);
+	    if H!=END then {
+              F := APPLY(F,H);
+	      rstream := rs;
+            }
+            else
+              valis (rstream,F)
+	  }
+	else
+	  valis (rstream,F)
+      }
+    }
+  };
+
+  termLeft(stream,prior,inside) => valof {
+    [(tok.=yyTok,ln.=yyLine,fl.=yyFile),..rstream] : stream;
+    case tok in {
+      STR(s) -> {
+        (rs,left) = term0(stream);
+	valis (rs,0,left)
+      }
+    | NUM(n) -> {
+        (rs,left) = term0(stream);
+	valis (rs,0,left)
+    }
+    | DQUOTE(n) -> {
+        (rs,left) = term0(stream);
+	valis (rs,0,left)
+      }
+    | ID([''%]) -> {
+        (rs,left) = term0(stream);
+	valis (rs,0,left)
+      }
+    | ID(n) -> {
+        (O,R) = prefixPr(n);
+        if O<=prior then {
+	  if [(RPAR.=yyTok,_,_),..rs].=rstream then 
+	    valis (rstream,0,IDEN(fl,ln,n))
+	  else{
+	    (rs,_,left) = term(rstream,R,inside);
+	    valis (rs,O,APPLY(IDEN(fl,ln,n),left))
+	  }
+	}
+        else if O!=10000 then
+	  valis reportError(fl,ln,"priority of "++string%%n++
+			     " is greater than "++prior^0,
+			     (stream,prior,VOID))
+        else{
+	  (rs,left) = term0(stream);
+	  valis (rs,0,left)
+        }
+      }
+    | QUOTE  -> {
+        (rs,left) = term0(stream);
+	valis (rs,0,left)
+      }
+    | LPAR  -> {
+        (rs,left) = term0(stream);
+	valis (rs,0,left)
+      }
+    | LBRA  -> {
+        (rs,left) = term0(stream);
+	valis (rs,0,left)
+      }
+    | LBRC -> {
+        (rs,left) = term0(stream);
+	valis (rs,0,left)
+      }
+    | EOF ->
+        valis ([],0,END)
+    | _ -> 
+	valis reportError(fl,ln,showTok(head(stream))++" not permitted here",(rstream,0,VOID))
+    }
+  };
+
+  termRight(stream,prior,lprior,left,inside) => valof {{
+    [(tok.=yyTok,ln.=yyLine,fl.=yyFile),..rstream] : stream;
+
+    case tok in {
+      ID(n) -> {
+        if (L,O) .= postfixPr(n) && O!=10000 && L>=lprior && O<=prior then {
+	  if(XL,XO,XR) .= infixPr(n) && XO<=prior && XL>=lprior then {
+	      /* operator is both infix and postfix */
+              [(hed.=yyTok,_,_),.._]=rstream;-- look ahead one token
+	      if STR(_) .=hed || NUM(_).=hed || QUOTE.=hed || LPAR.=hed || 
+	         LBRA.=hed || LBRC.=hed || 
+	         (ID(nn).=hed && (!isOperator(nn) ||
+				   (PP,_).=prefixPr(nn) && PP<=XL ||
+				   (PP,_,_).=infixPr(nn) && PP<=XL)) then {
+		  (rs,rp,right) = term(rstream,XR,inside);
+                  valis termRight(rs,prior,O,
+				   APPLY(IDEN(fl,ln,n),PAIR(left,right)),
+				   inside)
+              }
+	      else
+	        valis termRight(rstream,prior,O,APPLY(IDEN(fl,ln,n),left),
+				 inside)
+
+          }
+          else				-- postfix only
+	    valis termRight(rstream,prior,O,APPLY(IDEN(fl,ln,n),left),inside)
+
+        }
+        else if (L,O,R) .= infixPr(n) && L>=lprior && O<=prior then {
+	  (rs,rp,right) = term(rstream,R,inside);
+	  if n==['',] then		-- are we tupling?
+	    valis termRight(rs,prior,0,PAIR(left,right),inside)
+	  else
+	    valis termRight(rs,prior,O,APPLY(IDEN(fl,ln,n),PAIR(left,right)),inside)
+	}
+        else
+	  valis (stream,lprior,left)
+      }
+    | DQUOTE(_) -> valis (stream,lprior,left)
+    | RPAR  -> valis (stream,lprior,left)
+    | RBRA  -> valis (stream,lprior,left)
+    | RBRC  -> valis (stream,lprior,left)
+    | CONS  -> valis (stream,lprior,left)
+    | COMMA -> {
+        if prior >= 1000 && lprior<=999 then
+          valis termRight([(yyTok=ID([''\,]),yyLine=ln,yyFile=fl),..rstream],
+			   prior,lprior,left,inside)
+          else
+	    valis (stream,lprior,left)
+    }
+
+    | SEMI -> {
+        if !inside then
+	  valis (stream,lprior,left)
+        else
+	  valis termRight([(yyTok=ID(['';]),yyLine=ln,yyFile=fl),..rstream],
+			   prior,lprior,left,inside)
+      }
+    | EOF -> valis (stream,lprior,left)
+    | _ -> valis reportError(fl,ln,showTok(head(stream))++" not allowed here",
+			      (rstream,prior,VOID))
+    }
+  }
+  onerror{
+    error(_,'matcherr) -> valis (stream,lprior,left)
+  | E -> exception E
+  }};
+
+
+  term(stream,prior,inside) => valof {
+    (rstream,lprior,left) = termLeft(stream,prior,inside);
+    valis termRight(rstream,prior,lprior,left,inside);
+  };
+
+  lookAhead([yyToken?tok,.._],tst)=>tok.yyTok==tst;
+
+  errCnt : 0;
+  reportError(fl,ln,er,s) => valof {
+    "File "++fl++"@"++ln^0++": syntax error - "++er++"\n">>stdout;
+    fflush(stdout);
+    errCnt +:=1;
+    valis s
+  };
+  errCount() => errCnt;
+
+  parseList(fl,ln,stream) => valof {
+    if [(RBRA.=yyTok,_,_),.._].=stream then
+      valis (stream,IDEN(fl,ln,[''\[,''\]]))
+    else{
+      (rstream,_,H)=term(stream,999,true);
+
+      if [(tok.=yyTok,el.=yyLine,_),..rs].=rstream then {
+        case tok in {
+          RBRA -> 
+            valis (rstream,APPLY(IDEN(fl,ln,[''\,,''\.,''\.]),
+				  PAIR(H,IDEN(fl,el,[''\[,''\]]))))
+	| COMMA -> {
+            (rs2,T) = parseList(fl,el,rs);
+	    valis (rs2,APPLY(IDEN(fl,ln,[''\,,''\.,''\.]),PAIR(H,T)))
+          }
+	| CONS -> {
+            (rs2,_,T) = term(rs,999,true);
+	    valis (rs2,APPLY(IDEN(fl,ln,[''\,,''\.,''\.]),PAIR(H,T)))
+          }
+        | _ ->
+	   valis reportError(fl,el,"close bracket expected",(rstream,VOID))
+        }
+      }
+      else
+	valis reportError(fl,-1,"close bracket expected",(rstream,VOID))
+    }
+  };
+
+  firstLine = {
+    IDEN(_,N,_) => N
+  | NM(_,N,_) => N
+  | ST(_,N,_) => N
+  | APPLY(L,R) => firstLine(L)
+  | PAIR(L,R) => firstLine(L)
+  | VOID => -1
+  };
+
+  lastLine = {
+    IDEN(_,N,_) => N
+  | NM(_,N,_) => N
+  | ST(_,N,_) => N
+  | APPLY(L,R) => lastLine(R)
+  | PAIR(L,R) => lastLine(R)
+  | VOID => -1
+  };
+
+  fileName = {
+    IDEN(N,_,_) => N
+  | NM(N,_,_) => N
+  | ST(N,_,_) => N
+  | APPLY(L,R) => fileName(L)
+  | PAIR(L,R) => fileName(L)
+  | VOID => ""
+  };
+
+  showTok((T.=yyTok,L.=yyLine,F.=yyFile)) => {
+    case T in {
+      SEMI => "SEMI"
+    | COMMA => "COMMA"
+    | CONS => "CONS"
+    | QUOTE => "QUOTE"
+    | LPAR => "\("
+    | RPAR => "\)"
+    | LBRA => "\["
+    | RBRA => "\]"
+    | LBRC => "\{"
+    | RBRC => "\}"
+    | ID(N) => string%%N
+    | NUM(N) =>string%%N 
+    | STR(N) => string%%N
+    | EOF => "<<end-of-file>>"
+    }};
+  
+  parse(stream) => valof {
+    (ns,L,T) : term(stream,2000,false);
+    if [({tok.=yyTok::tok==SEMI||tok==EOF},_,_),..rs].=ns then
+      valis (rs,L,T)
+    else
+      valis (ns,L,T)
+  };
+    
+} export (parse,errCount,reportError);
+

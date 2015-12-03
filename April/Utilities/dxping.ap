@@ -1,0 +1,31 @@
+/*
+ * Version of ping that uses dialox to allow retargetting of the messages
+ */
+
+program{
+
+  dxping(dialox,target)
+  {
+    `(window,"April Pinger", (column, [
+	(row, [(fit, 50, 24, (label, "To:   ")), 
+		(value, to, &{meta??{string%%target}}, (entry, to, (new_to,to)))]),
+	(row, [(fit, 50, 24,(label, "Msg:  ")), 
+	       (fit, 250, 64, (entry, msg))]),
+	(row, [(fit, 50, 24, (label, "Reply:")), 
+		(value, reply, " ", (label, reply))]),
+	(row, [(button, "Send", (sendIt,msg)),
+		(button, "Quit", quit)])]))>>dialox;
+
+    repeat{
+      (new_to,?to) -> {
+	target := handle??to
+      }
+    | (sendIt,?M) -> {
+	rname(M) >> target
+      }
+    | ?M -> {
+        (set_variable, reply, string??M) >> dialox
+      }
+    } until quit
+  };
+} execute dxping;

@@ -1,0 +1,201 @@
+@node Background theory
+@chapter Background theory
+
+@noindent
+@code{Alex} uses 4 passes to convert the rule file into a tokenizer module:
+
+@menu
+* Rule parser::                 
+* Nondeterministic Finite Automaton::  
+* Deterministic Finite Automaton::  
+* Generating the April code::  
+@end menu
+
+@node Rule parser
+@section Rule parser
+
+@noindent
+In the first phase, the rule file is parsed into a set of rules, the
+most critical part of this phase being the parsing of the regular
+expressions. @code{Alex} uses an internal representation of a regular
+expression that is based on the type:
+
+@smallexample
+regexp(%final) ::= ordRE(symbol?ch) 
+  | emptyRE
+  | orRE(regexp(%final)?left,regexp(%final)?right)
+  | catRE(regexp(%final)?left,regexp(%final)?right)
+  | starRE(regexp(%final)?exp)
+  | plusRE(regexp(%final)?exp)
+  | optRE(regexp(%final)?exp)
+  | seqRE(symbol[]?ch)
+  | charsRE(symbol[]?ch)
+  | negCharsRE(symbol[]?ch)
+  | periodRE
+  | finalRE(regexp(%final)?exp,finalType(%final)?val)
+  | eofRE(regexp(%final));
+@end smallexample
+
+@noindent
+So, for example, a regular expression such as:
+
+@smallexample
+"-"?[0-9_]+
+@end smallexample
+
+@noindent
+is parsed into the @code{April} structure:
+
+@smallexample
+catRE(optRE(ordRE(''-)),plusRE(charsRE([''0,''1,@dots{},''9])))
+@end smallexample
+
+@node Nondeterministic Finite Automaton
+@section Nondeterministic Finite Automaton
+@cindex Nondeterministic Finite Automaton
+
+@noindent
+It is well known that there is a close connection between regular
+expressions and finite state machines -- the latter be effectively
+programs that can recognize the same strings as are specified by the
+regular expression.
+
+In the case of regular expressions with disjunction (which is most), the
+most obvious mapping is into a Nondeterministic Finite Automaton
+(NFA). An NFA is a finite state machine where two or more transitions
+may be labelled with the same token. Equivalently, an NFA is a finite
+state machine which allows `empty' transitions between states: i.e.,
+some state transitions are possible without consuming any input. Such a
+machine is nondeterministic simply because one can choose to switch
+between states or not.
+
+@iftex
+@tex
+\vskip 1ex
+\centerline{\psfig{figure=nfa.eps,width=8cm}}
+@end tex
+An NFA which characterizes a regular expression for integers.
+
+@noindent
+@end iftex
+
+The outermost term in a regular expression of a rule
+becomes a final state in the corresponding NFA.
+
+@node Deterministic Finite Automaton
+@section Deterministic Finite Automaton
+@cindex Deterministic Finite Automaton
+
+@noindent
+The problem with an NFA is that it requires an `interpreter' that is
+capable of nondeterministic behaviour. In the context of a string parser
+this amounts to being able to `back up' the input an arbitrary amount
+depending on which of the alternative routes through the NFA state
+diagram are available. This in turn leads to slower lexical parsing.
+
+An alternative is to convert the regular expression into a deterministic finite
+automaton (DFA). In turns out that for every NFA, there is a DFA that
+parses equivalent input. 
+
+Essentially the technique is to introduce a new state in the DFA for
+every reachable set of states in the NFA. It is like executing every
+branch in the NFA in parallel. 
+
+While it is asymptotically true that if the NFA has @var{n} states, then
+there are
+@iftex
+@tex
+$2^n$
+@end tex
+@end iftex
+@ifinfo
+2**n
+@end ifinfo
+reachable states in the equivalent DFA, in practice the number of states
+in the DFA is larger than the NFA but not enormously so.
+
+It would be impractical for @code{Alex} to actually generate a NFA and
+then convert it into a DFA. The @code{Alex} generator constructs the DFA
+directly from the regular expression by examining the possible `follow'
+strings at every point in the regular expression.
+
+In fact, the algorithm simultaneously converts @emph{all} the regular
+expressions of all of the rules into a single large DFA. This is because
+eventually @code{Alex} will produce a single program.
+
+@cindex Final states in DFAs
+A state is final in the DFA if one of its constituent states is final in
+the corresponding NFA. If there is more than one such final state then
+the one corresponding to the earliest rule in the rule file is used as
+the final state. This is the mechanism by which rules are disambiguated
+when they can match the same string. (For this reason, it is wise to
+place the rules for keywords before the rules for identifiers.)
+
+@node Generating the April code
+@section Generating the @code{April} code
+@cindex Generating the @code{April} code
+
+@noindent
+The final phase of the generator is to convert the state transition
+diagram associated with the DFA into an @code{April} program that
+effectively interprets the DFA.
+
+This is done by converting a state transition of the form:
+@smallexample
+0:''- -> 1
+  ''0 -> 2
+  ''3 -> 2
+  @dots{}
+  ''9 -> 2
+@end smallexample
+
+@noindent
+into an @code{April} fragment that determines the next state:
+
+@smallexample
+yyState := case yyChar in @{
+  ''- => 1
+| ''0 => 2
+| ''3 => 2
+  @dots{}
+| ''9 => 2
+@}
+@end smallexample
+
+Each transition is associated with the consumption of a character from
+the input stream. The characters so consumed are collected together into
+a token list -- for passing to the action function:
+
+@smallexample
+yyTok := [yyChar,..yyTok]
+@end smallexample
+
+@noindent
+A final state in the DFA corresponds to an action that is associated
+with the rule. If the action is a regular action then the appropriate
+function will be called, if the action is a skip, or a switch to another
+state then the parser is restarted in the new state (and the token
+collected so far is discarded).
+@cindex Final states in DFAs
+
+Since encountering a final state does not necessarily imply that the
+parser should stop, the parser does not execute the action until it
+encounters the `impossible' state (i.e., it has reached a character
+which has no legal state transition. 
+
+At that point the parser will return (if the action is an acceptance
+action) with the value returned by the invoked action function:
+@cindex Invoking action function
+
+@smallexample
+-1 -> @{
+        if yyNext!= -1 then @{
+          yyState := yyNext; yyTok := []; yyIPos := yyLPos;
+          yyNext := -1; yyString := yyRest;
+        @}
+        else
+          valis yyFinal(yyRev(yyTok),yyIPos,yyLPos,yyRest)
+      @}
+@end smallexample
+
+

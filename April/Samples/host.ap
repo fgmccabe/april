@@ -1,0 +1,25 @@
+#include "mobile.ah";
+
+program{
+  
+  main()
+  {
+    S = spawn skills() as hl('skills,'mobile);
+    H = spawn server() as handle('server,'mobile);
+    waitfor(H);
+    waitfor(S);
+  };
+
+  skills()
+  {
+    repeat
+      querySkill("stdout") ->>
+        skillsAre("stdout",[stdout]) >> replyto
+    } until Done;
+  };
+
+  server()
+  {
+    repeat{
+      takeThisAgent(      
+

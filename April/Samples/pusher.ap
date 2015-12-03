@@ -1,0 +1,71 @@
+/*
+ * An example program that pushes a migratory agent around
+ */
+#include "mover.ah";
+#include |dialox.ah|;
+
+program{
+
+  main(dialox,who)
+  {
+    dXclearDbase(`listing) >> dialox;
+    
+    dXwind("Agent pusher", dXcol([
+	dXrow([dXlabel("Target agent"), dXvar(`who,who,dXentry(`who')), 
+		dXcolour("green", dXbtn("Set", (`set', `who')))]),
+	dXrow([dXlabel("Message"), dXentry(`msg'),
+		dXcolour("green", dXbtn("Send", (`send', `msg')))]),
+	dXrow([dXvLabel(`reply')]),
+        dXrow([dXbtn("Hello",`hello'),
+		dXbtn("Move...",`move'),
+		dXpopup("Pickup", 
+		    dXreplicate(`listing',[dXvBtn(`file',(`pickup',`file'))])),
+		dXbtn("Refresh",`list'),
+		dXbtn("Come home",`come_home')]),
+        dXrow([dXcolour("red", dXbtn("Quit", `quit'))])])) >> dialox;
+
+    repeat{
+      ('send, term?(msg)) ->> msg>>who
+    | ('set,string?w) ->> who := handle%%w
+    | 'hello ->> say_hello >> who
+    | 'move ->> _ = spawn mover(dialox,who)
+    | 'list ->> dir>>who
+    | ('pickup,ptn) ->> pickup(ptn) >> who
+    | here_you_are(name,t) ->> _ = spawn DisplayText(name,t,dialox)
+    | 'come_home ->> come_home >> who
+    | listing(list) ->> {
+	dXclearDbase('listing) >> dialox;
+	for S in list do
+	  dXnewRecord('listing, [('file,S)]) >> dialox;
+	dXsetVar('reply, sprintf("%d files in store",(|list|))) >> dialox
+      }
+    | hi_there(m) ->> dXsetVar('reply, sprintf("Hello from %S",(m))) >> dialox
+    | i_have_it(f) ->> dXsetVar('reply, sprintf("I have %S",(f))) >> dialox
+    | M ->> dXsetVar('reply, sprintf("%3w",(M))) >> dialox
+    } until 'quit::sender==dialox
+  };
+
+  mover(dialox,who)
+  {
+    dXwind("Where to?", dXcol([
+	dXrow([dXlabel("Where to:"), dXentry('dest)]),
+	dXrow([dXcolour("green", dXbtn("Move it", ('move, 'dest))),
+		dXcolour("red", dXbtn("Cancel", 'cancel))])]))>>dialox;
+
+     { ('move, string?host) ->> moveto(host)>>who
+     | 'cancel ->> relax
+     };
+
+     dXclose >> dialox
+  };
+
+  DisplayText(name,t,dialox)
+  {
+    dXwind(sprintf("File - %S",(name)), dXcol([
+	dXvar('tt, t, dXtext('tt, 80, 24)),
+	dXcolour("red", dXbtn("Dismiss", 'quit))])) >> dialox;
+    'quit ->> relax;
+    dXclose >> dialox
+  }
+
+} execute main;

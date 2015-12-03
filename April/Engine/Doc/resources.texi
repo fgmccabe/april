@@ -1,0 +1,3 @@
+@node Resource management
+@chapter Resource management
+@cindex Resource management

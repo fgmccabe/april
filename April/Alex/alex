@@ -1,0 +1,5 @@
+#!/bin/sh
+
+# Execute the alex lexical parser generator
+
+exec /opt/april/bin/april -h8192 file:////opt/april/april/alex.aam $*

@@ -1,0 +1,21 @@
+program{
+consumer(start){
+  T:0;
+  repeat 
+    N ->> T:=T+N
+  until 0;
+  time = ticks()-start;
+  (time,T)^0 ++ "\n" >> stdout
+};
+producer(MAX){
+  start = ticks();
+ Adder = spawn consumer(start);
+ for N in 1..MAX do
+   N >> Adder;
+/* N:0;
+ while N<MAX do
+   {N:=N+1;N>>Adder};
+*/
+ 0>>Adder
+}
+}execute producer;

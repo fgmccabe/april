@@ -1,0 +1,13 @@
+program
+{
+  main(Cmd,A1,A2){
+    H1 = spawn {R1 = shell(Cmd,[A1],[]);
+      "Shell1 returns "++R1^0++"\n">>stdout;fflush(stdout);
+    };
+    H2 = spawn {R2 = shell(Cmd,[A2],[]);
+      "Shell2 returns "++R2^0++"\n">>stdout;fflush(stdout);
+    };
+    waitfor(H1);
+    waitfor(H2);
+  }
+} execute main

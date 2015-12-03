@@ -1,0 +1,751 @@
+/* A test suite to verify April arithmetic */
+
+program{
+
+  plus_test(X,Y)
+  {
+    "Result of "++X^0++"+"++Y^0++"="++(X+Y)^0++"\n">>stdout
+    onerror{
+      error(S,C) ->
+        "+ error: "++S++" in "++C^0++"\n">>stdout
+    }
+  };
+
+  minus_test(X,Y)
+  {
+    "Result of "++X^0++"-"++Y^0++"="++(X-Y)^0++"\n">>stdout
+    onerror{
+      error(S,C) ->
+        "error: "++S++" in "++C^0++"\n">>stdout
+    }
+  };
+
+  times_test(X,Y)
+  {
+    "Result of "++X^0++"*"++Y^0++"="++(X*Y)^0++"\n">>stdout
+    onerror{
+      error(S,C) ->
+        "error: "++S++" in "++C^0++"\n">>stdout
+    }
+  };
+
+  divide_test(X,Y)
+  {
+    "Result of "++X^0++"/"++Y^0++"="++(X/Y)^0++"\n">>stdout
+    onerror{
+      error(S,C) ->
+        "error: "++S++" in "++C^0++"\n">>stdout
+    }
+  };
+
+  quotient_test(X,Y)
+  {
+    "Result of "++X^0++"%"++Y^0++"="++(X quot Y)^0++"\n">>stdout
+    onerror{
+      error(S,C) ->
+        "error: "++S++" in "++C^0++"\n">>stdout
+    }
+  };
+
+  remainder_test(X,Y)
+  {
+    "Result of "++X^0++"rem"++Y^0++"="++(X rem Y)^0++"\n">>stdout
+    onerror{
+      error(S,C) ->
+        "error: "++S++" in "++C^0++"\n">>stdout
+    }
+  };
+
+  abs_test(X)
+  {
+    "Result of abs("++X^0++")="++abs(X)^0++"\n">>stdout
+    onerror{
+      error(S,C) ->
+        "error: "++S++" in "++C^0++"\n">>stdout
+    }
+  };
+
+  band_test(X,Y)
+  {
+    "Result of "++X^0++"&"++Y^0++"="++band(X,Y)^0++"\n">>stdout
+    onerror{
+      error(S,C) ->
+        "error: "++S++" in "++C^0++"\n">>stdout
+    }
+  };
+
+  bor_test(X,Y)
+  {
+    "Result of "++X^0++"|"++Y^0++"="++bor(X,Y)^0++"\n">>stdout
+    onerror{
+      error(S,C) ->
+        "error: "++S++" in "++C^0++"\n">>stdout
+    }
+  };
+
+  bnot_test(X)
+  {
+    "Result of bnot("++X^0++")="++bnot(X)^0++"\n">>stdout
+    onerror{
+      error(S,C) ->
+        "error: "++S++" in "++C^0++"\n">>stdout
+    }
+  };
+
+  bxor_test(X,Y)
+  {
+    "Result of "++X^0++" xor "++Y^0++"="++bxor(X,Y)^0++"\n">>stdout
+    onerror{
+      error(S,C) ->
+        "error: "++S++" in "++C^0++"\n">>stdout
+    }
+  };
+
+  bleft_test(X,Y)
+  {
+    "Result of "++X^0++"<<"++Y^0++"="++bleft(X,Y)^0++"\n">>stdout
+    onerror{
+      error(S,C) ->
+        "error: "++S++" in "++C^0++"\n">>stdout
+    }
+  };
+
+  bright_test(X,Y)
+  {
+    "Result of "++X^0++">>"++Y^0++"="++bright(X,Y)^0++"\n">>stdout
+    onerror{
+      error(S,C) ->
+        "error: "++S++" in "++C^0++"\n">>stdout
+    }
+  };
+
+  trunc_test(X)
+  {
+    "Result of trunc("++X^0++")="++trunc(X)^0++"\n">>stdout
+    onerror{
+      error(S,C) ->
+        "error: "++S++" in "++C^0++"\n">>stdout
+    }
+  };
+
+  ceil_test(X)
+  {
+    "Result of ceil("++X^0++")="++ceil(X)^0++"\n">>stdout
+    onerror{
+      error(S,C) ->
+        "error: "++S++" in "++C^0++"\n">>stdout
+    }
+  };
+
+  floor_test(X)
+  {
+    "Result of floor("++X^0++")="++floor(X)^0++"\n">>stdout
+    onerror{
+      error(S,C) ->
+        "error: "++S++" in "++C^0++"\n">>stdout
+    }
+  };
+
+  itrunc_test(X)
+  {
+    "Result of itrunc("++X^0++")="++itrunc(X)^0++"\n">>stdout
+    onerror{
+      error(S,C) ->
+        "error: "++S++" in "++C^0++"\n">>stdout
+    }
+  };
+
+  sine_test(X)
+  {
+    "Result of sin("++X^0++")="++sin(X)^0++"\n">>stdout
+    onerror{
+      error(S,C) ->
+        "error: "++S++" in "++C^0++"\n">>stdout
+    }
+  };
+
+  cosine_test(X)
+  {
+    "Result of cos("++X^0++")="++cos(X)^0++"\n">>stdout
+    onerror{
+      error(S,C) ->
+        "error: "++S++" in "++C^0++"\n">>stdout
+    }
+  };
+
+  tangent_test(X)
+  {
+    "Result of tan("++X^0++")="++tan(X)^0++"\n">>stdout
+    onerror{
+      error(S,C) ->
+        "error: "++S++" in "++C^0++"\n">>stdout
+    }
+  };
+
+  arcsine_test(X)
+  {
+    "Result of asin("++X^0++")="++asin(X)^0++"\n">>stdout
+    onerror{
+      error(S,C) ->
+        "error: "++S++" in "++C^0++"\n">>stdout
+    }
+  };
+
+  arcosine_test(X)
+  {
+    "Result of acos("++X^0++")="++acos(X)^0++"\n">>stdout
+    onerror{
+      error(S,C) ->
+        "error: "++S++" in "++C^0++"\n">>stdout
+    }
+  };
+
+  arctangent_test(X)
+  {
+    "Result of atan("++X^0++")="++atan(X)^0++", /pi="++atan(X)/pi()^0++"\n">>stdout
+    onerror{
+      error(S,C) ->
+        "error: "++S++" in "++C^0++"\n">>stdout
+    }
+  };
+
+  sinh_test(X)
+  {
+    "Result of sinh("++X^0++")="++sinh(X)^0++", /pi="++sinh(X)/pi()^0++"\n">>stdout
+    onerror{
+      error(S,C) ->
+        "error: "++S++" in "++C^0++"\n">>stdout
+    }
+  };
+
+  sqrt_test(X)
+  {
+    "Result of sqrt("++X^0++")="++sqrt(X)^0++"\n">>stdout
+    onerror{
+      error(S,C) ->
+        "error: "++S++" in "++C^0++"\n">>stdout
+    }
+  };
+
+  cbrt_test(X)
+  {
+    "Result of cbrt("++X^0++")="++cbrt(X)^0++"\n">>stdout
+    onerror{
+      error(S,C) ->
+        "error: "++S++" in "++C^0++"\n">>stdout
+    }
+  };
+
+  pow_test(X,Y)
+  {
+    "Result of pow("++X^0++","++Y^0++")="++pow(X,Y)^0++"\n">>stdout
+    onerror{
+      error(S,C) ->
+        "error: "++S++" in "++C^0++"\n">>stdout
+    }
+  };
+
+  exp_test(X)
+  {
+    "Result of exp("++X^0++")="++exp(X)^0++"\n">>stdout
+    onerror{
+      error(S,C) ->
+        "error: "++S++" in "++C^0++"\n">>stdout
+    }
+  };
+
+  log_test(X)
+  {
+    "Result of log("++X^0++")="++log(X)^0++"\n">>stdout
+    onerror{
+      error(S,C) ->
+        "error: "++S++" in "++C^0++"\n">>stdout
+    }
+  };
+
+  log10_test(X)
+  {
+    "Result of log10("++X^0++")="++log10(X)^0++"\n">>stdout
+    onerror{
+      error(S,C) ->
+        "error: "++S++" in "++C^0++"\n">>stdout
+    }
+  };
+
+  rand_test(X)
+  {
+    "Result of rand("++X^0++")="++rand(X)^0++"\n">>stdout
+    onerror{
+      error(S,C) ->
+        "error: "++S++" in "++C^0++"\n">>stdout
+    }
+  };
+
+  irand_test(X)
+  {
+    "Result of irand("++X^0++")="++irand(X)^0++"\n">>stdout
+    onerror{
+      error(S,C) ->
+        "error: "++S++" in "++C^0++"\n">>stdout
+    }
+  };
+
+  main()
+  {
+    plus_test(0,0);
+    plus_test(0,0.0);
+    plus_test(23,-23);
+    plus_test(23.035,0.5);
+    plus_test(23,0.5);
+    plus_test(23.035,5);
+    plus_test(65536,65536);
+    plus_test(33554432,33554432);
+    plus_test(67108864,67108864);
+    plus_test(134217728,134217728);
+    plus_test(268435456,268435456);
+    plus_test(536870912,536870912);
+    minus_test(0,0);
+    minus_test(0,0.0);
+    minus_test(23,-23);
+    minus_test(23.035,0.035);
+    minus_test(23,0.5);
+    minus_test(23.035,5);
+    times_test(0,0);
+    times_test(10,0.0);
+    times_test(23,-23);
+    times_test(23.035,0.035);
+    times_test(23,0.5);
+    times_test(23.035,5);
+    times_test(65536,65536);
+    times_test(33554432,33554432);
+    times_test(67108864,67108864);
+    times_test(134217728,134217728);
+    times_test(268435456,268435456);
+    times_test(536870912,536870912);
+    divide_test(0,0);
+    divide_test(10,0.0);
+    divide_test(10.5,0.0);
+    divide_test(-23,5);
+    divide_test(23,-5);
+    divide_test(-23,-5);
+    divide_test(23,-23);
+    divide_test(23.035,0.035);
+    divide_test(23,0.5);
+    divide_test(23.035,5);
+    quotient_test(0,0);
+    quotient_test(10,0.0);
+    quotient_test(-23,5);
+    quotient_test(23,-5);
+    quotient_test(-23,-5);
+    quotient_test(-23.5,5);
+    quotient_test(23.5,-5);
+    quotient_test(-23,-5);
+    quotient_test(23,-23);
+    quotient_test(23.035,0.035);
+    quotient_test(23,0.5);
+    quotient_test(23.035,5);
+    remainder_test(0,0);
+    remainder_test(10,0.0);
+    remainder_test(1.5,0.0);
+    remainder_test(23,5);
+    remainder_test(-23,5);
+    remainder_test(23,-5);
+    remainder_test(-23,-5);
+    remainder_test(23,-23);
+    remainder_test(23.035,0.035);
+    remainder_test(23,0.5);
+    remainder_test(23.035,5);
+    band_test(0x0f,0x0f);
+    band_test(0x0f,0xf0);
+    band_test(0x0f,0x0);
+    bor_test(0x0f,0x0f);
+    bor_test(0x0f,0xf0);
+    bor_test(0x0f,0x0);
+    bxor_test(0x0f,0x0f);
+    bxor_test(0x0f,0xf0);
+    bxor_test(0x0f,0x0);
+    bleft_test(0x0f,1);
+    bleft_test(0x0f,2);
+    bleft_test(0x0f,3);
+    bleft_test(0x0f,4);
+    bleft_test(0x0f,5);
+    bleft_test(0x0f,6);
+    bleft_test(0x0f,7);
+    bleft_test(0x0f,8);
+    bleft_test(0x0f,9);
+    bleft_test(0x0f,10);
+    bleft_test(0x0f,11);
+    bleft_test(0x0f,12);
+    bleft_test(0x0f,13);
+    bleft_test(0x0f,14);
+    bleft_test(0x0f,15);
+    bleft_test(0x0f,16);
+    bleft_test(0x0f,17);
+    bleft_test(0x0f,18);
+    bleft_test(0x0f,19);
+    bleft_test(0x0f,20);
+    bleft_test(0x0f,24);
+    bleft_test(0x0f,29);
+    bleft_test(0x0f,-1);
+    bleft_test(0x0f,-2);
+    bright_test(0x0f,1);
+    bright_test(0x0f,2);
+    bright_test(0x0f,3);
+    bright_test(0x0f,4);
+    bright_test(0x0f,5);
+    bright_test(0x0f,6);
+    bright_test(0x0f,7);
+    bright_test(0x0f,8);
+    bright_test(0x0f,9);
+    bright_test(0x0f,10);
+    bright_test(0x0f,11);
+    bright_test(0x0f,12);
+    bright_test(0x0f,13);
+    bright_test(0x0f,14);
+    bright_test(0x0f,15);
+    bright_test(0x0f,16);
+    bright_test(0x0f,17);
+    bright_test(0x0f,18);
+    bright_test(0x0f,19);
+    bright_test(0x0f,20);
+    bright_test(0x0f,24);
+    bright_test(0x0f,29);
+    bright_test(0x0f,-1);
+    bright_test(0x0f,-2);
+    bnot_test(0);
+    bnot_test(0x1);
+    bnot_test(bnot(0x1));
+    abs_test(0);
+    abs_test(1);
+    abs_test(100);
+    abs_test(65536);
+    abs_test(33554432);
+    abs_test(67108864);
+    abs_test(134217728);
+    abs_test(268435456);
+    abs_test(536870912);
+    abs_test(-0);
+    abs_test(-1);
+    abs_test(-100);
+    abs_test(-65536);
+    abs_test(-33554432);
+    abs_test(-67108864);
+    abs_test(-134217728);
+    abs_test(-268435456);
+    abs_test(-536870912);
+    abs_test(0.0);
+    abs_test(1.2);
+    abs_test(10.30);
+    abs_test(65.536);
+    abs_test(335.54432);
+    abs_test(6710.8864);
+    abs_test(1342177.28);
+    abs_test(26843545.6);
+    abs_test(536870912e12);
+    abs_test(-1.2);
+    abs_test(-10.30);
+    abs_test(-655.36);
+    abs_test(-3355.4432);
+    abs_test(-67108.864);
+    abs_test(-134217.728);
+    abs_test(-2684354.56);
+    abs_test(-53687091.2e12);
+    trunc_test(0);
+    trunc_test(1);
+    trunc_test(100);
+    trunc_test(65536);
+    trunc_test(33554432);
+    trunc_test(67108864);
+    trunc_test(134217728);
+    trunc_test(268435456);
+    trunc_test(536870912);
+    trunc_test(-0);
+    trunc_test(-1);
+    trunc_test(-100);
+    trunc_test(-65536);
+    trunc_test(-33554432);
+    trunc_test(-67108864);
+    trunc_test(-134217728);
+    trunc_test(-268435456);
+    trunc_test(-536870912);
+    trunc_test(0.0);
+    trunc_test(1.2);
+    trunc_test(10.30);
+    trunc_test(65.536);
+    trunc_test(335.54432);
+    trunc_test(6710.8864);
+    trunc_test(1342177.28);
+    trunc_test(26843545.6);
+    trunc_test(536870912e12);
+    trunc_test(-1.2);
+    trunc_test(-10.30);
+    trunc_test(-655.36);
+    trunc_test(-3355.4432);
+    trunc_test(-67108.864);
+    trunc_test(-134217.728);
+    trunc_test(-2684354.56);
+    trunc_test(-53687091.2e12);
+    ceil_test(0);
+    ceil_test(1);
+    ceil_test(100);
+    ceil_test(65536);
+    ceil_test(33554432);
+    ceil_test(67108864);
+    ceil_test(134217728);
+    ceil_test(268435456);
+    ceil_test(536870912);
+    ceil_test(-0);
+    ceil_test(-1);
+    ceil_test(-100);
+    ceil_test(-65536);
+    ceil_test(-33554432);
+    ceil_test(-67108864);
+    ceil_test(-134217728);
+    ceil_test(-268435456);
+    ceil_test(-536870912);
+    ceil_test(0.0);
+    ceil_test(1.2);
+    ceil_test(10.30);
+    ceil_test(65.536);
+    ceil_test(335.54432);
+    ceil_test(6710.8864);
+    ceil_test(1342177.28);
+    ceil_test(26843545.6);
+    ceil_test(536870912e12);
+    ceil_test(-1.2);
+    ceil_test(-10.30);
+    ceil_test(-655.36);
+    ceil_test(-3355.4432);
+    ceil_test(-67108.864);
+    ceil_test(-134217.728);
+    ceil_test(-2684354.56);
+    ceil_test(-53687091.2e12);
+    floor_test(0);
+    floor_test(1);
+    floor_test(100);
+    floor_test(65536);
+    floor_test(33554432);
+    floor_test(67108864);
+    floor_test(134217728);
+    floor_test(268435456);
+    floor_test(536870912);
+    floor_test(-0);
+    floor_test(-1);
+    floor_test(-100);
+    floor_test(-65536);
+    floor_test(-33554432);
+    floor_test(-67108864);
+    floor_test(-134217728);
+    floor_test(-268435456);
+    floor_test(-536870912);
+    floor_test(0.0);
+    floor_test(1.2);
+    floor_test(10.30);
+    floor_test(65.536);
+    floor_test(335.54432);
+    floor_test(6710.8864);
+    floor_test(1342177.28);
+    floor_test(26843545.6);
+    floor_test(536870912e12);
+    floor_test(-1.2);
+    floor_test(-10.30);
+    floor_test(-655.36);
+    floor_test(-3355.4432);
+    floor_test(-67108.864);
+    floor_test(-134217.728);
+    floor_test(-2684354.56);
+    floor_test(-53687091.2e12);
+    itrunc_test(0);
+    itrunc_test(1);
+    itrunc_test(100);
+    itrunc_test(65536);
+    itrunc_test(33554432);
+    itrunc_test(67108864);
+    itrunc_test(134217728);
+    itrunc_test(268435456);
+    itrunc_test(536870912);
+    itrunc_test(-0);
+    itrunc_test(-1);
+    itrunc_test(-100);
+    itrunc_test(-65536);
+    itrunc_test(-33554432);
+    itrunc_test(-67108864);
+    itrunc_test(-134217728);
+    itrunc_test(-268435456);
+    itrunc_test(-536870912);
+    itrunc_test(0.0);
+    itrunc_test(1.2);
+    itrunc_test(10.30);
+    itrunc_test(65.536);
+    itrunc_test(335.54432);
+    itrunc_test(6710.8864);
+    itrunc_test(1342177.28);
+    itrunc_test(26843545.6);
+    itrunc_test(536870912e12);
+    itrunc_test(-1.2);
+    itrunc_test(-10.30);
+    itrunc_test(-655.36);
+    itrunc_test(-3355.4432);
+    itrunc_test(-67108.864);
+    itrunc_test(-134217.728);
+    itrunc_test(-2684354.56);
+    itrunc_test(-53687091.2e12);
+
+    sine_test(pi());
+    sine_test(0);
+    sine_test(pi()/2);
+    sine_test(pi()/3);
+    sine_test(pi()/4);
+    sine_test(pi()/6);
+    sine_test(2*pi());
+
+    cosine_test(pi());
+    cosine_test(0);
+    cosine_test(pi()/2);
+    cosine_test(pi()/3);
+    cosine_test(pi()/4);
+    cosine_test(pi()/6);
+    cosine_test(2*pi());
+
+    tangent_test(pi());
+    tangent_test(0);
+    tangent_test(pi()/2);
+    tangent_test(pi()/3);
+    tangent_test(pi()/4);
+    tangent_test(pi()/6);
+    tangent_test(2*pi());
+
+    arcsine_test(sin(pi()));
+    arcsine_test(sin(0));
+    arcsine_test(sin(pi()/2));
+    arcsine_test(sin(pi()/3));
+    arcsine_test(sin(pi()/4));
+    arcsine_test(sin(pi()/6));
+    arcsine_test(sin(2*pi()));
+    arcsine_test(0);
+    arcsine_test(0.5);
+    arcsine_test(1);
+    arcsine_test(1.5);
+
+    arcosine_test(cos(pi()));
+    arcosine_test(cos(0));
+    arcosine_test(cos(pi()/2));
+    arcosine_test(cos(pi()/3));
+    arcosine_test(cos(pi()/4));
+    arcosine_test(cos(pi()/6));
+    arcosine_test(cos(2*pi()));
+    arcosine_test(0);
+    arcosine_test(0.5);
+    arcosine_test(1);
+    arcosine_test(1.5);
+
+    arctangent_test(tan(pi()));
+    arctangent_test(tan(0));
+    arctangent_test(tan(pi()/2));
+    arctangent_test(tan(pi()/3));
+    arctangent_test(tan(pi()/4));
+    arctangent_test(tan(pi()/6));
+    arctangent_test(tan(2*pi()));
+    arctangent_test(0);
+    arctangent_test(0.5);
+    arctangent_test(1);
+    arctangent_test(1.5);
+
+    sqrt_test(0);
+    sqrt_test(2);
+    sqrt_test(3);
+    sqrt_test(4);
+    sqrt_test(5);
+    sqrt_test(9);
+    sqrt_test(64);
+    sqrt_test(-1);
+    sqrt_test(-1.5);
+
+    cbrt_test(0);
+    cbrt_test(2);
+    cbrt_test(3);
+    cbrt_test(4);
+    cbrt_test(5);
+    cbrt_test(9);
+    cbrt_test(27);
+    cbrt_test(64);
+    cbrt_test(-1);
+    cbrt_test(-1.5);
+
+    pow_test(0,0);
+    pow_test(1,0);
+    pow_test(1,1);
+    pow_test(2,2);
+    pow_test(2,-1);
+    pow_test(4,0.5);
+    pow_test(4.5,0.5);
+    pow_test(-4.5,0.5);
+    pow_test(-4,0.5);
+    pow_test(-4.5,5);
+    pow_test(sqrt(7),2);
+    pow_test(10,-3);
+    pow_test(30,pow(30,30));
+
+    exp_test(0);
+    exp_test(1);
+    exp_test(1.3);
+    exp_test(2);
+    exp_test(0.5);
+    exp_test(4.5);
+    exp_test(-4.5);
+    exp_test(-4);
+    exp_test(exp(30));
+
+    log_test(0);
+    log_test(1);
+    log_test(exp(0));
+    log_test(-2);
+    log_test(-34.2);
+
+    log10_test(0);
+    log10_test(10);
+    log10_test(100);
+    log10_test(pow(10,3.4));
+
+    rand_test(0);
+    rand_test(1);
+    rand_test(1);
+    rand_test(1);
+    rand_test(1.5);
+    rand_test(1.5);
+    rand_test(1.5);
+    seed(5);
+    rand_test(10);
+    rand_test(10);
+    rand_test(10);
+    seed(5);
+    rand_test(10);
+    rand_test(10);
+    rand_test(100);
+    rand_test(100);
+    rand_test(100);
+    rand_test(100);
+    rand_test(100);
+    rand_test(-1);
+    rand_test(-10);
+    rand_test(-10.5);
+    irand_test(0);
+    irand_test(1);
+    irand_test(1);
+    irand_test(1);
+    irand_test(10);
+    irand_test(10);
+    irand_test(10);
+    irand_test(10);
+    irand_test(10);
+    irand_test(100);
+    irand_test(100);
+    irand_test(100);
+    irand_test(100);
+    irand_test(100);
+    irand_test(-1);
+    irand_test(-10);
+    fflush(stdout);
+  }
+} execute main;
+

@@ -1,0 +1,134 @@
+/* General April support macros */
+
+/* Implement the break and continue statements */
+#macro while ?T do {?B./break} ==> ##exit :- {while T do B./leave ##exit};
+#macro while ?T do {?B./continue} ==> {while T do {##loop:-B./leave ##loop}};
+#macro for ?T do {?B./break} ==> ##exit :- { for T do B./leave ##exit };
+#macro for ?T do {?B./continue} ==> {for T do {##loop:-B./leave ##loop}};
+
+/* Map some for loops into while loops */
+#macro for (`(?))(?T,?X) in ?Y .. ?H do ?S ==>
+	 { T?X : Y; ##Z = H; while X<= ##Z do { S; X := X+1}};
+#macro for (`(?))(?X) in ?L .. ?H do ?S ==>
+	 { X : L; Z = H;
+	   while X<=Z do { S; X := X+1}};
+#macro for symbol?X in ?L .. ?H do ?S ==>
+	 { X : L; ##Z = H;
+	   while X<= ##Z do { S; X := X+1}};
+
+#macro for (`(?))(?X) in ?L .. ?H step ?K do ?S ==>
+	 { X : L; ##Z = H; ##K = K;
+	   while X<= ##Z do { S; X := X+ ##K}};
+#macro for symbol?X in ?L .. ?H step ?K do ?S ==>
+	 { X : L; ##Z = H; ##K = K;
+	   while X<= ##Z do { S; X := X+ ##K}};
+
+/* Map let ... in ... form into pure April */
+#macro let ?B in ?E ==> theta{B}.E;
+#macro let ?B where ?E ==> theta{B}.E;
+
+/* Incremental assignment statements */
+#macro ?X +:= ?E ==> X := X+E;
+
+#macro ?X *:= ?E ==> X := X*E;
+
+#macro ?X /:= ?E ==> X := X/E;
+
+#macro ?X -:= ?E ==> X := X-E;
+
+/* Time functions */
+#macro ?X secs ==> X;
+#macro ?X mins ==> X*60;
+#macro ?X hours ==> X*3600;
+#macro ?X days ==> X*86400;
+
+/* Higher level constrained execution statement */
+#macro ?S within ?E ==> {
+  ##old = __get_clicks(self());
+  ##sub = __split_clicks(##old,E);
+  S within_ ##sub;
+  __merge_clicks(##sub,##old);
+};
+
+/* support for macro defining macros -- get rid of spurious voids */
+#macro {void ; ?S} ==> S;
+#macro {?S;void} ==> S;
+#macro {void ;} ==> void;	-- This REMOVES a ; from the source ... 
+#macro {void. ?X} ==> X;
+
+/* support obsolete functions */
+#macro _args() ==> tail(command_line(),1);
+#macro shell(?P) ==> valof {
+			parts = expand(P," ");
+			valis shell(head(parts),tail(parts,1),[])
+                     };
+#macro theta{?B} ==> {_thetaize_(B)};
+
+#macro ?H,+?T ==> [H,..T];
+
+#macro ?T ?? ?E ==> valof{
+  any(T? ##X) = E;
+  valis ##X;
+};
+#macro any?? ?E ==> any(E);
+
+-- date(year,month,day,dow,hour,min,sec)
+
+date ::= date(number,number,number,number,number,number,number);
+
+error ::= error(string,symbol) | failed | timedout | clickedout ;
+
+_sys_protocol ::= _kill_(handle) | _killed_(handle) | 
+  interrupt | monitor(handle) | unmonitor(handle) |
+  _attach_debugger_(handle) | _debugger_attached_(handle) 
+  | _detach_debugger_ | _debugger_detached_ 
+  | ping(handle) | unalive(handle) | alive(handle);
+
+_monitor_protocol ::= termin(handle);
+
+process ::= process(handle?hdl, handle?creator,handle?filer,
+		handle?manager,handle?mailer,logical?privileged);
+
+_process_state ::= quiescent| runnable | wait_io | wait_msg | wait_timer |dead;
+
+_access_right ::= _allow_read | _allow_write | _allow_pipe | 
+        _allow_connect | _allow_server | _allow_listen;
+
+_file_mode ::= _access_right;
+
+_file_permission ::= _setuid | _setgid | _sticky
+	| _rusr | _wusr | _xusr
+	| _rgrp | _wgrp | _xgrp
+	| _roth | _woth | _xoth;
+
+_file_type ::= _not_found | _fifo_special | _char_special | _block_special 
+	| _directory | _plain_file | _sym_link;
+
+_file_open_mode ::= _open_read | _open_write | _open_read_write 
+        | _open_append
+        | _create_write | _create_append;
+
+_stream_mode ::= char_stream
+   | line_stream
+   | text_stream
+   | term_stream
+   | coded_stream
+   ;
+
+_file_status ::= _file_stat(number?device,number?serial,
+     number?mode,number?links,
+     number?usr,number?grp,
+     number?dev,number?size,
+     number?access,number?modify,number?change,
+     number?bksize,number?noblks);
+
+xmlTree ::= xmlText(string)
+ | xmlNode(string,(string,string)[],xmlTree[])
+ ;
+
+_stream_protocol(%a) ::= 
+     sio_char(number,char)
+   | sio_text(number,string)
+   | sio_term(number,%a)
+   | sio_end;
+   

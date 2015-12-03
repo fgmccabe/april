@@ -1,0 +1,111 @@
+/*
+ * handle the results of a questionaire as they are input into an AdB database
+ */
+
+#macro adb_proc(?msg) -> { msg >> adb;
+                         { (ok, ?) -> relax
+                         | (error, ?M) -> { 
+                             writef(stdout, "Problem with adb: %3w\n",(M));
+                             exit(1);
+                           }
+                         }};
+
+#op({.^}, "(*)f(*)",700);
+#macro ?S .^ ?K -> {S^.(K,?)}.val;
+
+db_rec ::= (symbol?key,any?val)[];
+
+program {
+
+  set_up_summary(string?survey,handle?dialox)->symbol[]?collect
+  {
+    handle?tmpl := fopen(survey++".tmpl","r");
+    symbol?srvy := symbol??survey;    
+
+    while not eof(tmpl) do {
+      { (string?quest,symbol?q_name,
+	  string?lv1,string?lv2,string?lv3,string?lv4,string?lvU)
+	:=(string,symbol,string,string,string,string,string)??read(tmpl);
+
+        (new_record,srvy, [
+	  (question,quest),
+	  (ID,q_name),
+	  (lvl1,lv1), (lvl2,lv2),(lvl3,lv3), (lvl4,lv4),(lvlU,lvU),
+	  (rsp1,0), (rsp2,0),(rsp3,0), (rsp4,0),(rspU,0),
+	  (count,0)]) >> dialox;
+	elemis q_name;
+      }
+      onerror {
+        (error, "end of file", ?) -> relax
+      | (error, ?O, ?) -> "Other problem "++string??O++" in reading from "++
+		survey++"\n" >> stdout
+      };
+
+    };
+
+    fclose(tmpl);
+  };	
+
+  process_response(db_rec?record,symbol[]?keys,handle?dlx,symbol?db)
+  {
+    for symbol?ky in keys do{
+      if (ky, number?vl) in record then {
+        symbol?var := symbol??{ sprintf("%s$%s$rsp%d",(db,ky,vl))};
+	symbol?count := symbol??{ sprintf("%s$%s$count",(db,ky))};
+
+        (get_variable, count) >> dlx;
+        (get_variable, var) >> dlx;
+        {(count, integer?cnt) -> 
+	  { (var, integer?varcnt) -> {
+              (set_variable, var, varcnt+1) >> dlx;
+              (set_variable, count, cnt+1) >> dlx;
+	    }
+          | failed -> writef(stdout,"Couldnt access %s\n",(var))
+          }
+        | failed -> writef(stdout,"Couldnt access %s\n",(count))
+        }
+      }
+    }
+  };
+
+  main(handle?adb,handle?dialox,string?survey)
+  {
+    symbol?srvy := symbol??survey;    
+
+    adb_proc((open_dbase,srvy));		/* open up the database */
+    adb_proc((watch,srvy,all));			/* and watch its contents */
+
+    (open_dbase, srvy) >> dialox;
+    (clear_dbase, srvy) >> dialox;
+
+    symbol[]?keys:=set_up_summary(survey,dialox);/* set up summary database */
+
+    (window, "Display of "++survey, (column, [
+      (row, [(label, "On-line results of survey `"++survey++"'"),
+	     (colour, "green", (fit, 200, 32, (message, msg))),
+	     (button, "Quit", quit)]),
+	
+      (scroll, (replicate, srvy, [
+	(button, question, (analyse, ID)),
+	(label,lvl1),(label,rsp1),
+	(label,lvl2),(label,rsp2),
+	(label,lvl3),(label,rsp3),
+	(label,lvl4),(label,rsp4),
+	(label,"Total: "),(label,count)]))])) >> dialox;
+
+    repeat {
+      (analyse, symbol?q_name) -> {
+        writef(stdout,"Analyzing %s\n",(q_name));
+      }
+   | (new_record, srvy, db_rec?record) -> {
+        (set_variable, msg, sprintf("New record from %2w",
+					({record^.(email,?)}.val)))>>dialox;
+	process_response(record,keys,dialox,srvy);
+     }
+   } until quit;
+
+   close >> dialox;
+   goodbye >> adb;
+    
+  };
+} execute main;

@@ -1,0 +1,11 @@
+program{
+main() {
+
+  while not eof(stdin) do{
+    inp = binline(stdin);
+    _break("");
+    any%%X .= inp;
+    "You typed in "++string%%X++"\n">>stdout;
+  }
+}
+} execute main;

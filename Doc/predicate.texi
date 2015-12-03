@@ -1,0 +1,356 @@
+@node Tests and conditions
+@chapter Tests and Conditions
+@cindex Tests and conditions
+
+@noindent
+These functions return values of type @code{logical} (i.e., values are
+either @code{true} or @code{false}) and are typically used in the
+condition for loops or @code{if@dots{}then} statements.
+
+Note that certain of these predicates may have a `side-effect' of
+declaring a variable -- for example the @code{.=} match predicate may
+declare variables in the pattern on the left hand side. Variables that
+are declared in a predicate may extend their scope outside the predicate
+-- in particular `conjunctive' predicates allow this but disjunctive or
+negative predicates do not: for example, @code{.=} allows it but
+@code{not @dots{} =} does not.
+
+@menu
+* Term matching::               Matching data against a pattern
+* Comparisons::                 Comparing data values
+* Logical connectives::         Boolean combinations
+@end menu
+
+@node Term matching
+@section Term Matching
+@cindex Term matching
+
+@noindent
+These predicates apply a pattern to a value -- for a description of the
+possible kinds of pattern, @pxref{Patterns}.
+
+@menu
+* .=::                          Term match
+* in::                          List membership
+@end menu
+
+@node .=
+@subsection Match condition
+@cindex Term matching
+@findex @code{.=} @r{predicate}
+
+@noindent
+Template:
+@smallexample
+@var{Pattern} .= @var{Term} => logical
+@end smallexample
+
+@noindent
+Term matching is a test for the @emph{compatibility} of a data
+value with a @emph{structure prototype}.
+This is more powerful and general than equality tests as it permits simple
+type checking and implicit iteration as well as comparison. In
+addition, it is possible to assign variables as a result of a
+successful match.
+
+@node in
+@subsection List membership condition
+@cindex List membership test
+@findex @code{in} @r{predicate}
+
+@noindent
+Template:
+@smallexample
+@var{%a}?@var{E} in @var{%a}[]?@var{T} => logical
+@end smallexample
+
+@noindent
+This predicate is @code{true} if there is an element described by
+the pattern @var{E} in the list @var{T}, and @code{false} otherwise.
+
+Note that in some circumstances, the @code{in} operator can also
+introduce variable declarations -- via the pattern @var{E}. If the
+@code{in} expression occurs as the top-level expression in a @code{for}
+statement, such as in:
+
+@smallexample
+@group
+for X in @var{S} do
+  elemis X
+@end group
+@end smallexample
+
+@noindent
+then the variables introduced in the pattern have as their scope the
+dependent statement(s) of the @code{for} statement. I.e., the
+variables's scope includes the body of the @code{for} statement.
+
+@node Comparisons
+@section Comparisons
+@cindex Comparisons
+
+@noindent
+Not all values in @code{April} are strictly comparable -- for example
+procedures and functions are not comparable. In addition, elements of a
+user-defined type are not comparable. However, `ordinary' values
+such as strings, numbers and even lists of these are comparable.
+
+The type-checker will insist that when comparing two elements, they have
+the same type.
+
+If two values are of the same type, then the relative ordering is as
+follows:
+
+@itemize @bullet
+@item
+One number is less than another if it is numerically less.  Note that we
+can transparently compare integer values and floating point numbers; e.g.
+@smallexample
+1 < 1.5 < 2
+@end smallexample
+@item
+Symbols and strings can be ordered by comparing the characters in their
+name using the underlying character encoding scheme@footnote{Usually
+based on ASCII}.  One symbol or string is less than another if:
+@itemize @minus
+@item
+its first character is less than the first character of the second
+symbol using the underlying character ordering -- or,
+@item
+if the first characters are the same then the next character in
+each symbol is compared in the same way.  This is repeated until
+two different characters are found and a result is decided -- or,
+@item
+if one symbol runs out of characters before a result is decided,
+the shorter symbol is deemed to be smaller.
+@end itemize
+@item
+One tuple is less than another if either:
+@itemize @minus
+@item
+its arity is smaller (i.e. there are fewer elements in the smaller
+tuple) -- or,
+@item
+if the arities are the same, the element in one tuple (in a
+left-to-right sequence) is less than the corresponding element
+in the other tuple.
+@end itemize
+@item
+One record is less than another if either:
+@itemize @minus
+@item
+its arity is smaller (i.e. there are fewer elements in the smaller
+record) -- or,
+@item
+its label is smaller -- in the symbol encoding described above -- or,
+@item
+if the arities are the same, an element in one record (in a
+left-to-right sequence) is less than the corresponding element
+in the other record.
+@end itemize
+@end itemize
+
+Using this ordering, we can define the following comparison functions:
+
+@menu
+* ==::                          Equality test
+* !=::                          Inequality test
+* <::                           Less than test
+* >::                           Greater than test
+* <=::                          
+* >=::                          Greater than or equal test
+@end menu
+
+@node ==
+@subsection Term equality
+@cindex Term equality
+@cindex Data value equality
+@cindex Equality of data values
+@findex @code{==} @r{predicate}
+
+@noindent
+Condition template:
+@smallexample
+@var{%a}?@var{A} == @var{%a}?@var{B} => logical
+@end smallexample
+
+@noindent
+This predicate is @code{true} if @var{A} is equal to @var{B}. Note
+that @var{A} and @var{B} should have the same type; if this is type
+@code{any} then the universal ordering on terms will be used.
+
+@node !=
+@subsection Term inequality
+@findex @code{!=} @r{predicate}
+@cindex Inequality
+@cindex Data value equality
+@cindex Equality of data values
+
+@noindent
+Condition template:
+@smallexample
+@var{%a}?@var{A} != @var{%a}?@var{B} => logical
+@end smallexample
+
+@noindent
+This predicate is @code{true} if @var{A} is not equal to @var{B}. Note
+that @var{A} and @var{B} should have the same type; if this is type
+@code{any} then the universal ordering on terms will be used.
+
+@node <
+@subsection Less than condition
+@findex @code{<} @r{predicate}
+@cindex Less than test
+@cindex Data value less than test
+
+@noindent
+Condition template:
+@smallexample
+@var{%a}?@var{A} < @var{%a}?@var{B} => logical
+@end smallexample
+
+@noindent
+This predicate is @code{true} if @var{A} is less than @var{B}. Note
+that @var{A} and @var{B} should have the same type; if this is type
+@code{any} then the universal ordering on terms will be used.
+
+@node >
+@subsection Greater than test
+@cindex Greater than test
+@cindex Data value less than test
+@findex @code{>} @r{predicate}
+
+@noindent
+Condition template:
+@smallexample
+@var{%a}?@var{A} > @var{%a}?@var{B} => logical
+@end smallexample
+
+@noindent
+This predicate is @code{true} if @var{A} is greater than 
+@var{B}. Note that @var{A} and @var{B} should have the same type; if
+this is type @code{any} then the universal ordering on terms will be
+used.
+
+@node <=
+@subsection Less than or equal condition
+@cindex Less than or equal test
+@cindex Data value less than test
+@findex @code{<=} @r{predicate}
+
+@noindent
+Condition template:
+@smallexample
+@code{%a?@var{A} <= %a?@var{B} => logical}
+@end smallexample
+
+@noindent
+This predicate is @code{true} if @var{A} is less than or equal to
+@var{B}. Note that @var{A} and @var{B} should have the same type; if
+this is type @code{any} then the universal ordering on terms will be
+used.
+
+@node >=
+@subsection Greater than or equal test
+@cindex Greater than or equal test
+@cindex Data value less than test
+@findex @code{>=} @r{predicate}
+
+@noindent
+Condition template:
+@smallexample
+@var{%a}?@var{A} >= @var{%a}?@var{B} => logical
+@end smallexample
+
+@noindent
+This predicate is @code{true} if @var{A} is greater than or equal to
+@var{B}. Note that @var{A} and @var{B} should have the same type; if
+this is type @code{any} then the universal ordering on terms will be
+used.
+
+
+@node Logical connectives
+@section Logical Connectives
+@cindex Logical connectives
+
+@noindent
+The logical connectives allow boolean combinations to be formed. Note
+that @code{&&} and @code{||}  are @emph{conditional} combinations: if
+the first element evaluates to @code{false} or @code{true} respectively
+then the second argument is not evaluated. While this is not strict in
+the mathematical sense, it makes perfect sense for a programming
+language, since it allows optimizations to be made by the compiler.
+
+@menu
+* &&::                          Conjunction
+* ||::                          Disjunction
+* !::                           Logical negation
+@end menu
+
+@node &&
+@subsection Logical conjunction
+@cindex Logical conjunction
+@findex @code{and} @r{predicate}
+@findex @code{&&} @r{predicate}
+
+@noindent
+Condition template:
+@smallexample
+logical?@var{A} && logical?@var{B} => logical
+@end smallexample
+
+@noindent
+This predicate is @code{true} if @var{A} and @var{B} both evaluate to
+@code{true}.  Otherwise, this returns @code{false}. More accurately, if
+@var{A} evaluates to @code{true} then the value is the value of
+@var{B}. I.e., @var{B} is only evaluated if @var{A} is @code{true},
+otherwise it is skipped.
+
+Variables which are declared within @var{A} or @var{B} may extend their
+scope outside the conjuction.
+
+@node ||
+@subsection Logical disjunction
+@cindex Logical disjunction
+@findex @code{or} @r{predicate}
+@findex @code{||} @r{predicate}
+
+@noindent
+Condition template:
+@smallexample
+logical?@var{A} || logical?@var{B} => logical
+@end smallexample
+
+@noindent
+This predicate is @code{true} if either @var{A} or @var{B} evaluate to
+@code{true}.  Otherwise, this predicate is @code{false}. More accurately, if
+@var{A} evaluates to @code{false} then the value is the value of
+@var{B}. I.e., @var{B} is only evaluated if @var{A} is @code{false},
+otherwise it is skipped.
+
+Note that any variables declared within @var{A} or @var{B} do @emph{not}
+extend their scope outside the disjunction.
+
+@node !
+@subsection Logical negation
+@cindex Logical negation
+@findex not @r{predicate}
+@findex ! @r{predicate}
+
+@noindent
+Condition template:
+@smallexample
+! logical?@var{A} => logical
+@end smallexample
+
+@noindent
+This predicate is @code{true} if @var{A} evaluates to @code{false}.
+Otherwise, This predicate is @code{false}.
+
+Note that any variables declared within @var{A} do @emph{not}
+extend their scope outside the negation.
+
+
+
+
+

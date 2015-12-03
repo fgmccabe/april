@@ -1,0 +1,37 @@
+/* 
+ * Test the XML parser and the stream I/O modules
+ */
+
+program
+  import {interface "sio.af" and
+          interface "xml.af"} in
+{
+
+  main(P)
+  {
+    H = sio_server(P,xmlHandler,text_stream);
+
+    "XML Server "++H^0++" started\n">>stdout;
+
+    waitfor(H)
+  };
+
+   xmlHandler(Host,number?Port,handle?InP,OutP){
+     "Connection from "++Host++"["++Port^0++"]\n">>stdout;
+
+     xmlInFilter(spawn{
+       No : 1;
+       repeat
+	 sio_term(!No,T) ->> {
+	   "Received XML term "++T^0++"\n" >> stdout;
+	   sio_text(No,xmlGen(T))>>OutP;
+	   No := No+1;
+	 }
+       until sio_end;
+       sio_end >> OutP;
+     },InP);
+
+    "Connection closing\n">>stdout;
+   };    
+
+} execute main
